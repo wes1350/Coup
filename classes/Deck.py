@@ -13,7 +13,6 @@ class Deck:
             self._deck.append(Card(character=Captain.Captain()))
             self._deck.append(Card(character=Contessa.Contessa()))
             self._deck.append(Card(character=Duke.Duke()))
-        random.shuffle(self._deck)
         self._assigned = [False]*len(self._deck)
 
     def mark_as_assigned(self, assignments : list) -> None:
@@ -34,3 +33,17 @@ class Deck:
         if assign:
             self.mark_as_assigned(selected_cards)
         return [self._deck[i] for i in selected_cards]
+
+    def return_card(self, card : Card) -> None:
+        for i, c in enumerate(self._deck):
+            if type(c) == type(card):
+                if self.assigned[i]:
+                    self.assigned[i] = False
+                    return
+        raise ValueError("Could not find given card among assigned cards")
+
+    def exchange_card(self, card : Card) -> Card:
+        new_card = self.draw(1)
+        self.return_card(card)
+        return new_card
+        
