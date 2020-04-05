@@ -1,49 +1,46 @@
+print(__name__)
 import random
-from .Card import Card
-from .characters import Ambassador, Assassin, Captain, Contessa, Duke
+if __name__ == "__main__":
+    from Card import Card
+    from Characters import Ambassador, Assassin, Captain, Contessa, Duke
+else:
+    from .Card import Card
+    from .characters import Ambassador, Assassin, Captain, Contessa, Duke
 
 class Deck:
     """Class for managing the Coup deck. The deck only contains information about the cards it contains, and whether a card has been dealt (assigned) or not. It does not know about player assignments.To interact with the deck, we call methods such as draw."""
+    ALL_CHARACTERS = [Ambassador.Ambassador, Assassin.Assassin, Captain.Captain, Contessa.Contessa, Duke.Duke]
 
     def __init__(self, n_players : int, n_cards_per_character : int) -> None:
-        self._deck = []
-        for _ in range(n_cards_per_character):
-            self._deck.append(Card(character=Ambassador.Ambassador()))
-            self._deck.append(Card(character=Assassin.Assassin()))
-            self._deck.append(Card(character=Captain.Captain()))
-            self._deck.append(Card(character=Contessa.Contessa()))
-            self._deck.append(Card(character=Duke.Duke()))
-        self._assigned = [False]*len(self._deck)
+        ids = [i for i in range(n_cards_per_character * len(Deck.ALL_CHARACTERS))]
+        self._deck = {}
+        for char in Deck.ALL_CHARACTERS:
+            for _ in range(n_cards_per_character):
+                # random id
+                id = ids.pop(random.randint(1, len(ids)) - 1)
+                self._deck[id] = (Card(character=char(), id=id))
 
-    def mark_as_assigned(self, assignments : list) -> None:
-        for idx in assignments:
-            self._assigned[idx] = True
-    
-    def switch_assignment(self, old : int, new : int) -> None:
-        self._assigned[old] = False
-        self._assigned[new] = True
-    
     def draw(self, n : int, assign : bool = True) -> list:
-        unassigned = [i for i in range(len(self._assigned)) if not self._assigned[i]]
+        unassigned = [card for card in self._deck if not self._deck[card].is_assigned()]
+        print(unassigned)
         if n <= 0:
             raise ValueError("Must draw more than 0 cards")
         if n > len(unassigned):
             raise ValueError("Cannot draw {} cards when only {} are in the deck".format(n, len(unassigned)))
         selected_cards = random.sample(unassigned, n)
+        print(selected_cards)
         if assign:
-            self.mark_as_assigned(selected_cards)
+            [self._deck[id].set_assign(True) for id in selected_cards]
+
         return [self._deck[i] for i in selected_cards]
 
-    def return_card(self, card : Card) -> None:
-        for i, c in enumerate(self._deck):
-            if type(c) == type(card):
-                if self.assigned[i]:
-                    self.assigned[i] = False
-                    return
-        raise ValueError("Could not find given card among assigned cards")
+    def return_card(self, id : int) -> None:
+        if self._deck.get(id) != None:
+            self._deck[id].set_assign(False)
+        else:
+            raise ValueError("Could not find given card among assigned cards")
 
     def exchange_card(self, card : Card) -> Card:
         new_card = self.draw(1)
         self.return_card(card)
-        return new_card
-        
+        return new_card[0]

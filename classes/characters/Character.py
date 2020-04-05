@@ -1,10 +1,10 @@
+print(__name__)
 from typing import Callable
-from classes.actions.Action import Action
+if __name__ == "characters.Character":
+    from ..actions.Action import Action
+else:
+    from classes.actions.Action import Action
 
 class Character:
     def influence(self) -> dict:
-        pass
-    
-    """  """
-    def counter(self, action: Action) -> bool:
         pass
