@@ -3,29 +3,10 @@ from classes.characters import Ambassador, Assassin, Captain, Contessa, Duke
 from classes.Card import Card
 from State import State
 
-
 class Engine:
 
     def __init__(self) -> None:
-        self.CARDS_PER_CHARACTER = 4
-        self._deck = []
-        self._initialize_deck()
-        print(self._deck)
-
-    def _initialize_game(self, n_players : int) -> None:
-        self._state = State(n_players)
-
-    def _assign_cards_to_players(self, n_players : int) -> dict:
-        pass
-
-    def _initialize_deck(self) -> None:
-        for _ in range(self.CARDS_PER_CHARACTER):
-            self._deck.append(Card(character=Ambassador.Ambassador()))
-            self._deck.append(Card(character=Assassin.Assassin()))
-            self._deck.append(Card(character=Captain.Captain()))
-            self._deck.append(Card(character=Contessa.Contessa()))
-            self._deck.append(Card(character=Duke.Duke()))
-        random.shuffle(self._deck)
+        self.CARDS_PER_CHARACTER = 3
 
 # Initialize game with n players, create the state object
 

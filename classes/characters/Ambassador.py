@@ -1,4 +1,6 @@
-class Ambassador:
+from .Character import Character
+
+class Ambassador(Character):
     
     def __init__(self):
-        pass
+        pass        
