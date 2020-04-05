@@ -3,6 +3,7 @@
 from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
+from classes.actions.Action import Action
 
 class State:
 
@@ -46,3 +47,17 @@ class State:
     
     def get_alive_players(self) -> list:
         return [self._players[i].get_id() for i in self._n_players if self.player_is_alive(i)]
+
+    def execute_action(self, player : int, action : Action) -> None:
+        target = action.get_property("target")
+
+        # Handle coin balances
+        cost = action.get_property("cost")        
+        self._players[player].change_coins(-1 * cost)
+        if "steal":
+            self._players[target].change_coins(cost)
+
+        # Handle assassinations
+        if action.get_property("kill"):
+            card_id = action.get_property("kill_card_id")
+            self._players[target].kill_card(card_id)

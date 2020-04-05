@@ -21,6 +21,9 @@ class Player:
     def set_card(self, i : int, card : Card) -> None:
         self._cards[i] = card 
 
+    def kill_card(self, i : int) -> None:
+        self._cards[i].die()
+    
     def is_eliminated(self) -> bool:
         for card in self._cards:
             if card.is_alive():

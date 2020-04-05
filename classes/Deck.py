@@ -21,13 +21,11 @@ class Deck:
 
     def draw(self, n : int, assign : bool = True) -> list:
         unassigned = [card for card in self._deck if not self._deck[card].is_assigned()]
-        print(unassigned)
         if n <= 0:
             raise ValueError("Must draw more than 0 cards")
         if n > len(unassigned):
             raise ValueError("Cannot draw {} cards when only {} are in the deck".format(n, len(unassigned)))
         selected_cards = random.sample(unassigned, n)
-        print(selected_cards)
         if assign:
             [self._deck[id].set_assign(True) for id in selected_cards]
 
