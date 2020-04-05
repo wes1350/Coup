@@ -15,7 +15,7 @@ class State:
         unassigned_cards = self._deck.draw(2 * n_players)
         self._players = []
         for i in range(n_players):
-            self._players.append(Player(id=i, coins=2, cards=(unassigned_cards[2*i], unassigned_cards[2*i+1])))
+            self._players.append(Player(id_=i, coins=2, cards=(unassigned_cards[2*i], unassigned_cards[2*i+1])))
 
         self._current_player = 0
         # Initialize the current turn
@@ -43,4 +43,6 @@ class State:
     def n_players_alive(self) -> bool:
         statuses = [self.player_is_alive(i) for i in range(self._n_players)]
         return sum([1 for x in statuses if x])
-        
+    
+    def get_alive_players(self) -> list:
+        return [self._players[i].get_id() for i in self._n_players if self.player_is_alive(i)]

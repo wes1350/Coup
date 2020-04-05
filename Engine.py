@@ -13,6 +13,7 @@ class Engine:
             print("Printing State")
             time.sleep(1)
             
+        print("Game is over! \n Winner is: Player {}".format(self._state.get_alive_players()[0]))
 
     def game_is_over(self):
         return self._state.n_players_alive() == 1
