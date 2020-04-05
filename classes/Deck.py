@@ -1,4 +1,3 @@
-print(__name__)
 import random
 if __name__ == "__main__":
     from Card import Card

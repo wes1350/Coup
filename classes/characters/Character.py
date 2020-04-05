@@ -1,4 +1,3 @@
-print(__name__)
 from typing import Callable
 if __name__ == "characters.Character":
     from ..actions.Action import Action

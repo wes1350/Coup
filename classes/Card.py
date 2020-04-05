@@ -1,4 +1,3 @@
-print(__name__)
 if __name__ == "Card":
     from characters import Character
 else:
