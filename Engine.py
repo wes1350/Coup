@@ -1,11 +1,21 @@
-import random
+import random, time
 from classes.Card import Card
 from State import State
 
 class Engine:
 
     def __init__(self) -> None:
-        self.state = State(n_players=3)
+        self._state = State(n_players=3)
+        self.run_game()
+
+    def run_game(self):
+        while not self.game_is_over():
+            print("Printing State")
+            time.sleep(1)
+            
+
+    def game_is_over(self):
+        return self._state.n_players_alive() == 1
 
 # Initialize game with n players, create the state object
 
