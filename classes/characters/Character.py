@@ -1,9 +1,8 @@
 from typing import Callable
-from State import State
-from Action import Action
+from ..Action import Action
 
 class Character:
-    def influence(self) -> Callable[[State], State]:
+    def influence(self) -> dict:
         pass
     
     """  """

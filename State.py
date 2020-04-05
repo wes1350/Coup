@@ -1,4 +1,4 @@
-from Player import Player
+from classes.Player import Player
 class State:
 
     def __init__(self, n_players : int, card_assignments : dict) -> None:

@@ -1,4 +1,4 @@
-from Character import Character
+from .characters import Character
 
 class Card:
     def __init__(self, character : Character) -> None:

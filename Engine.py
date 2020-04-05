@@ -1,27 +1,31 @@
+import random
 from classes.characters import Ambassador, Assassin, Captain, Contessa, Duke
-from classes import Card
+from classes.Card import Card
+from State import State
 
 
 class Engine:
-    CARDS_PER_CHARACTER = 3
 
     def __init__(self) -> None:
-        self.deck = []
-        self.initialize_deck()
+        self.CARDS_PER_CHARACTER = 4
+        self._deck = []
+        self._initialize_deck()
+        print(self._deck)
 
-    def initialize_game(self, n_players : int) -> None:
-        self.state = State(n_players)
+    def _initialize_game(self, n_players : int) -> None:
+        self._state = State(n_players)
 
-    def assign_cards_to_players(self, n_players : int) -> dict:
+    def _assign_cards_to_players(self, n_players : int) -> dict:
         pass
 
-    def initialize_deck(self) -> None:
-        for _ in range(CARDS_PER_CHARACTER):
-            self.deck.append(Card(character=Ambassador.Ambassador()))
-            self.deck.append(Card(character=Assassin()))
-            self.deck.append(Card(character=Captain()))
-            self.deck.append(Card(character=Contessa()))
-            self.deck.append(Card(character=Duke()))
+    def _initialize_deck(self) -> None:
+        for _ in range(self.CARDS_PER_CHARACTER):
+            self._deck.append(Card(character=Ambassador.Ambassador()))
+            self._deck.append(Card(character=Assassin.Assassin()))
+            self._deck.append(Card(character=Captain.Captain()))
+            self._deck.append(Card(character=Contessa.Contessa()))
+            self._deck.append(Card(character=Duke.Duke()))
+        random.shuffle(self._deck)
 
 # Initialize game with n players, create the state object
 
@@ -46,3 +50,6 @@ class Engine:
 # - now turn is over, so update game state
 
 # Note: settling a challenge includes executing the original action if the challenge was won by the executor
+
+if __name__ == "__main__":
+    Engine()
