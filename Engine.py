@@ -1,12 +1,11 @@
 import random
-from classes.characters import Ambassador, Assassin, Captain, Contessa, Duke
 from classes.Card import Card
 from State import State
 
 class Engine:
 
     def __init__(self) -> None:
-        self.CARDS_PER_CHARACTER = 3
+        self.state = State(n_players=3)
 
 # Initialize game with n players, create the state object
 
