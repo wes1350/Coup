@@ -1,6 +1,6 @@
 
 class Action:
-    def __init__(**kwargs):
+    def __init__(self, **kwargs):
         self._properties = {
             "target": None,
             "steal": False,
