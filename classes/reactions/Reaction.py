@@ -1,9 +1,12 @@
-class Block:
+class Reaction:
     def __init__(self, **kwargs):
-        self.properties = {
-            "from_player": None,
-            "from_character": None 
-        }   
+        self._properties = {
+            "reaction_type": None,
+            "from_player": None
+        }
+
+        for arg in kwargs:
+            self._properties[arg] = kwargs[arg]
 
     def get_property(self, prop : str):
         return self._properties[prop]

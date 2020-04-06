@@ -20,6 +20,9 @@ class Action:
 
     def set_property(self, prop : str, value):
         self._properties[prop] = value
+    
+    def is_blockable(self):
+        return self.get_property("blockable")
 
     def ready(self) -> bool:
         return True
