@@ -32,15 +32,15 @@ class Deck:
         return [self._deck[i] for i in selected_cards]
 
     def return_card(self, id_ : int) -> None:
-        if self._deck.get(id_) != None:
+        if self._deck.get(id_) is not None:
             self._deck[id_].set_assign(False)
         else:
             raise ValueError("Could not find given card among assigned cards")
 
     def exchange_card(self, card : Card) -> Card:
-        new_card = self.draw(1)
-        self.return_card(card)
-        return new_card[0]
+        new_card = self.draw(1)[0]
+        self.return_card(card.get_id())
+        return new_card
 
     def __str__(self):
         rep = "[\n"

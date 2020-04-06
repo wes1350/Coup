@@ -17,7 +17,7 @@ class State:
         unassigned_cards = self._deck.draw(2 * n_players)
         self._players = []
         for i in range(n_players):
-            self._players.append(Player(id_=i, coins=2, cards=(unassigned_cards[2*i], unassigned_cards[2*i+1])))
+            self._players.append(Player(id_=i, coins=2, cards=[unassigned_cards[2*i], unassigned_cards[2*i+1]]))
 
         self._current_player_id = 0
         # Initialize the current turn
@@ -50,7 +50,7 @@ class State:
         return chosen_cards
 
     def switch_player_card(self, player_id, card_idx) -> None:
-        new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))  
+        new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))
         self._players[player_id].set_card(card_idx, new_card)
 
     def kill_player_card(self, player_id, card_idx) -> None:
@@ -77,7 +77,7 @@ class State:
                 return challenger
         return actor
 
-    def execute_action(self, player : int, action : Action) -> None:
+    def execute_action(self, player : int, action : Action, ignore_killing : bool = False) -> None:
         target = action.get_property("target")
 
         # Handle coin balances
@@ -91,10 +91,12 @@ class State:
         else:
             self._players[player].change_coins(-1 * cost)
 
-        # Handle assassinations
-        if action.get_property("kill"):
-            card_id = action.get_property("kill_card_id")
-            self._players[target].kill_card(card_id)
+        # Check for the case if the affected player has already died this turn
+        if not ignore_killing:
+            # Handle assassinations, coups
+            if action.get_property("kill"):
+                card_id = action.get_property("kill_card_id")
+                self._players[target].kill_card(card_id)
 
     def validate_action(self, action : Action, player_id : int) -> bool:
         # Validate the cost 
@@ -121,6 +123,19 @@ class State:
                 return False
         
         return True
+
+    def exchange_player_card(self, player : int, character : str) -> None:
+        print("a"+ character + "a")
+        for id_ in self.get_player_living_card_ids(player):
+            print("b"+self.get_player_card(player, id_).get_character_type()+"b")
+            print(self.get_player_card(player, id_).get_character_type() == character)
+            if self.get_player_card(player, id_).get_character_type() == character:
+                self.switch_player_card(player, id_)
+                print("HERE")
+                return
+                print("STILL HERE")
+        print("AND HERE")
+        raise ValueError("Could not find character time among player's living cards") 
 
     def __str__(self):
         rep = "Deck: {}\n".format(self._deck.__str__())

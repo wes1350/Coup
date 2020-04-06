@@ -43,18 +43,21 @@ class Engine:
                             card = self.query_player_card(losing_player)
                             self._state.kill_player_card(losing_player, card)
                             if losing_player == blocker:
-                                self.execute_action(action, current_player, target)
+                                self.execute_action(action, current_player, target, ignore_if_dead=True)
+                            else:
+                                self.exchange_player_card(blocker, chosen_reaction)
                             print("Player {} loses the challenge".format(losing_player))
                         else:
                             print("Action blocked with {}".format(chosen_reaction.get_property("as_character")))    
                     elif reaction_type == "challenge":
                         challenger = chosen_reaction.get_property("from_player")
-                        claimed_character = action.get_property("actor")
+                        claimed_character = action.get_property("as_character")
                         losing_player = self._state.get_challenge_loser(claimed_character, current_player, challenger)
                         card = self.query_player_card(losing_player)
                         self._state.kill_player_card(losing_player, card)
                         if losing_player == challenger:
-                            self.execute_action(action, current_player, target)
+                            self.execute_action(action, current_player, target, ignore_if_dead=True)
+                            self.exchange_player_card(current_player, action)
                         print("Player {} loses the challenge".format(losing_player))
                     else:           
                         raise ValueError("Invalid reaction type encountered")
@@ -67,12 +70,17 @@ class Engine:
     def next_turn(self):
         self._state.update_current_player() 
 
-    def execute_action(self, action: Action, source : int, target : int):
+    def execute_action(self, action: Action, source : int, target : int, ignore_if_dead : bool = False):
+        ignore_killing = False
         # Query affected player if necessary
         if not action.ready():
-            card = self.query_player_card(target)
-            action.set_property("kill_card_id", card)
-        self._state.execute_action(source, action)
+            card = self.query_player_card(target, ignore_if_dead)
+            if card is not None:
+                action.set_property("kill_card_id", card)
+            else:   
+                # card is None because the player is already dead and there is no card to choose
+                ignore_killing = True
+        self._state.execute_action(source, action, ignore_killing)
 
     def query_player_action(self, player_id : int) -> Action:
         # First, check if the player has 10 coins and is forced to coup
@@ -139,11 +147,14 @@ class Engine:
                 print("Invalid coup target, please try again.")
             
 
-    def query_player_card(self, player_id : int) -> int:
+    def query_player_card(self, player_id : int, ignore_if_dead : bool = False) -> int:
         # First, determine whether we need to query the player for a card
         options = self._state.get_player_living_card_ids(player_id)
         if len(options) == 0:
-            raise ValueError("Cannot choose a card from a Player who is eliminated")
+            if ignore_if_dead:
+                return None
+            else:
+                raise ValueError("Cannot choose a card from a Player who is eliminated")
         elif len(options) == 1:
             return options[0]
         else:
@@ -233,6 +244,10 @@ class Engine:
             return True
         else:
             return False
+
+    def exchange_player_card(self, player : int, move) -> None:
+        character = move.get_property("as_character")
+        self._state.exchange_player_card(player, character)
 
 if __name__ == "__main__":
     Engine()

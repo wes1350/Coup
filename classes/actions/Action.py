@@ -6,7 +6,7 @@ class Action:
             "steal": False,
             "kill": False, 
             "kill_card_id": None,
-            "actor": None,  # what card we are claiming, e.g. Duke for Tax
+            "as_character": None,  # what card we are claiming, e.g. Duke for Tax
             "cost": None,
             "blockable": False,
             "blockable_by": None
@@ -25,7 +25,7 @@ class Action:
         return self.get_property("blockable")
 
     def is_challengeable(self):
-        return self.get_property("actor") is not None
+        return self.get_property("as_character") is not None
 
     def ready(self) -> bool:
         return True
