@@ -125,16 +125,10 @@ class State:
         return True
 
     def exchange_player_card(self, player : int, character : str) -> None:
-        print("a"+ character + "a")
         for id_ in self.get_player_living_card_ids(player):
-            print("b"+self.get_player_card(player, id_).get_character_type()+"b")
-            print(self.get_player_card(player, id_).get_character_type() == character)
             if self.get_player_card(player, id_).get_character_type() == character:
                 self.switch_player_card(player, id_)
-                print("HERE")
                 return
-                print("STILL HERE")
-        print("AND HERE")
         raise ValueError("Could not find character time among player's living cards") 
 
     def __str__(self):
