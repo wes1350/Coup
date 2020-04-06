@@ -29,14 +29,14 @@ class Engine:
                     else [p for p in self._state.get_alive_players() if p != current_player]
                 reactions = self.query_player_reactions(query_players, action)
                 if len(reactions) > 0:
-                    chosen_reaction = reactions[0]
+                    chosen_reaction = self.choose_among_reactions(reactions)
                     reaction_type = chosen_reaction.get_property("reaction_type")
                     if reaction_type == "block":
                         blocker = chosen_reaction.get_property("from_player")
                         query_challenge_players = [p for p in self._state.get_alive_players() if p != blocker]
                         challenges = self.query_challenges(query_challenge_players)
                         if len(challenges) > 0:
-                            chosen_challenge = challenges[0]
+                            chosen_challenge = self.choose_among_reactions(challenges)
                             challenger = chosen_challenge.get_property("from_player")
                             claimed_character = chosen_reaction.get_property("as_character")
                             losing_player = self._state.get_challenge_loser(claimed_character, blocker, challenger)
@@ -76,6 +76,45 @@ class Engine:
     
     def next_turn(self):
         self._state.update_current_player() 
+
+    def choose_among_reactions(self, reactions):
+        # First mode, random mode, first challenge, first block, random challenge first, random block first
+        chosen_reaction = None
+        mode = "first"
+        if mode == "first":
+            chosen_reaction = reactions[0]
+        elif mode == "random":
+            chosen_reaction = random.choice(reactions)
+        elif mode == "first_challenge":
+            for reaction in reactions:
+                if reaction.get_property("reaction_type") == "challenge":
+                    chosen_reaction = reaction
+                    break
+                chosen_reaction = reactions[0] 
+        elif mode == "first_block":
+            for reaction in reactions:
+                if reaction.get_property("reaction_type") == "block":
+                    chosen_reaction = reaction
+                    break
+                chosen_reaction = reactions[0] 
+        elif mode == "random_challenge":
+                desired = [r for r in reactions if r.get_property("reaction_type") == "challenge"]
+                if len(desired) > 0:
+                    chosen_reaction = random.choice(desired)
+                else:
+                    chosen_reaction = random.choice(reactions)
+        elif mode == "random_block":
+                desired = [r for r in reactions if r.get_property("reaction_type") == "block"]
+                if len(desired) > 0:
+                    chosen_reaction = random.choice(desired)
+                else:
+                    chosen_reaction = random.choice(reactions)
+        player = chosen_reaction.get_property("from_player")
+        reaction_type = chosen_reaction.get_property("reaction_type")
+        is_block = reaction_type == "block"
+        character = chosen_reaction.get_property("as_character") if is_block else None
+        print("Player {} does a {}{}".format(player, reaction_type, " as {}".format(character) if is_block else ""))
+        return chosen_reaction
 
     def execute_action(self, action: Action = None, source : int = None, target : int = None, ignore_if_dead : bool = False, only_pay_cost : bool = False):
         ignore_killing = False
