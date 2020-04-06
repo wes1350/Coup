@@ -9,7 +9,8 @@ class Action:
             "as_character": None,  # what card we are claiming, e.g. Duke for Tax
             "cost": None,
             "blockable": False,
-            "blockable_by": None
+            "blockable_by": None,
+            "pay_when_unsuccessful": False
         }
         
         for arg in kwargs:

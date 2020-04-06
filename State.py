@@ -77,11 +77,15 @@ class State:
                 return challenger
         return actor
 
-    def execute_action(self, player : int, action : Action, ignore_killing : bool = False) -> None:
+    def execute_action(self, player : int, action : Action, ignore_killing : bool = False, only_pay_cost : bool = False) -> None:
+        cost = action.get_property("cost")
+        if only_pay_cost and action.get_property("pay_when_unsuccessful"):
+            self._players[player].change_coins(-1 * cost)
+            return
+                    
         target = action.get_property("target")
 
         # Handle coin balances
-        cost = action.get_property("cost")        
         if action.get_property("steal"):
             target_player = self._players[target]
             old_balance = target_player.get_coins()
