@@ -13,6 +13,9 @@ class Card:
     def get_character(self) -> Character:
         return self._character
 
+    def get_character_type(self) -> str:
+        return str(self.get_character())
+
     def die(self):
         self._alive = False
 
