@@ -1,4 +1,4 @@
-from . import Reaction
+from .Reaction import Reaction
 
 class Challenge(Reaction):
     def __init__(self, source : int):

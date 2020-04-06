@@ -2,6 +2,7 @@ import random, time
 from classes.Card import Card
 from State import State
 from classes.actions import Action, Income, ForeignAid, Tax, Steal, Assassinate, Coup
+from classes.reactions import Reaction, Block, Challenge
 
 class Engine:
 
@@ -34,7 +35,7 @@ class Engine:
                 # Reactions possible
 
                 # Decide who to query
-                query_players = [target] if target is not None else [p for p in self._state.get_alive_players() if p != current player]
+                query_players = [target] if target is not None else [p for p in self._state.get_alive_players() if p != current_player]
                 reactions = self.query_player_reactions(query_players, action)
                 if len(reactions) > 0:
                     chosen_reaction = reactions[0]
@@ -172,9 +173,9 @@ class Engine:
                 if len(args) != 2:
                     raise ValueError("Invalid number of arguments for block")
                 character = args[1]
-                return Block(source_id, character)
+                return Block.Block(source_id, character)
             elif reaction_type == "challenge":
-                return Challenge(source_id)
+                return Challenge.Challenge(source_id)
             else:
                 raise ValueError("Invalid reaction type")
 
