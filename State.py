@@ -62,6 +62,10 @@ class State:
     
     def get_alive_players(self) -> list:
         return [self._players[i].get_id() for i in range(self._n_players) if self.player_is_alive(i)]
+    
+    def player_must_coup(self, player_id) -> bool:
+        assert 0 <= player_id < self.get_n_players() 
+        return self._players[player_id].get_coins() >= 10
 
     def execute_action(self, player : int, action : Action) -> None:
         target = action.get_property("target")
