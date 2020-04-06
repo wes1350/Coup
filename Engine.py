@@ -10,32 +10,23 @@ class Engine:
         self._state = State(n_players=3)
         self.run_game()
 
+    def game_is_over(self) -> bool:
+        return self._state.n_players_alive() == 1
+
     def run_game(self):
         while not self.game_is_over():
             print(self._state)
             current_player = self._state.get_current_player_id()
-
-            # query current player for action
             action = self.query_player_action(current_player)
             target = action.get_property("target")
             
             if not action.is_blockable() and not action.is_challengeable():
-                # No counter actions possible
-
-                # query affected player if necessary
-                if not action.ready():
-                    card = self.query_player_card(target)
-                    action.set_property("kill_card_id", card)
-
-                # handle action 
-                self._state.execute_action(current_player, action)
-                self._state.update_current_player() 
- 
+                # Action always goes through, e.g. Income
+                self.execute_action(action, current_player, target)
             else:
-                # Reactions possible
-
-                # Decide who to query
-                query_players = [target] if target is not None else [p for p in self._state.get_alive_players() if p != current_player]
+                # Blocks and/or Challenges are possible. See if anyone decides to challenge
+                query_players = [target] if target is not None \
+                    else [p for p in self._state.get_alive_players() if p != current_player]
                 reactions = self.query_player_reactions(query_players, action)
                 if len(reactions) > 0:
                     chosen_reaction = reactions[0]
@@ -45,50 +36,43 @@ class Engine:
                         query_challenge_players = [p for p in self._state.get_alive_players() if p != blocker]
                         challenges = self.query_challenges(query_challenge_players)
                         if len(challenges) > 0:
-                            # Someone challenged, so settle the challenge
                             chosen_challenge = challenges[0]
                             challenger = chosen_challenge.get_property("from_player")
                             claimed_character = chosen_reaction.get_property("as_character")
-                            # Decide who loses and remove one of their cards
                             losing_player = self._state.get_challenge_loser(claimed_character, blocker, challenger)
                             card = self.query_player_card(losing_player)
                             self._state.kill_player_card(losing_player, card)
-                            # If the challenger lost, execute the original action
                             if losing_player == blocker:
-                                # query affected player if necessary
-                                if not action.ready():
-                                    card = self.query_player_card(target)
-                                    action.set_property("kill_card_id", card)
-                                self._state.execute_action(current_player, action)
+                                self.execute_action(action, current_player, target)
                             print("Player {} loses the challenge".format(losing_player))
                         else:
                             print("Action blocked with {}".format(chosen_reaction.get_property("as_character")))    
                     elif reaction_type == "challenge":
-                        # Settle the challenge
                         challenger = chosen_reaction.get_property("from_player")
                         claimed_character = action.get_property("actor")
-                        # Decide who loses and remove one of their cards
                         losing_player = self._state.get_challenge_loser(claimed_character, current_player, challenger)
                         card = self.query_player_card(losing_player)
                         self._state.kill_player_card(losing_player, card)
-                        # If the challenger lost, execute the original action
                         if losing_player == challenger:
-                            # query affected player if necessary
-                            if not action.ready():
-                                card = self.query_player_card(target)
-                                action.set_property("kill_card_id", card)
-                            self._state.execute_action(current_player, action)
+                            self.execute_action(action, current_player, target)
                         print("Player {} loses the challenge".format(losing_player))
                     else:           
                         raise ValueError("Invalid reaction type encountered")
-                    # Finally move on to the next player
-                    self._state.update_current_player() 
                 else:
-                    # handle action 
-                    self._state.execute_action(current_player, action)
-                    self._state.update_current_player() 
+                    self.execute_action(action, current_player, target)
+            self.next_turn()
      
         print("Game is over! \n Winner is: Player {}".format(self._state.get_alive_players()[0]))
+    
+    def next_turn(self):
+        self._state.update_current_player() 
+
+    def execute_action(self, action: Action, source : int, target : int):
+        # Query affected player if necessary
+        if not action.ready():
+            card = self.query_player_card(target)
+            action.set_property("kill_card_id", card)
+        self._state.execute_action(source, action)
 
     def query_player_action(self, player_id : int) -> Action:
         # First, check if the player has 10 coins and is forced to coup
@@ -170,33 +154,6 @@ class Engine:
                     return card
                 except ValueError:
                     print("Invalid card, please try again.")
-
-    def game_is_over(self) -> bool:
-        return self._state.n_players_alive() == 1
-
-# Initialize game with n players, create the state object
-
-# while(game is not over):
-# - print state
-# - query current player for action
-# - based on action:
-# --- if cannot do reactions:
-# ----- execute action
-# ----- go to next turn
-# --- else (so can do reactions):
-# ----- query other players for reactions
-# ----- if no reaction:
-# ------- execute action
-# ----- else (is a reaction):
-# ------- among reactions, choose one to use
-# ------- if chosen reaction is a challenge:
-# --------- settle the challenge
-# ------- elif chosen reaction is a block:
-# --------- query other players for challenges
-# --------- if a challenge is given, choose one among them and settle it 
-# - now turn is over, so update game state
-
-# Note: settling a challenge includes executing the original action if the challenge was won by the executor
 
     def translate_action_choice(self, response : str) -> Action:
         args = response.split(" ")
