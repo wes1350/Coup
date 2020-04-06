@@ -136,8 +136,7 @@ class State:
         raise ValueError("Could not find character time among player's living cards") 
 
     def __str__(self):
-        rep = "Deck: {}\n".format(self._deck.__str__())
-        rep += "Players: [{}]\n\n".format("".join([p.__str__() for p in self._players]))
-        rep += "Current Player: {}\n".format(self._current_player_id)
+        rep = "-"*40
+        rep += "{}\n".format("".join([p.__str__() for p in self._players]))
         
         return rep
