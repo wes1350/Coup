@@ -17,3 +17,9 @@ class Action:
 
     def get_property(self, prop : str):
         return self._properties[prop]
+
+    def set_property(self, prop : str, value):
+        self._properties[prop] = value
+
+    def ready(self) -> bool:
+        return True
