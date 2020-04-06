@@ -4,11 +4,11 @@ else:
     from .characters import Character
 
 class Card:
-    def __init__(self, character: Character, id: int, assigned: bool = False) -> None:
+    def __init__(self, character: Character, id_: int, assigned: bool = False) -> None:
         self._character = character
         self._alive = True
         self._assigned = assigned
-        self._id = id
+        self._id = id_
         
     def get_character(self) -> Character:
         return self._character
@@ -27,3 +27,10 @@ class Card:
 
     def get_id(self) -> int:
         return self._id
+
+    def __str__(self):
+        rep = "["
+        rep += self._character.__str__() + ", "
+        rep += ("Alive" if self._alive else "Dead") + ", "
+        rep += str(self._id) + "]"
+        return rep

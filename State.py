@@ -64,3 +64,10 @@ class State:
         if action.get_property("kill"):
             card_id = action.get_property("kill_card_id")
             self._players[target].kill_card(card_id)
+
+    def __str__(self):
+        rep = "Deck: {}\n".format(self._deck.__str__())
+        rep += "Players: [{}]\n\n".format("".join([p.__str__() for p in self._players]))
+        rep += "Current Player: {}\n".format(self._current_player_id)
+        
+        return rep
