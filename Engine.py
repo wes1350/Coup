@@ -19,7 +19,7 @@ class Engine:
             action = self.query_player_action(current_player)
             target = action.get_property("target")
             
-            if not action.is_blockable():
+            if not action.is_blockable() and not action.is_challengeable():
                 # No counter actions possible
 
                 # query affected player if necessary
@@ -39,6 +39,24 @@ class Engine:
                 reactions = self.query_player_reactions(query_players, action)
                 if len(reactions) > 0:
                     chosen_reaction = reactions[0]
+                    reaction_type = chosen_reaction.get_property("reaction_type")
+                    if reaction_type == "block":
+                        pass
+                    elif reaction_type == "challenge":
+                        # Settle the challenge
+                        challenger = chosen_reaction.get_property("from_player")
+                        claimed_character = action.get_property("actor")
+                        # Decide who loses and remove one of their cards
+                        losing_player = self._state.get_challenge_loser(claimed_character, current_player, challenger)
+                        card = self.query_player_card(losing_player)
+                        self._state.kill_player_card(losing_player, card)
+                        # If the challenger lost, execute the original action
+                        if losing_player == challenger:
+                            self._state.execute_action(current_player, action)
+                    else:           
+                        raise ValueError("Invalid reaction type encountered")
+                    # Finally move on to the next player
+                    self._state.update_current_player() 
                 else:
                     # handle action 
                     self._state.execute_action(current_player, action)
@@ -196,6 +214,9 @@ class Engine:
     def validate_reaction(self, reaction : Reaction, action : Action) -> bool:
         reaction_type = reaction.get_property("reaction_type")
         if reaction_type == "block":
+            if not action.is_blockable():
+                print("Cannot block action")
+                return False
             character = reaction.get_property("as_character")
             blockable_by = action.get_property("blockable_by")
             if character not in blockable_by:
@@ -203,6 +224,9 @@ class Engine:
                 return False
             return True
         elif reaction_type == "challenge":
+            if not action.is_challengeable():
+                print("Cannot challenge action")
+                return False
             return True
         else:
             return False

@@ -24,5 +24,8 @@ class Action:
     def is_blockable(self):
         return self.get_property("blockable")
 
+    def is_challengeable(self):
+        return self.get_property("actor") is not None
+
     def ready(self) -> bool:
         return True
