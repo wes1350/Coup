@@ -128,6 +128,7 @@ class Engine:
         elif action_name == "coup":
             return Coup.Coup(target=target)
         else:
+            print("ERROR: invalid action name: {}".format(action_name))
             raise ValueError("Invalid action name: {}".format(action_name))
 
     def translate_coup_target(self, response : str) -> Action:
@@ -137,6 +138,7 @@ class Engine:
     def translate_card_choice(self, response : str, options : list) -> int:
         chosen_card = int(response)
         if chosen_card not in options:
+            print("ERROR: invalid card number: {}".format(chosen_card))
             raise ValueError("Invalid card option") 
         return chosen_card       
 
