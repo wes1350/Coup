@@ -37,6 +37,14 @@ class State:
     def get_player_card(self, player_id : int, card_idx : int) -> Card:
         return self.get_player_cards(player_id)[card_idx]
 
+    def get_player_living_card_ids(self, player_id : int) -> list:
+        cards = self.get_player_cards(player_id)
+        chosen_cards = []
+        for i, card in enumerate(cards):
+            if card.is_alive():
+                chosen_cards.append(i)
+        return chosen_cards
+
     def switch_player_card(self, player_id, card_idx) -> None:
         new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))  
         self.players.set_card(card_idx, new_card)
@@ -57,13 +65,28 @@ class State:
         # Handle coin balances
         cost = action.get_property("cost")        
         self._players[player].change_coins(-1 * cost)
-        if "steal":
+        if action.get_property("steal"):
             self._players[target].change_coins(cost)
 
         # Handle assassinations
         if action.get_property("kill"):
             card_id = action.get_property("kill_card_id")
             self._players[target].kill_card(card_id)
+
+    def validate_action(self, action : Action, player_id : int) -> bool:
+        # Validate the cost 
+        budget = self._players[player_id].get_coins()
+        if action.get_property("cost") > budget:
+            return False
+        
+        # Validate the target, if applicable
+        has_target = action.get_property("target") is not None
+        if has_target:
+            target_id = action.get_property("target") 
+            if not self.player_is_alive(target_id):
+                return False
+        
+        return True
 
     def __str__(self):
         rep = "Deck: {}\n".format(self._deck.__str__())

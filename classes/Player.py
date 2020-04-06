@@ -13,7 +13,7 @@ class Player:
         return self._coins
 
     def change_coins(self, change : int):
-        self._coins = min(self._coins + change, 0)
+        self._coins = max(self._coins + change, 0)
     
     def get_cards(self) -> list:
         return self._cards
