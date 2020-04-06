@@ -51,7 +51,10 @@ class State:
 
     def switch_player_card(self, player_id, card_idx) -> None:
         new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))  
-        self.players.set_card(card_idx, new_card)
+        self._players[player_id].set_card(card_idx, new_card)
+
+    def kill_player_card(self, player_id, card_idx) -> None:
+        self._players[player_id].get_card(card_idx).die()
 
     def player_is_alive(self, id_ : int) -> bool:
         return self._players[id_].is_alive()
@@ -66,6 +69,13 @@ class State:
     def player_must_coup(self, player_id) -> bool:
         assert 0 <= player_id < self.get_n_players() 
         return self._players[player_id].get_coins() >= 10
+
+    def get_challenge_loser(self, claimed_character : str, actor : int, challenger : int) -> int:
+        living_actor_cards = self.get_player_living_card_ids(actor)
+        for id_ in living_actor_cards:
+            if self.get_player_card(actor, id_).get_character_type() == claimed_character:
+                return challenger
+        return actor
 
     def execute_action(self, player : int, action : Action) -> None:
         target = action.get_property("target")
