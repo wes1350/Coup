@@ -68,9 +68,14 @@ class State:
 
         # Handle coin balances
         cost = action.get_property("cost")        
-        self._players[player].change_coins(-1 * cost)
         if action.get_property("steal"):
+            target_player = self._players[target]
+            old_balance = target_player.get_coins()
             self._players[target].change_coins(cost)
+            # Increase the actor's balance by at most the target's balance
+            self._players[player].change_coins(min(old_balance, -1 * cost)) 
+        else:
+            self._players[player].change_coins(-1 * cost)
 
         # Handle assassinations
         if action.get_property("kill"):
