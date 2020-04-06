@@ -33,3 +33,6 @@ class Player:
     def is_alive(self) -> bool:
         return not self.is_eliminated()
         
+    def __str__(self):
+        rep = "\nPlayer {}: {} coins, {}".format(self._id, self._coins, ", ".join([c.__str__() for c in self._cards])) 
+        return rep

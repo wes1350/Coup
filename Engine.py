@@ -11,7 +11,7 @@ class Engine:
 
     def run_game(self):
         while not self.game_is_over():
-            print("Printing State")
+            print(self._state)
             current_player = self._state.get_current_player_id()
 
             # query current player for action

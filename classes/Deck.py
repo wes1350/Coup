@@ -16,8 +16,8 @@ class Deck:
         for char in Deck.ALL_CHARACTERS:
             for _ in range(n_cards_per_character):
                 # random id
-                id = ids.pop(random.randint(1, len(ids)) - 1)
-                self._deck[id] = (Card(character=char(), id=id))
+                id_ = ids.pop(random.randint(1, len(ids)) - 1)
+                self._deck[id_] = Card(character=char(), id_=id_)
 
     def draw(self, n : int, assign : bool = True) -> list:
         unassigned = [card for card in self._deck if not self._deck[card].is_assigned()]
@@ -27,13 +27,13 @@ class Deck:
             raise ValueError("Cannot draw {} cards when only {} are in the deck".format(n, len(unassigned)))
         selected_cards = random.sample(unassigned, n)
         if assign:
-            [self._deck[id].set_assign(True) for id in selected_cards]
+            [self._deck[id_].set_assign(True) for id_ in selected_cards]
 
         return [self._deck[i] for i in selected_cards]
 
-    def return_card(self, id : int) -> None:
-        if self._deck.get(id) != None:
-            self._deck[id].set_assign(False)
+    def return_card(self, id_ : int) -> None:
+        if self._deck.get(id_) != None:
+            self._deck[id_].set_assign(False)
         else:
             raise ValueError("Could not find given card among assigned cards")
 
@@ -41,3 +41,9 @@ class Deck:
         new_card = self.draw(1)
         self.return_card(card)
         return new_card[0]
+
+    def __str__(self):
+        rep = "[\n"
+        rep += "\n".join([self._deck[id_].__str__() for id_ in self._deck])
+        rep += "]\n"
+        return rep
