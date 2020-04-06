@@ -41,7 +41,24 @@ class Engine:
                     chosen_reaction = reactions[0]
                     reaction_type = chosen_reaction.get_property("reaction_type")
                     if reaction_type == "block":
-                        pass
+                        blocker = chosen_reaction.get_property("from_player")
+                        query_challenge_players = [p for p in self._state.get_alive_players() if p != blocker]
+                        challenges = self.query_challenges(query_challenge_players)
+                        if len(challenges) > 0:
+                            # Someone challenged, so settle the challenge
+                            chosen_challenge = challenges[0]
+                            challenger = chosen_challenge.get_property("from_player")
+                            claimed_character = chosen_reaction.get_property("as_character")
+                            # Decide who loses and remove one of their cards
+                            losing_player = self._state.get_challenge_loser(claimed_character, blocker, challenger)
+                            card = self.query_player_card(losing_player)
+                            self._state.kill_player_card(losing_player, card)
+                            # If the challenger lost, execute the original action
+                            if losing_player == challenger:
+                                self._state.execute_action(current_player, action)
+                            print("Player {} loses the challenge".format(losing_player))
+                        else:
+                            print("Action blocked with {}".format(chosen_reaction.get_property("as_character")))    
                     elif reaction_type == "challenge":
                         # Settle the challenge
                         challenger = chosen_reaction.get_property("from_player")
@@ -53,6 +70,7 @@ class Engine:
                         # If the challenger lost, execute the original action
                         if losing_player == challenger:
                             self._state.execute_action(current_player, action)
+                        print("Player {} loses the challenge".format(losing_player))
                     else:           
                         raise ValueError("Invalid reaction type encountered")
                     # Finally move on to the next player
@@ -83,7 +101,7 @@ class Engine:
                     print("Impossible action, please try again.")
                     
 
-    def query_player_reactions(self, players : list, action : Action):
+    def query_player_reactions(self, players : list, action : Action) -> list:
         reactions = []
         for player_id in players:
             while True:
@@ -101,7 +119,20 @@ class Engine:
                         break
                     print("Impossible reaction, please try again.")
         return reactions
-            
+
+    def query_challenges(self, players : list) -> list:
+        challenges = []
+        for player_id in players:
+            while True:
+                response = input("Player {}, are you going to challenge?\n".format(player_id))
+                try: 
+                    reaction = self.translate_challenge_answer(response, player_id)
+                    if reaction is not None:
+                        challenges.append(reaction)
+                    break
+                except ValueError:
+                    print("Invalid response, please try again.")
+        return challenges
 
     def query_player_coup_target(self, player_id : int) -> int:
         while True:
@@ -117,7 +148,7 @@ class Engine:
                 print("Invalid coup target, please try again.")
             
 
-    def query_player_card(self, player_id : int):
+    def query_player_card(self, player_id : int) -> int:
         # First, determine whether we need to query the player for a card
         options = self._state.get_player_living_card_ids(player_id)
         if len(options) == 0:
@@ -133,7 +164,7 @@ class Engine:
                 except ValueError:
                     print("Invalid card, please try again.")
 
-    def game_is_over(self):
+    def game_is_over(self) -> bool:
         return self._state.n_players_alive() == 1
 
 # Initialize game with n players, create the state object
@@ -196,6 +227,14 @@ class Engine:
                 return Challenge.Challenge(source_id)
             else:
                 raise ValueError("Invalid reaction type")
+
+    def translate_challenge_answer(self, response : str, source_id : int) -> Challenge:
+        if len(response) == 0 or response == "no":  
+            return None
+        elif response == "yes":
+            return Challenge.Challenge(source_id)
+        else:
+            raise ValueError("Invalid challenge answer")
 
     def translate_coup_target(self, response : str) -> Action:
         target = int(response)
