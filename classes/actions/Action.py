@@ -8,7 +8,7 @@ class Action:
             "kill_card_id": None,
             "actor": None,  # what card we are claiming, e.g. Duke for Tax
             "cost": None,
-            "is_blockable": False,  # improve the following later
+            "blockable": False,
             "blockable_by": None
         }
         
