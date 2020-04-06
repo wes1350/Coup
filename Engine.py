@@ -15,14 +15,15 @@ class Engine:
             current_player = self._state.get_current_player_id()
 
             # query current player for action
-            action = self.query_player_action(current_player) 
+            action = self.query_player_action(current_player)
+            target = action.get_property("target")
             
-            if True:
+            if not action.is_blockable():
                 # No counter actions possible
 
                 # query affected player if necessary
                 if not action.ready():
-                    card = self.query_player_card(action.get_property("target"))
+                    card = self.query_player_card(target)
                     action.set_property("kill_card_id", card)
 
                 # handle action 
@@ -31,7 +32,17 @@ class Engine:
  
             else:
                 # Reactions possible
-                pass
+
+                # Decide who to query
+                query_players = [target] if target is not None else [p for p in self._state.get_alive_players() if p != current player]
+                reactions = self.query_player_reactions(query_players, action)
+                if len(reactions) > 0:
+                    chosen_reaction = reactions[0]
+                else:
+                    # handle action 
+                    self._state.execute_action(current_player, action)
+                    self._state.update_current_player() 
+                
      
         print("Game is over! \n Winner is: Player {}".format(self._state.get_alive_players()[0]))
 
@@ -52,6 +63,26 @@ class Engine:
                         return action
                     print("Impossible action, please try again.")
                     
+
+    def query_player_reactions(self, players : list, action : Action):
+        reactions = []
+        for player_id in players:
+            while True:
+                response = input("Player {}, are you going to react?\n".format(player_id))
+                try: 
+                    reaction = self.translate_reaction_choice(response, player_id)
+                except ValueError:
+                    print("Invalid reaction, please try again.")
+                else:
+                    if reaction is None:
+                        break
+                    valid = self.validate_reaction(reaction, action)
+                    if valid:
+                        reactions.append(reaction)
+                        break
+                    print("Impossible reaction, please try again.")
+        return reactions
+            
 
     def query_player_coup_target(self, player_id : int) -> int:
         while True:
@@ -131,6 +162,22 @@ class Engine:
             print("ERROR: invalid action name: {}".format(action_name))
             raise ValueError("Invalid action name: {}".format(action_name))
 
+    def translate_reaction_choice(self, response : str, source_id : int) -> Reaction:
+        if len(response) == 0:
+            return None
+        else:
+            args = response.split(" ")
+            reaction_type = args[0]
+            if reaction_type == "block":
+                if len(args) != 2:
+                    raise ValueError("Invalid number of arguments for block")
+                character = args[1]
+                return Block(source_id, character)
+            elif reaction_type == "challenge":
+                return Challenge(source_id)
+            else:
+                raise ValueError("Invalid reaction type")
+
     def translate_coup_target(self, response : str) -> Action:
         target = int(response)
         return Coup.Coup(target=target)
@@ -144,6 +191,20 @@ class Engine:
 
     def validate_action(self, action : Action, player_id : int) -> bool:
         return self._state.validate_action(action, player_id) 
+
+    def validate_reaction(self, reaction : Reaction, action : Action) -> bool:
+        reaction_type = reaction.get_property("reaction_type")
+        if reaction_type == "block":
+            character = reaction.get_property("as_character")
+            blockable_by = action.get_property("blockable_by")
+            if character not in blockable_by:
+                print("Specified character cannot block this action")
+                return False
+            return True
+        elif reaction_type == "challenge":
+            return True
+        else:
+            return False
 
 if __name__ == "__main__":
     Engine()
