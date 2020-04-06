@@ -90,6 +90,7 @@ class State:
         # Validate the cost 
         budget = self._players[player_id].get_coins()
         if action.get_property("cost") > budget:
+            print("ERROR: not enough coins for action")
             return False
         
         # Validate the target, if applicable
@@ -98,12 +99,15 @@ class State:
         if has_target:
             # Target must be a valid Player. Bank doesn't count
             if target_id < 0 or target_id >= self.get_n_players():
+                print("ERROR: invalid player id")
                 return False 
             # Target must be alive
             if not self.player_is_alive(target_id):
+                print("ERROR: chosen player has been eliminated")
                 return False
             # Target must not be self
             if target_id == player_id:
+                print("ERROR: cannot target self with action")
                 return False
         
         return True
