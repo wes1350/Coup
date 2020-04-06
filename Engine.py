@@ -54,7 +54,11 @@ class Engine:
                             card = self.query_player_card(losing_player)
                             self._state.kill_player_card(losing_player, card)
                             # If the challenger lost, execute the original action
-                            if losing_player == challenger:
+                            if losing_player == blocker:
+                                # query affected player if necessary
+                                if not action.ready():
+                                    card = self.query_player_card(target)
+                                    action.set_property("kill_card_id", card)
                                 self._state.execute_action(current_player, action)
                             print("Player {} loses the challenge".format(losing_player))
                         else:
@@ -69,6 +73,10 @@ class Engine:
                         self._state.kill_player_card(losing_player, card)
                         # If the challenger lost, execute the original action
                         if losing_player == challenger:
+                            # query affected player if necessary
+                            if not action.ready():
+                                card = self.query_player_card(target)
+                                action.set_property("kill_card_id", card)
                             self._state.execute_action(current_player, action)
                         print("Player {} loses the challenge".format(losing_player))
                     else:           
@@ -79,7 +87,6 @@ class Engine:
                     # handle action 
                     self._state.execute_action(current_player, action)
                     self._state.update_current_player() 
-                
      
         print("Game is over! \n Winner is: Player {}".format(self._state.get_alive_players()[0]))
 
