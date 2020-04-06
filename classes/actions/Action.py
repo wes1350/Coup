@@ -1,11 +1,11 @@
 
 class Action:
-    def __init__(**kwargs):
+    def __init__(self, **kwargs):
         self._properties = {
-            "take_coins_target_id": None,
+            "target": None,
+            "steal": False,
             "kill": False, 
-            "kill_target_id": None,  # player id we are killing
-            "kill_target_card_idx": None,
+            "kill_card_id": None,
             "actor": None,  # what card we are claiming, e.g. Duke for Tax
             "cost": None,
             "is_blockable": False,  # improve the following later
@@ -13,4 +13,13 @@ class Action:
         }
         
         for arg in kwargs:
-            self.properties[arg] = kwargs[arg]
+            self._properties[arg] = kwargs[arg]
+
+    def get_property(self, prop : str):
+        return self._properties[prop]
+
+    def set_property(self, prop : str, value):
+        self._properties[prop] = value
+
+    def ready(self) -> bool:
+        return True

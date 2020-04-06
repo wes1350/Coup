@@ -1,7 +1,7 @@
 from .Action import Action
 
 class Steal(Action):
-    def __init__(self, target_id, n_coins=2):
-        if target_id == -1:
-            raise ValueError("Cannot steal from the bank")
-        super.__init__("cost"=-1*n_coins, "take_coins_target_id"=target_id)
+    def __init__(self, target : int, n_coins : int = 2):
+        if target is None:
+            raise ValueError("Must specify target to steal from")
+        super().__init__(steal=True, cost=-1*n_coins, target=target)

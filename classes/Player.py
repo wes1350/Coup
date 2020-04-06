@@ -13,7 +13,7 @@ class Player:
         return self._coins
 
     def change_coins(self, change : int):
-        self._coins = min(self._coins + change, 0)
+        self._coins = max(self._coins + change, 0)
     
     def get_cards(self) -> list:
         return self._cards
@@ -21,6 +21,9 @@ class Player:
     def set_card(self, i : int, card : Card) -> None:
         self._cards[i] = card 
 
+    def kill_card(self, i : int) -> None:
+        self._cards[i].die()
+    
     def is_eliminated(self) -> bool:
         for card in self._cards:
             if card.is_alive():
@@ -30,3 +33,6 @@ class Player:
     def is_alive(self) -> bool:
         return not self.is_eliminated()
         
+    def __str__(self):
+        rep = "\nPlayer {}: {} coins, {}".format(self._id, self._coins, ", ".join([c.__str__() for c in self._cards])) 
+        return rep
