@@ -85,7 +85,7 @@ class State:
         
         # Validate the target, if applicable
         target_id = action.get_property("target") 
-        has_target = target_id is not None and target_id != -1
+        has_target = target_id is not None
         if has_target:
             # Target must be a valid Player. Bank doesn't count
             if target_id < 0 or target_id >= self.get_n_players():
