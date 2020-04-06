@@ -1,4 +1,5 @@
 """Maintiains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
+    
 
 from classes.Player import Player
 from classes.Deck import Deck
@@ -21,6 +22,9 @@ class State:
         self._current_player_id = 0
         # Initialize the current turn
         self._current_turn = []
+    
+    def get_n_players(self):
+        return self._n_players
 
     def get_current_player_id(self) -> int:
         return self._current_player_id
@@ -80,9 +84,12 @@ class State:
             return False
         
         # Validate the target, if applicable
-        has_target = action.get_property("target") is not None
+        target_id = action.get_property("target") 
+        has_target = target_id is not None and target_id != -1
         if has_target:
-            target_id = action.get_property("target") 
+            # Target must be a valid Player. Bank doesn't count
+            if target_id < 0 or target_id >= self.get_n_players():
+                return False 
             # Target must be alive
             if not self.player_is_alive(target_id):
                 return False
