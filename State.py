@@ -83,7 +83,11 @@ class State:
         has_target = action.get_property("target") is not None
         if has_target:
             target_id = action.get_property("target") 
+            # Target must be alive
             if not self.player_is_alive(target_id):
+                return False
+            # Target must not be self
+            if target_id == player_id:
                 return False
         
         return True
