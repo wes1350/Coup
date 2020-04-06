@@ -35,20 +35,37 @@ class Engine:
      
         print("Game is over! \n Winner is: Player {}".format(self._state.get_alive_players()[0]))
 
-    def query_player_action(self, player_id : int):
+    def query_player_action(self, player_id : int) -> Action:
+        # First, check if the player has 10 coins and is forced to coup
+        if self._state.player_must_coup(player_id):
+            return self.query_player_coup_target(player_id)
+        else:
+            while True:
+                response = input("Player {}, what is your action?\n".format(player_id))
+                try: 
+                    action = self.translate_action_choice(response)
+                except ValueError:
+                    print("Invalid action, please try again.")
+                else:
+                    valid = self.validate_action(action, player_id)
+                    if valid:
+                        return action
+                    print("Impossible action, please try again.")
+                    
+
+    def query_player_coup_target(self, player_id : int) -> int:
         while True:
-            response = input("Player {}, what is your action?\n".format(player_id))
-            try: 
-                action = self.translate_action_choice(response)
+            response = input("Player {}, who are you going to coup?\n".format(player_id))
+            try:
+                action = self.translate_coup_target(response)
             except ValueError:
-                print("Invalid action, please try again.")
+                print("Invalid coup target, please try again.")
             else:
                 valid = self.validate_action(action, player_id)
                 if valid:
-                    break
-                print("Impossible action, please try again.")
-                
-        return action
+                    return action
+                print("Invalid coup target, please try again.")
+            
 
     def query_player_card(self, player_id : int):
         # First, determine whether we need to query the player for a card
@@ -112,6 +129,10 @@ class Engine:
             return Coup.Coup(target=target)
         else:
             raise ValueError("Invalid action name: {}".format(action_name))
+
+    def translate_coup_target(self, response : str) -> Action:
+        target = int(response)
+        return Coup.Coup(target=target)
 
     def translate_card_choice(self, response : str, options : list) -> int:
         chosen_card = int(response)
