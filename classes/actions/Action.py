@@ -7,10 +7,11 @@ class Action:
             "kill": False, 
             "kill_card_id": None,
             "as_character": None,  # what card we are claiming, e.g. Duke for Tax
-            "cost": None,
+            "cost": 0,
             "blockable": False,
             "blockable_by": None,
-            "pay_when_unsuccessful": False
+            "pay_when_unsuccessful": False,
+            "exchange_with_deck": False
         }
         
         for arg in kwargs:

@@ -19,15 +19,15 @@ class Deck:
                 id_ = ids.pop(random.randint(1, len(ids)) - 1)
                 self._deck[id_] = Card(character=char(), id_=id_)
 
-    def draw(self, n : int, assign : bool = True) -> list:
+    def draw(self, n : int) -> list:
         unassigned = [card for card in self._deck if not self._deck[card].is_assigned()]
         if n <= 0:
             raise ValueError("Must draw more than 0 cards")
         if n > len(unassigned):
             raise ValueError("Cannot draw {} cards when only {} are in the deck".format(n, len(unassigned)))
         selected_cards = random.sample(unassigned, n)
-        if assign:
-            [self._deck[id_].set_assign(True) for id_ in selected_cards]
+        for id_ in selected_cards:
+            self._deck[id_].set_assign(True)
 
         return [self._deck[i] for i in selected_cards]
 

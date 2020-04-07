@@ -108,6 +108,37 @@ class State:
                 card_id = action.get_property("kill_card_id")
                 self._players[target].kill_card(card_id)
 
+        # Handle exchanging 
+        if action.get_property("exchange_with_deck"):
+            n_to_draw = self.config.n_cards_for_exchange
+            drawn_cards = self._deck.draw(n_to_draw)
+            message = "You have drawn: "
+            in_hand = self.config.cards_per_player 
+            for i in range(n_to_draw):
+                message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
+            print(message)
+
+            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw)
+            
+            # Return all cards from our hand we decided not to keep
+            returned = []
+            for i in range(in_hand):
+                if i not in cards_to_keep:
+                    self._deck.return_card(self.get_player_card(player, i).get_id())
+                    returned.append(i)
+
+            # Replace the missing slots with the chosen drawn cards
+            return_idx = 0
+            for i, card in enumerate(cards_to_keep):
+                if in_hand <= card < in_hand + n_to_draw:
+                    self._players[player].set_card(returned[return_idx], drawn_cards[card-in_hand])
+                    return_idx += 1
+
+            # Return the drawn cards that we didn't keep
+            for i, card in enumerate(drawn_cards):
+                if i + in_hand not in cards_to_keep:
+                    self._deck.return_card(card.get_id())
+
     def validate_action(self, action : Action, player_id : int) -> bool:
         # Validate the cost 
         budget = self._players[player_id].get_coins()
@@ -132,6 +163,33 @@ class State:
                 print("ERROR: cannot target self with action")
                 return False
         
+        return True
+
+    def query_exchange(self, player : int, draw_start : int, draw_end : int) -> list:
+        while True:
+            response = input("Pick {} cards to keep:\n".format(self.config.cards_per_player))
+            try: 
+                cards = self.translate_exchange(response)
+            except ValueError:
+                print("Invalid exchange, please try again.")
+            else:
+                valid = self.validate_exchange(player, cards, draw_start, draw_end)
+                if valid:
+                    return cards
+                print("Impossible exchange, please try again.")
+
+    def translate_exchange(self, response : str) -> list:
+        return [int(n) for n in response.split(" ")]
+
+    def validate_exchange(self, player : int, cards : list, draw_start : int, draw_end : int) -> bool:
+        if len(cards) != self.config.n_cards_for_exchange:
+            return False
+        alive = self.get_player_living_card_ids(player)
+        for i in cards:
+            if not (i in alive or draw_start <= i < draw_end):
+                return False 
+        if len(set(cards)) != len(cards):
+            return False
         return True
 
     def exchange_player_card(self, player : int, character : str) -> None:

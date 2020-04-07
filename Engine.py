@@ -1,7 +1,7 @@
 import random, time
 from classes.Card import Card
 from State import State
-from classes.actions import Action, Income, ForeignAid, Tax, Steal, Assassinate, Coup
+from classes.actions import Action, Income, ForeignAid, Tax, Steal, Assassinate, Coup, Exchange
 from classes.reactions import Reaction, Block, Challenge
 from Config import Config
 
@@ -238,6 +238,8 @@ class Engine:
             return ForeignAid.ForeignAid()
         elif action_name == "tax":
             return Tax.Tax()
+        elif action_name == "exchange":
+            return Exchange.Exchange()
         elif action_name == "steal":
             return Steal.Steal(target=target)
         elif action_name == "assassinate":

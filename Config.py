@@ -11,6 +11,8 @@ class Config:
 
         self.mandatory_coup_threshold = 10
 
+        self.n_cards_for_exchange = 2
+
         # initialize other parameters
         for key, value in kwargs.items():
             self.__setattr__(key, value)
