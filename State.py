@@ -84,8 +84,9 @@ class State:
 
     def execute_action(self, player : int, action : Action, ignore_killing : bool = False, only_pay_cost : bool = False) -> None:
         cost = action.get_property("cost")
-        if only_pay_cost and action.get_property("pay_when_unsuccessful"):
-            self._players[player].change_coins(-1 * cost)
+        if only_pay_cost:
+            if action.get_property("pay_when_unsuccessful"):
+                self._players[player].change_coins(-1 * cost)
             return
                     
         target = action.get_property("target")
