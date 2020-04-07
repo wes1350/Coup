@@ -47,8 +47,8 @@ class Engine:
                                 self.execute_action(action, current_player, target, ignore_if_dead=True)
                             else:
                                 # Enforce any costs to original action executor
-                                self.execute_action(action, current_player, only_pay_cost=True)
                                 self.exchange_player_card(blocker, chosen_reaction)
+                                self.execute_action(action, current_player, only_pay_cost=True)
                             print("Player {} loses the challenge".format(losing_player))
                         else:
                             # Enforce any costs to original action executor
@@ -61,8 +61,8 @@ class Engine:
                         card = self.query_player_card(losing_player)
                         self._state.kill_player_card(losing_player, card)
                         if losing_player == challenger:
-                            self.execute_action(action, current_player, target, ignore_if_dead=True)
                             self.exchange_player_card(current_player, action)
+                            self.execute_action(action, current_player, target, ignore_if_dead=True)
                         print("Player {} loses the challenge".format(losing_player))
                     else:           
                         raise ValueError("Invalid reaction type encountered")

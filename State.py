@@ -54,9 +54,10 @@ class State:
                 chosen_cards.append(i)
         return chosen_cards
 
-    def switch_player_card(self, player_id, card_idx) -> None:
+    def switch_player_card(self, player_id : int, card_idx : int) -> None:
         new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))
         self._players[player_id].set_card(card_idx, new_card)
+        print("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())))
 
     def kill_player_card(self, player_id, card_idx) -> None:
         self.get_player_card(player_id, card_idx).die()
