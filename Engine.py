@@ -27,9 +27,8 @@ class Engine:
                 self.execute_action(action, current_player, target)
             else:
                 # Blocks and/or Challenges are possible. See if anyone decides to challenge
-                query_players = [target] if target is not None \
-                    else [p for p in self._state.get_alive_players() if p != current_player]
-                reactions = self.query_player_reactions(query_players, action)
+                query_players = [p for p in self._state.get_alive_players() if p != current_player]
+                reactions = self.query_player_reactions(query_players, target, action)
                 if len(reactions) > 0:
                     chosen_reaction = self.choose_among_reactions(reactions)
                     reaction_type = chosen_reaction.get_property("reaction_type")
@@ -64,9 +63,6 @@ class Engine:
                         if losing_player == challenger:
                             self.execute_action(action, current_player, target, ignore_if_dead=True)
                             self.exchange_player_card(current_player, action)
-                        else:
-                            # Enforce any costs to the original player, the challenge loser
-                            self.execute_action(action, current_player, only_pay_cost=True)
                         print("Player {} loses the challenge".format(losing_player))
                     else:           
                         raise ValueError("Invalid reaction type encountered")
@@ -149,11 +145,12 @@ class Engine:
                     print("Impossible action, please try again.")
                     
 
-    def query_player_reactions(self, players : list, action : Action) -> list:
+    def query_player_reactions(self, players : list, target : int, action : Action) -> list:
         reactions = []
         for player_id in players:
             while True:
-                response = input("Player {}, are you going to react?\n".format(player_id))
+                message_action = "react" if target is not None and player_id == target else "challenge"
+                response = input("Player {}, are you going to {}?\n".format(player_id, message_action))
                 try: 
                     reaction = self.translate_reaction_choice(response, player_id)
                 except ValueError:
@@ -277,8 +274,14 @@ class Engine:
     def validate_reaction(self, reaction : Reaction, action : Action) -> bool:
         reaction_type = reaction.get_property("reaction_type")
         if reaction_type == "block":
+            target = action.get_property("target")
+            if target is not None:
+                reactor = reaction.get_property("from_player")
+                if target != reactor:
+                    print("Cannot block action when not the target")
+                    return False
             if not action.is_blockable():
-                print("Cannot block action")
+                print("Action is unblockable")
                 return False
             character = reaction.get_property("as_character")
             blockable_by = action.get_property("blockable_by")
@@ -288,7 +291,7 @@ class Engine:
             return True
         elif reaction_type == "challenge":
             if not action.is_challengeable():
-                print("Cannot challenge action")
+                print("Action cannot be challenged")
                 return False
             return True
         else:

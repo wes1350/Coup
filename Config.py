@@ -7,7 +7,7 @@ class Config:
         self.penalize_first_player_in_2p_game = True
         self.first_player_coin_penalty = 1
 
-        self.reaction_choice_mode = "random"
+        self.reaction_choice_mode = "random_challenge"
 
         self.mandatory_coup_threshold = 10
 
