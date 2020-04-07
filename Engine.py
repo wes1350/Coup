@@ -3,11 +3,13 @@ from classes.Card import Card
 from State import State
 from classes.actions import Action, Income, ForeignAid, Tax, Steal, Assassinate, Coup
 from classes.reactions import Reaction, Block, Challenge
+from Config import Config
 
 class Engine:
 
     def __init__(self) -> None:
-        self._state = State(n_players=3)
+        self.config = Config()
+        self._state = State(self.config)
         self.run_game()
 
     def game_is_over(self) -> bool:
@@ -80,7 +82,7 @@ class Engine:
     def choose_among_reactions(self, reactions):
         # First mode, random mode, first challenge, first block, random challenge first, random block first
         chosen_reaction = None
-        mode = "first"
+        mode = self.config.reaction_choice_mode
         if mode == "first":
             chosen_reaction = reactions[0]
         elif mode == "random":

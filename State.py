@@ -1,23 +1,28 @@
-"""Maintiains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
+"""Maintains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
     
-
 from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
 from classes.actions.Action import Action
+from Config import Config
 
 class State:
 
-    def __init__(self, n_players : int) -> None:
-        self._n_players = n_players
-        self.CARDS_PER_CHARACTER = 3
+    def __init__(self, config : Config) -> None:
+        self.config = config
+        self._n_players = config.n_players
         # Initialize the deck
-        self._deck = Deck(n_players, self.CARDS_PER_CHARACTER)
+        self._deck = Deck(self._n_players, config.cards_per_character)
         # Initialize the players and assign them cards from the deck
-        unassigned_cards = self._deck.draw(2 * n_players)
+        unassigned_cards = self._deck.draw(config.cards_per_player * self._n_players)
         self._players = []
-        for i in range(n_players):
-            self._players.append(Player(id_=i, coins=2, cards=[unassigned_cards[2*i], unassigned_cards[2*i+1]]))
+        for i in range(self._n_players):
+            self._players.append(Player(id_=i, coins=config.starting_coins, 
+                                        cards=[unassigned_cards[config.cards_per_player*i], 
+                                               unassigned_cards[config.cards_per_player*i+1]]))
+        # Penalize the first player in a 2 person game
+        if config.penalize_first_player_in_2p_game and self._n_players == 2:
+            self._players[0].change_coins(-1)
 
         self._current_player_id = 0
         # Initialize the current turn
@@ -68,7 +73,7 @@ class State:
     
     def player_must_coup(self, player_id) -> bool:
         assert 0 <= player_id < self.get_n_players() 
-        return self._players[player_id].get_coins() >= 10
+        return self._players[player_id].get_coins() >= self.config.mandatory_coup_threshold
 
     def get_challenge_loser(self, claimed_character : str, actor : int, challenger : int) -> int:
         living_actor_cards = self.get_player_living_card_ids(actor)
