@@ -149,7 +149,22 @@ class Engine:
         reactions = []
         for player_id in players:
             while True:
-                message_action = "react" if target is not None and player_id == target else "challenge"
+                if target is not None:
+                    if target == player_id:
+                        message_action = "react"
+                    else:
+                        message_action = "challenge"
+                else:
+                    challengeable = action.get_property("as_character") 
+                    blockable = action.is_blockable()
+                    if challengeable and blockable:
+                        message_action = "react"
+                    elif challengeable:
+                        message_action = "challenge"
+                    elif blockable:
+                        message_action = "block"
+                    else:
+                        raise ValueError("Should not ask for reaction to unreactionable action")
                 response = input("Player {}, are you going to {}?\n".format(player_id, message_action))
                 try: 
                     reaction = self.translate_reaction_choice(response, player_id)
