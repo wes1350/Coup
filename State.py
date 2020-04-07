@@ -1,23 +1,28 @@
-"""Maintiains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
+"""Maintains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
     
-
 from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
 from classes.actions.Action import Action
+from Config import Config
 
 class State:
 
-    def __init__(self, n_players : int) -> None:
-        self._n_players = n_players
-        self.CARDS_PER_CHARACTER = 3
+    def __init__(self, config : Config) -> None:
+        self.config = config
+        self._n_players = config.n_players
         # Initialize the deck
-        self._deck = Deck(n_players, self.CARDS_PER_CHARACTER)
+        self._deck = Deck(self._n_players, config.cards_per_character)
         # Initialize the players and assign them cards from the deck
-        unassigned_cards = self._deck.draw(2 * n_players)
+        unassigned_cards = self._deck.draw(config.cards_per_player * self._n_players)
         self._players = []
-        for i in range(n_players):
-            self._players.append(Player(id_=i, coins=2, cards=(unassigned_cards[2*i], unassigned_cards[2*i+1])))
+        for i in range(self._n_players):
+            self._players.append(Player(id_=i, coins=config.starting_coins, 
+                                        cards=[unassigned_cards[config.cards_per_player*i+j]
+                                               for j in range(config.cards_per_player)]))
+        # Penalize the first player in a 2 person game
+        if config.penalize_first_player_in_2p_game and self._n_players == 2:
+            self._players[0].change_coins(-1 * config.first_player_coin_penalty)
 
         self._current_player_id = 0
         # Initialize the current turn
@@ -49,9 +54,13 @@ class State:
                 chosen_cards.append(i)
         return chosen_cards
 
-    def switch_player_card(self, player_id, card_idx) -> None:
-        new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))  
-        self.players.set_card(card_idx, new_card)
+    def switch_player_card(self, player_id : int, card_idx : int) -> None:
+        new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))
+        self._players[player_id].set_card(card_idx, new_card)
+        print("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())))
+
+    def kill_player_card(self, player_id, card_idx) -> None:
+        self.get_player_card(player_id, card_idx).die()
 
     def player_is_alive(self, id_ : int) -> bool:
         return self._players[id_].is_alive()
@@ -65,13 +74,25 @@ class State:
     
     def player_must_coup(self, player_id) -> bool:
         assert 0 <= player_id < self.get_n_players() 
-        return self._players[player_id].get_coins() >= 10
+        return self._players[player_id].get_coins() >= self.config.mandatory_coup_threshold
 
-    def execute_action(self, player : int, action : Action) -> None:
+    def get_challenge_loser(self, claimed_character : str, actor : int, challenger : int) -> int:
+        living_actor_cards = self.get_player_living_card_ids(actor)
+        for id_ in living_actor_cards:
+            if self.get_player_card(actor, id_).get_character_type() == claimed_character:
+                return challenger
+        return actor
+
+    def execute_action(self, player : int, action : Action, ignore_killing : bool = False, only_pay_cost : bool = False) -> None:
+        cost = action.get_property("cost")
+        if only_pay_cost:
+            if action.get_property("pay_when_unsuccessful"):
+                self._players[player].change_coins(-1 * cost)
+            return
+                    
         target = action.get_property("target")
 
         # Handle coin balances
-        cost = action.get_property("cost")        
         if action.get_property("steal"):
             target_player = self._players[target]
             old_balance = target_player.get_coins()
@@ -81,10 +102,43 @@ class State:
         else:
             self._players[player].change_coins(-1 * cost)
 
-        # Handle assassinations
-        if action.get_property("kill"):
-            card_id = action.get_property("kill_card_id")
-            self._players[target].kill_card(card_id)
+        # Check for the case if the affected player has already died this turn
+        if not ignore_killing:
+            # Handle assassinations, coups
+            if action.get_property("kill"):
+                card_id = action.get_property("kill_card_id")
+                self._players[target].kill_card(card_id)
+
+        # Handle exchanging 
+        if action.get_property("exchange_with_deck"):
+            n_to_draw = self.config.n_cards_for_exchange
+            drawn_cards = self._deck.draw(n_to_draw)
+            message = "You have drawn: "
+            in_hand = self.config.cards_per_player 
+            for i in range(n_to_draw):
+                message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
+            print(message)
+
+            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw)
+            
+            # Return all cards from our hand we decided not to keep
+            returned = []
+            for i in range(in_hand):
+                if i not in cards_to_keep:
+                    self._deck.return_card(self.get_player_card(player, i).get_id())
+                    returned.append(i)
+
+            # Replace the missing slots with the chosen drawn cards
+            return_idx = 0
+            for i, card in enumerate(cards_to_keep):
+                if in_hand <= card < in_hand + n_to_draw:
+                    self._players[player].set_card(returned[return_idx], drawn_cards[card-in_hand])
+                    return_idx += 1
+
+            # Return the drawn cards that we didn't keep
+            for i, card in enumerate(drawn_cards):
+                if i + in_hand not in cards_to_keep:
+                    self._deck.return_card(card.get_id())
 
     def validate_action(self, action : Action, player_id : int) -> bool:
         # Validate the cost 
@@ -112,9 +166,42 @@ class State:
         
         return True
 
+    def query_exchange(self, player : int, draw_start : int, draw_end : int) -> list:
+        while True:
+            response = input("Pick {} cards to keep:\n".format(self.config.cards_per_player))
+            try: 
+                cards = self.translate_exchange(response)
+            except ValueError:
+                print("Invalid exchange, please try again.")
+            else:
+                valid = self.validate_exchange(player, cards, draw_start, draw_end)
+                if valid:
+                    return cards
+                print("Impossible exchange, please try again.")
+
+    def translate_exchange(self, response : str) -> list:
+        return [int(n) for n in response.split(" ")]
+
+    def validate_exchange(self, player : int, cards : list, draw_start : int, draw_end : int) -> bool:
+        if len(cards) != self.config.n_cards_for_exchange:
+            return False
+        alive = self.get_player_living_card_ids(player)
+        for i in cards:
+            if not (i in alive or draw_start <= i < draw_end):
+                return False 
+        if len(set(cards)) != len(cards):
+            return False
+        return True
+
+    def exchange_player_card(self, player : int, character : str) -> None:
+        for id_ in self.get_player_living_card_ids(player):
+            if self.get_player_card(player, id_).get_character_type() == character:
+                self.switch_player_card(player, id_)
+                return
+        raise ValueError("Could not find character time among player's living cards") 
+
     def __str__(self):
-        rep = "Deck: {}\n".format(self._deck.__str__())
-        rep += "Players: [{}]\n\n".format("".join([p.__str__() for p in self._players]))
-        rep += "Current Player: {}\n".format(self._current_player_id)
+        rep = "-"*40
+        rep += "{}\n".format("".join([p.__str__() for p in self._players]))
         
         return rep

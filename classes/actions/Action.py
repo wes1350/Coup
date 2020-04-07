@@ -6,10 +6,12 @@ class Action:
             "steal": False,
             "kill": False, 
             "kill_card_id": None,
-            "actor": None,  # what card we are claiming, e.g. Duke for Tax
-            "cost": None,
-            "is_blockable": False,  # improve the following later
-            "blockable_by": None
+            "as_character": None,  # what card we are claiming, e.g. Duke for Tax
+            "cost": 0,
+            "blockable": False,
+            "blockable_by": None,
+            "pay_when_unsuccessful": False,
+            "exchange_with_deck": False
         }
         
         for arg in kwargs:
@@ -20,6 +22,12 @@ class Action:
 
     def set_property(self, prop : str, value):
         self._properties[prop] = value
+    
+    def is_blockable(self):
+        return self.get_property("blockable")
+
+    def is_challengeable(self):
+        return self.get_property("as_character") is not None
 
     def ready(self) -> bool:
         return True
