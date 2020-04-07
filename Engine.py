@@ -232,19 +232,19 @@ class Engine:
         action_name = args[0]
         target = None if len(args) == 1 else int(args[1])
      
-        if action_name == "income":
+        if action_name.lower() in ["i", "income"]:
             return Income.Income()
-        elif action_name == "foreignaid":
+        elif action_name.lower() in ["f", "foreignaid", "foreign aid"]:
             return ForeignAid.ForeignAid()
-        elif action_name == "tax":
+        elif action_name.lower() in ["t", "tax"]:
             return Tax.Tax()
-        elif action_name == "exchange":
+        elif action_name.lower() in ["e", "exchange"]:
             return Exchange.Exchange()
-        elif action_name == "steal":
+        elif action_name.lower() in ["s", "steal"]:
             return Steal.Steal(target=target)
-        elif action_name == "assassinate":
+        elif action_name.lower() in ["a", "assassinate"]:
             return Assassinate.Assassinate(target=target)
-        elif action_name == "coup":
+        elif action_name.lower() in ["c", "coup"]:
             return Coup.Coup(target=target)
         else:
             print("ERROR: invalid action name: {}".format(action_name))
@@ -256,12 +256,12 @@ class Engine:
         else:
             args = response.split(" ")
             reaction_type = args[0]
-            if reaction_type == "block":
+            if reaction_type.lower() in ["b", "block"]:
                 if len(args) != 2:
                     raise ValueError("Invalid number of arguments for block")
                 character = args[1]
                 return Block.Block(source_id, character)
-            elif reaction_type == "challenge":
+            elif reaction_type.lower() in ["c", "challenge"]:
                 return Challenge.Challenge(source_id)
             else:
                 raise ValueError("Invalid reaction type")
@@ -269,7 +269,7 @@ class Engine:
     def translate_challenge_answer(self, response : str, source_id : int) -> Challenge:
         if len(response) == 0 or response == "no":  
             return None
-        elif response == "yes":
+        elif response.lower() in ["challenge", "yes"]:
             return Challenge.Challenge(source_id)
         else:
             raise ValueError("Invalid challenge answer")
