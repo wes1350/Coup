@@ -18,11 +18,11 @@ class State:
         self._players = []
         for i in range(self._n_players):
             self._players.append(Player(id_=i, coins=config.starting_coins, 
-                                        cards=[unassigned_cards[config.cards_per_player*i], 
-                                               unassigned_cards[config.cards_per_player*i+1]]))
+                                        cards=[unassigned_cards[config.cards_per_player*i+j]
+                                               for j in range(config.cards_per_player)]))
         # Penalize the first player in a 2 person game
         if config.penalize_first_player_in_2p_game and self._n_players == 2:
-            self._players[0].change_coins(-1)
+            self._players[0].change_coins(-1 * config.first_player_coin_penalty)
 
         self._current_player_id = 0
         # Initialize the current turn
