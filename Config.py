@@ -1,4 +1,7 @@
+"""Maintains various parameters used in the game, such as the number of players and number of coins per player."""
+
 class Config:
+    """The class storing all the config parameters."""
     def __init__(self, **kwargs):
         self.n_players = 3
         self.cards_per_player = 2
@@ -17,3 +20,10 @@ class Config:
         for key, value in kwargs.items():
             self.__setattr__(key, value)
 
+    def __str__(self):
+        """Nicely print all the game settings."""
+        rep = "\nGame settings:\n\n"
+        settings = vars(self)
+        for v in settings:
+            rep += "{}: {}\n".format(v, settings[v])
+        return rep

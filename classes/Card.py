@@ -1,3 +1,5 @@
+"""A class representing a card in a player's hand or in the deck."""
+
 if __name__ == "Card":
     from characters import Character
 else:
@@ -14,6 +16,7 @@ class Card:
         return self._character
 
     def get_character_type(self) -> str:
+        """Return character type, e.g. Contessa."""
         return str(self.get_character())
 
     def die(self):
@@ -23,7 +26,8 @@ class Card:
         return self._alive
 
     def is_assigned(self) -> bool:
-        return  self._assigned
+        """Return whether the card has been marked as in a player's hand, or is unassigned in the deck."""
+        return self._assigned
 
     def set_assign(self, value: bool) -> None:
         self._assigned = value

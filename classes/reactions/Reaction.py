@@ -1,3 +1,5 @@
+"""The base class for Reactions, which are made to counter an Action."""
+
 class Reaction:
     def __init__(self, **kwargs):
         self._properties = {

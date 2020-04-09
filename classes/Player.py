@@ -1,3 +1,4 @@
+"""A class representing a player and their state, including cards and coin balance."""
 from .Card import Card
 
 class Player:
@@ -13,6 +14,7 @@ class Player:
         return self._coins
 
     def change_coins(self, change : int):
+        """Given a requested change, add the requested number of coins to the player's balance. If the resulting balance would be negative, set it to 0."""
         self._coins = max(self._coins + change, 0)
     
     def get_cards(self) -> list:

@@ -9,6 +9,7 @@ from Config import Config
 class State:
 
     def __init__(self, config : Config) -> None:
+        """Initialize the game state with players and a deck, then assign cards to each player."""
         self.config = config
         self._n_players = config.n_players
         # Initialize the deck
@@ -35,6 +36,7 @@ class State:
         return self._current_player_id
 
     def update_current_player(self):
+        """Increment the current player id, returning to the first player if appropriate."""
         while True:
             self._current_player_id = (self._current_player_id + 1) % self._n_players
             if self.player_is_alive(self._current_player_id):
@@ -47,6 +49,7 @@ class State:
         return self.get_player_cards(player_id)[card_idx]
 
     def get_player_living_card_ids(self, player_id : int) -> list:
+        """Return the indices of the living cards in a player's house. Note: these are not the ids that the Card objects themselves own."""
         cards = self.get_player_cards(player_id)
         chosen_cards = []
         for i, card in enumerate(cards):
@@ -55,6 +58,7 @@ class State:
         return chosen_cards
 
     def switch_player_card(self, player_id : int, card_idx : int) -> None:
+        """Return the indicated card in the player's hand to the deck, and draw a new one at random."""
         new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))
         self._players[player_id].set_card(card_idx, new_card)
         print("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())))
@@ -73,10 +77,12 @@ class State:
         return [self._players[i].get_id() for i in range(self._n_players) if self.player_is_alive(i)]
     
     def player_must_coup(self, player_id) -> bool:
+        """Determine whether a player is obligated to coup based on their coin balance."""
         assert 0 <= player_id < self.get_n_players() 
         return self._players[player_id].get_coins() >= self.config.mandatory_coup_threshold
 
     def get_challenge_loser(self, claimed_character : str, actor : int, challenger : int) -> int:
+        """Given two players and the claimed character, determine who loses the challenge."""
         living_actor_cards = self.get_player_living_card_ids(actor)
         for id_ in living_actor_cards:
             if self.get_player_card(actor, id_).get_character_type() == claimed_character:
@@ -84,7 +90,10 @@ class State:
         return actor
 
     def execute_action(self, player : int, action : Action, ignore_killing : bool = False, only_pay_cost : bool = False) -> None:
+        """Execute a given action and update the game state accordingly. Can involve querying players, e.g. for Exchange. """
         cost = action.get_property("cost")
+        # Sometimes an action was blocked, but the original actor still needs to pay. 
+        # In this case, charge them accordingly but don't do anything else.
         if only_pay_cost:
             if action.get_property("pay_when_unsuccessful"):
                 self._players[player].change_coins(-1 * cost)
@@ -141,6 +150,7 @@ class State:
                     self._deck.return_card(card.get_id())
 
     def validate_action(self, action : Action, player_id : int) -> bool:
+        """Given an action, ensure it can be applied given the game state."""
         # Validate the cost 
         budget = self._players[player_id].get_coins()
         if action.get_property("cost") > budget:
@@ -167,6 +177,7 @@ class State:
         return True
 
     def query_exchange(self, player : int, draw_start : int, draw_end : int) -> list:
+        """For an Exchange, prompt the player for which cards they'd like to keep."""
         while True:
             response = input("Pick {} cards to keep:\n".format(self.config.cards_per_player))
             try: 
@@ -180,9 +191,11 @@ class State:
                 print("Impossible exchange, please try again.")
 
     def translate_exchange(self, response : str) -> list:
+        """Given an exchange response, translate it accordingly."""
         return [int(n) for n in response.split(" ")]
 
     def validate_exchange(self, player : int, cards : list, draw_start : int, draw_end : int) -> bool:
+        """Given an exchange, ensure it can be done given the game state."""
         if len(cards) != self.config.n_cards_for_exchange:
             return False
         alive = self.get_player_living_card_ids(player)
@@ -194,6 +207,7 @@ class State:
         return True
 
     def exchange_player_card(self, player : int, character : str) -> None:
+        """Given a player and character, find the character in the player's hand and swap it with a new card from the Deck."""
         for id_ in self.get_player_living_card_ids(player):
             if self.get_player_card(player, id_).get_character_type() == character:
                 self.switch_player_card(player, id_)
