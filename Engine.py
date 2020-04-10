@@ -263,6 +263,7 @@ class Engine:
 
     def translate_action_choice(self, response : str) -> Action:
         """Given an action response, translate it appropriately"""
+        response = response.strip()
         args = response.split(" ")
         action_name = args[0]
         target = None if len(args) == 1 else int(args[1])
@@ -287,6 +288,7 @@ class Engine:
 
     def translate_reaction_choice(self, response : str, source_id : int) -> Reaction:
         """Given a reaction response, translate it appropriately."""
+        response = response.strip()
         if len(response) == 0:
             return None
         else:
@@ -304,6 +306,7 @@ class Engine:
 
     def translate_challenge_answer(self, response : str, source_id : int) -> Challenge:
         """Given a challenge response, translate it appropriately."""
+        response = response.strip()
         if len(response) == 0 or response == "no":  
             return None
         elif response.lower() in ["challenge", "yes"]:
@@ -312,11 +315,13 @@ class Engine:
             raise ValueError("Invalid challenge answer")
 
     def translate_coup_target(self, response : str) -> Action:
+        response = response.strip()
         """Given a coup target response, translate it appropriately."""
         target = int(response)
         return Coup(target=target)
 
     def translate_card_choice(self, response : str, options : List[int]) -> int:
+        response = response.strip()
         """Given a card choice to discard, translate it appropriately."""
         chosen_card = int(response)
         if chosen_card not in options:

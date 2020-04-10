@@ -197,13 +197,14 @@ class State:
 
     def translate_exchange(self, response : str) -> List[int]:
         """Given an exchange response, translate it accordingly."""
+        response = response.strip()
         return [int(n) for n in response.split(" ")]
 
     def validate_exchange(self, player : int, cards : List[int], draw_start : int, draw_end : int) -> bool:
         """Given an exchange, ensure it can be done given the game state."""
-        if len(cards) != self.config.n_cards_for_exchange:
-            return False
         alive = self.get_player_living_card_ids(player)
+        if len(cards) != len(alive):
+            return False
         for i in cards:
             if not (i in alive or draw_start <= i < draw_end):
                 return False 
