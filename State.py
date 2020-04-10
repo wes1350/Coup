@@ -1,5 +1,7 @@
 """Maintains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
     
+from typing import List
+
 from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
@@ -29,26 +31,26 @@ class State:
         # Initialize the current turn
         self._current_turn = []
     
-    def get_n_players(self):
+    def get_n_players(self) -> int:
         return self._n_players
 
     def get_current_player_id(self) -> int:
         return self._current_player_id
 
-    def update_current_player(self):
+    def update_current_player(self) -> None:
         """Increment the current player id, returning to the first player if appropriate."""
         while True:
             self._current_player_id = (self._current_player_id + 1) % self._n_players
             if self.player_is_alive(self._current_player_id):
                 break
 
-    def get_player_cards(self, id_ : int) -> list:
+    def get_player_cards(self, id_ : int) -> List[Card]:
         return self._players[id_].get_cards()
 
     def get_player_card(self, player_id : int, card_idx : int) -> Card:
         return self.get_player_cards(player_id)[card_idx]
 
-    def get_player_living_card_ids(self, player_id : int) -> list:
+    def get_player_living_card_ids(self, player_id : int) -> List[int]:
         """Return the indices of the living cards in a player's house. Note: these are not the ids that the Card objects themselves own."""
         cards = self.get_player_cards(player_id)
         chosen_cards = []
@@ -69,14 +71,14 @@ class State:
     def player_is_alive(self, id_ : int) -> bool:
         return self._players[id_].is_alive()
 
-    def n_players_alive(self) -> bool:
+    def n_players_alive(self) -> int:
         statuses = [self.player_is_alive(i) for i in range(self._n_players)]
         return sum([1 for x in statuses if x])
     
-    def get_alive_players(self) -> list:
+    def get_alive_players(self) -> List[int]:
         return [self._players[i].get_id() for i in range(self._n_players) if self.player_is_alive(i)]
     
-    def player_must_coup(self, player_id) -> bool:
+    def player_must_coup(self, player_id : int) -> bool:
         """Determine whether a player is obligated to coup based on their coin balance."""
         assert 0 <= player_id < self.get_n_players() 
         return self._players[player_id].get_coins() >= self.config.mandatory_coup_threshold
@@ -176,7 +178,7 @@ class State:
         
         return True
 
-    def query_exchange(self, player : int, draw_start : int, draw_end : int) -> list:
+    def query_exchange(self, player : int, draw_start : int, draw_end : int) -> List[int]:
         """For an Exchange, prompt the player for which cards they'd like to keep."""
         while True:
             response = input("Pick {} cards to keep:\n".format(self.config.cards_per_player))
@@ -190,11 +192,11 @@ class State:
                     return cards
                 print("Impossible exchange, please try again.")
 
-    def translate_exchange(self, response : str) -> list:
+    def translate_exchange(self, response : str) -> List[int]:
         """Given an exchange response, translate it accordingly."""
         return [int(n) for n in response.split(" ")]
 
-    def validate_exchange(self, player : int, cards : list, draw_start : int, draw_end : int) -> bool:
+    def validate_exchange(self, player : int, cards : List[int], draw_start : int, draw_end : int) -> bool:
         """Given an exchange, ensure it can be done given the game state."""
         if len(cards) != self.config.n_cards_for_exchange:
             return False

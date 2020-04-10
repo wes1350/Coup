@@ -2,7 +2,7 @@
 
 class Config:
     """The class storing all the config parameters."""
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs) -> None:
         self.n_players = 3
         self.cards_per_player = 2
         self.cards_per_character = 3
@@ -20,7 +20,7 @@ class Config:
         for key, value in kwargs.items():
             self.__setattr__(key, value)
 
-    def __str__(self):
+    def __str__(self) -> str:
         """Nicely print all the game settings."""
         rep = "\nGame settings:\n\n"
         settings = vars(self)

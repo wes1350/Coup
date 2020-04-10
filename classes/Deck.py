@@ -8,6 +8,8 @@ else:
     from .Card import Card
     from .characters import Ambassador, Assassin, Captain, Contessa, Duke
 
+from typing import List
+
 class Deck:
     """Class for managing the Coup deck. The deck only contains information about the cards it contains, and whether a card has been dealt (assigned) or not. It does not know about player assignments.To interact with the deck, we call methods such as draw."""
     ALL_CHARACTERS = [Ambassador.Ambassador, Assassin.Assassin, Captain.Captain, Contessa.Contessa, Duke.Duke]
@@ -21,7 +23,7 @@ class Deck:
                 id_ = ids.pop(random.randint(1, len(ids)) - 1)
                 self._deck[id_] = Card(character=char(), id_=id_)
 
-    def draw(self, n : int) -> list:
+    def draw(self, n : int) -> List[Card]:
         """Return n random cards from the deck that are currently unassigned to players."""
         unassigned = [card for card in self._deck if not self._deck[card].is_assigned()]
         if n <= 0:

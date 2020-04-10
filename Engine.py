@@ -1,11 +1,23 @@
 """Master class for running Coup. Reads in arguments from the command line, Maintains and updates the state, and queries players for actions."""
 
 import random, time
-from classes.Card import Card
+from typing import List, Optional
+
 from State import State
-from classes.actions import Action, Income, ForeignAid, Tax, Steal, Assassinate, Coup, Exchange
-from classes.reactions import Reaction, Block, Challenge
 from Config import Config
+from classes.Card import Card
+from classes.actions.Action import Action
+from classes.actions.Income import Income
+from classes.actions.ForeignAid import ForeignAid
+from classes.actions.Tax import Tax
+from classes.actions.Steal import Steal
+from classes.actions.Assassinate import Assassinate
+from classes.actions.Coup import Coup
+from classes.actions.Exchange import Exchange
+from classes.reactions.Reaction import Reaction
+from classes.reactions.Block import Block
+from classes.reactions.Challenge import Challenge
+
 
 class Engine:
     """Maintains all the logic relevant to the game, such as the game state, config, querying players, etc."""
@@ -20,7 +32,7 @@ class Engine:
         """Determine if the win condition is satisfied."""
         return self._state.n_players_alive() == 1
 
-    def run_game(self):
+    def run_game(self) -> int:
         """Start and run a game until completion, handling game logic as necessary."""
         while not self.game_is_over():
             print(self._state)
@@ -76,13 +88,15 @@ class Engine:
                     self.execute_action(action, current_player, target)
             self.next_turn()
      
-        print("Game is over! \n Winner is: Player {}".format(self._state.get_alive_players()[0]))
+        winner = self._state.get_alive_players()[0]
+        print("Game is over!\n\nPlayer {} wins!".format(winner))
+        return winner
     
-    def next_turn(self):
+    def next_turn(self) -> None:
         """Move on to the next turn, updating the game state as necessary."""
         self._state.update_current_player() 
 
-    def choose_among_reactions(self, reactions : list) -> Reaction:
+    def choose_among_reactions(self, reactions : List[Reaction]) -> Reaction:
         """Given a list of reactions, return one based on the selection setting."""
         # First mode, random mode, first challenge, first block, random challenge first, random block first
         chosen_reaction = None
@@ -122,7 +136,7 @@ class Engine:
         print("Player {} does a {}{}".format(player, reaction_type, " as {}".format(character) if is_block else ""))
         return chosen_reaction
 
-    def execute_action(self, action: Action = None, source : int = None, target : int = None, ignore_if_dead : bool = False, only_pay_cost : bool = False):
+    def execute_action(self, action: Action = None, source : int = None, target : int = None, ignore_if_dead : bool = False, only_pay_cost : bool = False) -> None:
         ignore_killing = False
         if not only_pay_cost:
             # Query affected player if necessary
@@ -154,7 +168,7 @@ class Engine:
                     print("Impossible action, please try again.")
                     
 
-    def query_player_reactions(self, players : list, action : Action) -> list:
+    def query_player_reactions(self, players : List[int], action : Action) -> List[Reaction]:
         """Given an action and a list of players to query, prompt players for reactions"""
         reactions = []
         target = action.get_property("target")
@@ -191,7 +205,7 @@ class Engine:
                     print("Impossible reaction, please try again.")
         return reactions
 
-    def query_challenges(self, players : list) -> list:
+    def query_challenges(self, players : List[int]) -> List[Challenge]:
         """Given a list of players to query, ask them if they want to challenge."""
         challenges = []
         for player_id in players:
@@ -248,19 +262,19 @@ class Engine:
         target = None if len(args) == 1 else int(args[1])
      
         if action_name.lower() in ["i", "income"]:
-            return Income.Income()
+            return Income()
         elif action_name.lower() in ["f", "foreignaid", "foreign aid"]:
-            return ForeignAid.ForeignAid()
+            return ForeignAid()
         elif action_name.lower() in ["t", "tax"]:
-            return Tax.Tax()
+            return Tax()
         elif action_name.lower() in ["e", "exchange"]:
-            return Exchange.Exchange()
+            return Exchange()
         elif action_name.lower() in ["s", "steal"]:
-            return Steal.Steal(target=target)
+            return Steal(target=target)
         elif action_name.lower() in ["a", "assassinate"]:
-            return Assassinate.Assassinate(target=target)
+            return Assassinate(target=target)
         elif action_name.lower() in ["c", "coup"]:
-            return Coup.Coup(target=target)
+            return Coup(target=target)
         else:
             print("ERROR: invalid action name: {}".format(action_name))
             raise ValueError("Invalid action name: {}".format(action_name))
@@ -276,9 +290,9 @@ class Engine:
                 if len(args) != 2:
                     raise ValueError("Invalid number of arguments for block")
                 character = args[1]
-                return Block.Block(source_id, character)
+                return Block(source_id, character)
             elif reaction_type.lower() in ["c", "challenge"]:
-                return Challenge.Challenge(source_id)
+                return Challenge(source_id)
             else:
                 raise ValueError("Invalid reaction type")
 
@@ -287,16 +301,16 @@ class Engine:
         if len(response) == 0 or response == "no":  
             return None
         elif response.lower() in ["challenge", "yes"]:
-            return Challenge.Challenge(source_id)
+            return Challenge(source_id)
         else:
             raise ValueError("Invalid challenge answer")
 
     def translate_coup_target(self, response : str) -> Action:
         """Given a coup target response, translate it appropriately."""
         target = int(response)
-        return Coup.Coup(target=target)
+        return Coup(target=target)
 
-    def translate_card_choice(self, response : str, options : list) -> int:
+    def translate_card_choice(self, response : str, options : List[int]) -> int:
         """Given a card choice to discard, translate it appropriately."""
         chosen_card = int(response)
         if chosen_card not in options:
@@ -335,11 +349,11 @@ class Engine:
         else:
             return False
 
-    def exchange_player_card(self, player : int, move) -> None:
+    def exchange_player_card(self, player : int, move : Reaction) -> None:
         """Given a player and an action or reaction they did, exchange one of their cards appropriately. This is called when a player wins a challenge and needs to replace the challenged character."""
         character = move.get_property("as_character")
         self._state.exchange_player_card(player, character)
 
 if __name__ == "__main__":
     engine = Engine()
-    engine.run_game()
+    winner = engine.run_game()
