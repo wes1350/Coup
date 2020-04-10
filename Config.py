@@ -1,5 +1,7 @@
 """Maintains various parameters used in the game, such as the number of players and number of coins per player."""
 
+from typing import NoReturn
+
 class Config:
     """The class storing all the config parameters."""
     def __init__(self, **kwargs) -> None:
@@ -19,6 +21,26 @@ class Config:
         # initialize other parameters
         for key, value in kwargs.items():
             self.__setattr__(key, value)
+
+        self.validate_args()
+
+    def validate_args(self) -> NoReturn:
+        """Ensure that the starting arguments give a valid configuration."""
+        
+        # Make sure that there are enough cards in the deck for the settings
+        max_cards_in_use = self.n_players * self.cards_per_player + self.n_cards_for_exchange
+        cards_in_deck = self.cards_per_character * 5
+        if max_cards_in_use > cards_in_deck:
+            raise ValueError("Not enough cards to play given game settings")
+        
+        # Ensure first player penalty in 2p games is not greater than starting coins
+        if self.n_players == 2 and self.penalize_first_player_in_2p_game:
+            if self.first_player_coin_penalty > self.starting_coins:
+                raise ValueError("First player penalty is greater than number of starting coins")
+        
+        # Ensure reaction choice mode is valid
+        if self.reaction_choice_mode not in ["first", "random", "first_block", "first_challenge", "random_block", "random_challenge"]:
+            raise ValueError("Invalid reaction choice mode: {}".format(self.reaction_choice_mode))
 
     def __str__(self) -> str:
         """Nicely print all the game settings."""

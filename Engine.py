@@ -1,7 +1,7 @@
 """Master class for running Coup. Reads in arguments from the command line, Maintains and updates the state, and queries players for actions."""
 
-import random, time
-from typing import List, Optional
+import random, time, argparse
+from typing import List, Optional, Dict, Any
 
 from State import State
 from Config import Config
@@ -22,11 +22,17 @@ from classes.reactions.Challenge import Challenge
 class Engine:
     """Maintains all the logic relevant to the game, such as the game state, config, querying players, etc."""
 
-    def __init__(self) -> None:
+    def __init__(self, args : Dict[str, Any]) -> None:
         """Initialize a new Engine, with arguments from the command line."""
-        self.config = Config()
-        print(str(self.config))
-        self._state = State(self.config)
+        self._config_status, self._config_err_msg = True, None
+        try:
+            self.config = Config(**args)
+        except ValueError as e:
+            self._config_status = False
+            self._config_err_msg = getattr(e, 'message', repr(e))
+        else:
+            self._state = State(self.config)
+            print(str(self.config))
 
     def game_is_over(self) -> bool:
         """Determine if the win condition is satisfied."""
@@ -354,6 +360,32 @@ class Engine:
         character = move.get_property("as_character")
         self._state.exchange_player_card(player, character)
 
+    def get_config_status(self):
+        return self._config_status
+    
+    def get_config_err_msg(self):
+        return self._config_err_msg
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description="Customize game settings.")
+    parser.add_argument("-n", "--n_players", type=int, help="Number of players")
+    parser.add_argument("-cp", "--cards_per_player", type=int, help="Number of cards each player starts with")
+    parser.add_argument("-cc", "--cards_per_character", type=int, help="How many cards of each character type are in the deck")
+    parser.add_argument("-s", "--starting_coins", type=int, help="How many coins each player starts with")
+    parser.add_argument("-p", "--penalize_p1_in_2p_game", type=bool, help="Penalize the first player in a two person game by deducting coins at the start")
+    parser.add_argument("-pa", "--first_player_coin_penalty", type=int, help="How many coins to penalize the first player in a two person game")
+    parser.add_argument("-m", "--reaction_choice_mode", type=str, choices=["first", "random", "first_block", "first_challenge", "random_block", "random_challenge"], help="How to prioritize reactions when there are multiple")
+    parser.add_argument("-ct", "--mandatory_coup_threshold", type=int, help="How many coins a player starts a turn with that obligates them to coup on that turn.")
+    parser.add_argument("-ne", "--n_cards_for_exchange", type=int, help="How many cards a player draws during an Exchange.")
+    return parser.parse_args()
+
 if __name__ == "__main__":
-    engine = Engine()
-    winner = engine.run_game()
+    args = parse_args()
+    specified_args = {k: v for k, v in vars(args).items() if v is not None}
+    engine = Engine(specified_args)
+    if not engine.get_config_status():
+        print("\nInvalid configuration: " + engine.get_config_err_msg().split("'")[1])
+        print("\nCannot run game; exiting.")
+    else:
+        winner = engine.run_game()
