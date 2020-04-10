@@ -8,4 +8,4 @@ class Assassinate(Action):
         super().set_property(prop="kill_card_id", value=card_id)
 
     def ready(self):
-        return self.get_property("kill_card_id") is not None
+        return self.kill_card_id is not None

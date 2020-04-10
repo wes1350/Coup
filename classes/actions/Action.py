@@ -1,33 +1,25 @@
 
 class Action:
     def __init__(self, **kwargs):
-        self._properties = {
-            "target": None,
-            "steal": False,
-            "kill": False, 
-            "kill_card_id": None,
-            "as_character": None,  # what card we are claiming, e.g. Duke for Tax
-            "cost": 0,
-            "blockable": False,
-            "blockable_by": None,
-            "pay_when_unsuccessful": False,
-            "exchange_with_deck": False
-        }
+        self.target = None
+        self.steal = False
+        self.kill = False 
+        self.kill_card_id = None
+        self.as_character = None  # what card we are claiming e.g. Duke for Tax
+        self.cost = 0
+        self.blockable = False
+        self.blockable_by = None
+        self.pay_when_unsuccessful = False
+        self.exchange_with_deck = False
         
         for arg in kwargs:
-            self._properties[arg] = kwargs[arg]
+            self.__setattr__(arg, kwargs[arg])
 
-    def get_property(self, prop : str):
-        return self._properties[prop]
-
-    def set_property(self, prop : str, value):
-        self._properties[prop] = value
-    
     def is_blockable(self):
-        return self.get_property("blockable")
+        return self.blockable
 
     def is_challengeable(self):
-        return self.get_property("as_character") is not None
+        return self.as_character is not None
 
     def ready(self) -> bool:
         return True

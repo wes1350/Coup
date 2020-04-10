@@ -1,7 +1,11 @@
+"""A class representing a player and their state, including cards and coin balance."""
 from .Card import Card
 
+from typing import List
+
+
 class Player:
-    def __init__(self, id_ : int, coins : int, cards : list):
+    def __init__(self, id_ : int, coins : int, cards : List[Card]) -> None:
         self._id = id_
         self._coins = coins
         self._cards = cards
@@ -13,9 +17,10 @@ class Player:
         return self._coins
 
     def change_coins(self, change : int):
+        """Given a requested change, add the requested number of coins to the player's balance. If the resulting balance would be negative, set it to 0."""
         self._coins = max(self._coins + change, 0)
     
-    def get_cards(self) -> list:
+    def get_cards(self) -> List[Card]:
         return self._cards
 
     def set_card(self, i : int, card : Card) -> None:
@@ -23,6 +28,8 @@ class Player:
 
     def kill_card(self, i : int) -> None:
         self._cards[i].die()
+        if self.is_eliminated():
+            print("Player {} has been eliminated!".format(self._id))
     
     def is_eliminated(self) -> bool:
         for card in self._cards:
@@ -33,6 +40,6 @@ class Player:
     def is_alive(self) -> bool:
         return not self.is_eliminated()
         
-    def __str__(self):
-        rep = "\nPlayer {}: {} coins, {}".format(self._id, self._coins, ", ".join([c.__str__() for c in self._cards])) 
+    def __str__(self) -> str:
+        rep = "\nPlayer {}: {} coins, {}".format(self._id, self._coins, ", ".join([str(c) for c in self._cards])) 
         return rep

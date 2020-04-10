@@ -1,3 +1,5 @@
+"""A class representing the deck of character cards. Does not keep track of card assignments to players, but allows drawing and returning."""
+
 import random
 if __name__ == "__main__":
     from Card import Card
@@ -5,6 +7,8 @@ if __name__ == "__main__":
 else:
     from .Card import Card
     from .characters import Ambassador, Assassin, Captain, Contessa, Duke
+
+from typing import List
 
 class Deck:
     """Class for managing the Coup deck. The deck only contains information about the cards it contains, and whether a card has been dealt (assigned) or not. It does not know about player assignments.To interact with the deck, we call methods such as draw."""
@@ -19,7 +23,8 @@ class Deck:
                 id_ = ids.pop(random.randint(1, len(ids)) - 1)
                 self._deck[id_] = Card(character=char(), id_=id_)
 
-    def draw(self, n : int) -> list:
+    def draw(self, n : int) -> List[Card]:
+        """Return n random cards from the deck that are currently unassigned to players."""
         unassigned = [card for card in self._deck if not self._deck[card].is_assigned()]
         if n <= 0:
             raise ValueError("Must draw more than 0 cards")
@@ -32,12 +37,14 @@ class Deck:
         return [self._deck[i] for i in selected_cards]
 
     def return_card(self, id_ : int) -> None:
+        """Mark a card as unassigned, so that it can be redistributed later."""
         if self._deck.get(id_) is not None:
             self._deck[id_].set_assign(False)
         else:
             raise ValueError("Could not find given card among assigned cards")
 
     def exchange_card(self, card : Card) -> Card:
+        """Given a card, return it to the deck and return a new one to the caller."""
         new_card = self.draw(1)[0]
         self.return_card(card.get_id())
         return new_card
