@@ -1,4 +1,5 @@
-"""Master class for running Coup. Reads in arguments from the command line, Maintains and updates the state, and queries players for actions."""
+"""Master class for running Coup. Reads in arguments from the command line, 
+   maintains and updates the state, and queries players for actions."""
 
 import random, time, argparse
 from typing import List, Optional, Dict, Any
@@ -20,7 +21,8 @@ from classes.reactions.Challenge import Challenge
 
 
 class Engine:
-    """Maintains all the logic relevant to the game, such as the game state, config, querying players, etc."""
+    """Maintains all the logic relevant to the game, such as the 
+       game state, config, querying players, etc."""
 
     def __init__(self, args : Dict[str, Any]) -> None:
         """Initialize a new Engine, with arguments from the command line."""
@@ -42,69 +44,80 @@ class Engine:
         """Start and run a game until completion, handling game logic as necessary."""
         while not self.game_is_over():
             print(self._state)
-            current_player = self._state.get_current_player_id()
-            action = self.query_player_action(current_player)
-            target = action.target
-            
-            if not action.is_blockable() and not action.is_challengeable():
-                # Action always goes through, e.g. Income
-                self.execute_action(action, current_player, target)
-            else:
-                # Blocks and/or Challenges are possible. See if anyone decides to challenge
-                query_players = [p for p in self._state.get_alive_players() if p != current_player]
-                reactions = self.query_player_reactions(query_players, action)
-                if len(reactions) > 0:
-                    chosen_reaction = self.choose_among_reactions(reactions)
-                    reaction_type = chosen_reaction.reaction_type
-                    if reaction_type == "block":
-                        blocker = chosen_reaction.from_player
-                        query_challenge_players = [p for p in self._state.get_alive_players() if p != blocker]
-                        challenges = self.query_challenges(query_challenge_players)
-                        if len(challenges) > 0:
-                            chosen_challenge = self.choose_among_reactions(challenges)
-                            challenger = chosen_challenge.from_player
-                            claimed_character = chosen_reaction.as_character
-                            losing_player = self._state.get_challenge_loser(claimed_character, blocker, challenger)
-                            card = self.query_player_card(losing_player)
-                            self._state.kill_player_card(losing_player, card)
-                            if losing_player == blocker:
-                                self.execute_action(action, current_player, target, ignore_if_dead=True)
-                            else:
-                                # Enforce any costs to original action executor
-                                self.exchange_player_card(blocker, chosen_reaction)
-                                self.execute_action(action, current_player, only_pay_cost=True)
-                            print("Player {} loses the challenge".format(losing_player))
-                        else:
-                            # Enforce any costs to original action executor
-                            self.execute_action(action, current_player, only_pay_cost=True)
-                            print("Action blocked with {}".format(chosen_reaction.as_character))    
-                    elif reaction_type == "challenge":
-                        challenger = chosen_reaction.from_player
-                        claimed_character = action.as_character
-                        losing_player = self._state.get_challenge_loser(claimed_character, current_player, challenger)
-                        card = self.query_player_card(losing_player)
-                        self._state.kill_player_card(losing_player, card)
-                        if losing_player == challenger:
-                            self.exchange_player_card(current_player, action)
-                            self.execute_action(action, current_player, target, ignore_if_dead=True)
-                        print("Player {} loses the challenge".format(losing_player))
-                    else:           
-                        raise ValueError("Invalid reaction type encountered")
-                else:
-                    self.execute_action(action, current_player, target)
+            self.play_turn()
             self.next_turn()
-     
         winner = self._state.get_alive_players()[0]
         print("Game is over!\n\nPlayer {} wins!".format(winner))
         return winner
-    
+
+    def play_turn(self) -> None:
+        """Play one turn of the game."""
+        current_player = self._state.get_current_player_id()
+        action = self.query_player_action(current_player)
+        target = action.target
+        
+        if not action.is_blockable() and not action.is_challengeable():
+            # Action always goes through, e.g. Income
+            self.execute_action(action, current_player, target)
+        else:
+            # Blocks and/or Challenges are possible. See if anyone decides to challenge
+            query_players = [p for p in self._state.get_alive_players() if p != current_player]
+            reactions = self.query_player_reactions(query_players, action)
+            if len(reactions) > 0:
+                # At least one player reacted, so handle it
+                chosen_reaction = self.choose_among_reactions(reactions)
+                reaction_type = chosen_reaction.reaction_type
+                if reaction_type == "block":
+                    # Handle block reactions
+                    blocker = chosen_reaction.from_player
+                    query_challenge_players = [p for p in self._state.get_alive_players() 
+                                               if p != blocker]
+                    challenges = self.query_challenges(query_challenge_players)
+                    if len(challenges) > 0:
+                        # Someone challenged the block, so resolve the challenge 
+                        chosen_challenge = self.choose_among_reactions(challenges)
+                        challenger = chosen_challenge.from_player
+                        claimed_character = chosen_reaction.as_character
+                        losing_player = self._state.get_challenge_loser(claimed_character, 
+                                                                        blocker, challenger)
+                        card = self.query_player_card(losing_player)
+                        self._state.kill_player_card(losing_player, card)
+                        if losing_player == blocker:
+                            self.execute_action(action, current_player, target, 
+                                                ignore_if_dead=True)
+                        else:
+                            # Enforce any costs to original action executor
+                            self.exchange_player_card(blocker, chosen_reaction)
+                            self.execute_action(action, current_player, only_pay_cost=True)
+                        print("Player {} loses the challenge".format(losing_player))
+                    else:
+                        # Nobody challenged, so the block is successful
+                        # Enforce any costs to original action executor
+                        self.execute_action(action, current_player, only_pay_cost=True)
+                        print("Action blocked with {}".format(chosen_reaction.as_character))    
+                elif reaction_type == "challenge":
+                    challenger = chosen_reaction.from_player
+                    claimed_character = action.as_character
+                    losing_player = self._state.get_challenge_loser(claimed_character, 
+                                                                    current_player, challenger)
+                    card = self.query_player_card(losing_player)
+                    self._state.kill_player_card(losing_player, card)
+                    if losing_player == challenger:
+                        self.exchange_player_card(current_player, action)
+                        self.execute_action(action, current_player, target, ignore_if_dead=True)
+                    print("Player {} loses the challenge".format(losing_player))
+                else:           
+                    raise ValueError("Invalid reaction type encountered")
+            else:
+                # Nobody reacted, so the action goes through
+                self.execute_action(action, current_player, target)   
+
     def next_turn(self) -> None:
         """Move on to the next turn, updating the game state as necessary."""
         self._state.update_current_player() 
 
     def choose_among_reactions(self, reactions : List[Reaction]) -> Reaction:
         """Given a list of reactions, return one based on the selection setting."""
-        # First mode, random mode, first challenge, first block, random challenge first, random block first
         chosen_reaction = None
         mode = self.config.reaction_choice_mode
         if mode == "first":
@@ -143,6 +156,7 @@ class Engine:
         return chosen_reaction
 
     def execute_action(self, action: Action = None, source : int = None, target : int = None, ignore_if_dead : bool = False, only_pay_cost : bool = False) -> None:
+        """Given an action, execute it based on the parameters provided."""
         ignore_killing = False
         if not only_pay_cost:
             # Query affected player if necessary
