@@ -222,6 +222,6 @@ class State:
 
     def __str__(self):
         rep = "-"*40
-        rep += "{}\n".format("".join([p.__str__() for p in self._players]))
+        rep += "{}\n".format("".join([str(p) for p in self._players]))
         
         return rep

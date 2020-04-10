@@ -41,5 +41,5 @@ class Player:
         return not self.is_eliminated()
         
     def __str__(self) -> str:
-        rep = "\nPlayer {}: {} coins, {}".format(self._id, self._coins, ", ".join([c.__str__() for c in self._cards])) 
+        rep = "\nPlayer {}: {} coins, {}".format(self._id, self._coins, ", ".join([str(c) for c in self._cards])) 
         return rep
