@@ -93,18 +93,18 @@ class State:
 
     def execute_action(self, player : int, action : Action, ignore_killing : bool = False, only_pay_cost : bool = False) -> None:
         """Execute a given action and update the game state accordingly. Can involve querying players, e.g. for Exchange. """
-        cost = action.get_property("cost")
+        cost = action.cost
         # Sometimes an action was blocked, but the original actor still needs to pay. 
         # In this case, charge them accordingly but don't do anything else.
         if only_pay_cost:
-            if action.get_property("pay_when_unsuccessful"):
+            if action.pay_when_unsuccessful:
                 self._players[player].change_coins(-1 * cost)
             return
                     
-        target = action.get_property("target")
+        target = action.target
 
         # Handle coin balances
-        if action.get_property("steal"):
+        if action.steal:
             target_player = self._players[target]
             old_balance = target_player.get_coins()
             self._players[target].change_coins(cost)
@@ -116,12 +116,12 @@ class State:
         # Check for the case if the affected player has already died this turn
         if not ignore_killing:
             # Handle assassinations, coups
-            if action.get_property("kill"):
-                card_id = action.get_property("kill_card_id")
+            if action.kill:
+                card_id = action.kill_card_id
                 self._players[target].kill_card(card_id)
 
         # Handle exchanging 
-        if action.get_property("exchange_with_deck"):
+        if action.exchange_with_deck:
             n_to_draw = self.config.n_cards_for_exchange
             drawn_cards = self._deck.draw(n_to_draw)
             alive_cards = self.get_player_living_card_ids(player)
@@ -158,12 +158,12 @@ class State:
         """Given an action, ensure it can be applied given the game state."""
         # Validate the cost 
         budget = self._players[player_id].get_coins()
-        if action.get_property("cost") > budget:
+        if action.cost > budget:
             print("ERROR: not enough coins for action")
             return False
         
         # Validate the target, if applicable
-        target_id = action.get_property("target") 
+        target_id = action.target 
         has_target = target_id is not None
         if has_target:
             # Target must be a valid Player. Bank doesn't count

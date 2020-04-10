@@ -44,7 +44,7 @@ class Engine:
             print(self._state)
             current_player = self._state.get_current_player_id()
             action = self.query_player_action(current_player)
-            target = action.get_property("target")
+            target = action.target
             
             if not action.is_blockable() and not action.is_challengeable():
                 # Action always goes through, e.g. Income
@@ -55,15 +55,15 @@ class Engine:
                 reactions = self.query_player_reactions(query_players, action)
                 if len(reactions) > 0:
                     chosen_reaction = self.choose_among_reactions(reactions)
-                    reaction_type = chosen_reaction.get_property("reaction_type")
+                    reaction_type = chosen_reaction.reaction_type
                     if reaction_type == "block":
-                        blocker = chosen_reaction.get_property("from_player")
+                        blocker = chosen_reaction.from_player
                         query_challenge_players = [p for p in self._state.get_alive_players() if p != blocker]
                         challenges = self.query_challenges(query_challenge_players)
                         if len(challenges) > 0:
                             chosen_challenge = self.choose_among_reactions(challenges)
-                            challenger = chosen_challenge.get_property("from_player")
-                            claimed_character = chosen_reaction.get_property("as_character")
+                            challenger = chosen_challenge.from_player
+                            claimed_character = chosen_reaction.as_character
                             losing_player = self._state.get_challenge_loser(claimed_character, blocker, challenger)
                             card = self.query_player_card(losing_player)
                             self._state.kill_player_card(losing_player, card)
@@ -77,10 +77,10 @@ class Engine:
                         else:
                             # Enforce any costs to original action executor
                             self.execute_action(action, current_player, only_pay_cost=True)
-                            print("Action blocked with {}".format(chosen_reaction.get_property("as_character")))    
+                            print("Action blocked with {}".format(chosen_reaction.as_character))    
                     elif reaction_type == "challenge":
-                        challenger = chosen_reaction.get_property("from_player")
-                        claimed_character = action.get_property("as_character")
+                        challenger = chosen_reaction.from_player
+                        claimed_character = action.as_character
                         losing_player = self._state.get_challenge_loser(claimed_character, current_player, challenger)
                         card = self.query_player_card(losing_player)
                         self._state.kill_player_card(losing_player, card)
@@ -113,32 +113,32 @@ class Engine:
             chosen_reaction = random.choice(reactions)
         elif mode == "first_challenge":
             for reaction in reactions:
-                if reaction.get_property("reaction_type") == "challenge":
+                if reaction.reaction_type == "challenge":
                     chosen_reaction = reaction
                     break
                 chosen_reaction = reactions[0] 
         elif mode == "first_block":
             for reaction in reactions:
-                if reaction.get_property("reaction_type") == "block":
+                if reaction.reaction_type == "block":
                     chosen_reaction = reaction
                     break
                 chosen_reaction = reactions[0] 
         elif mode == "random_challenge":
-                desired = [r for r in reactions if r.get_property("reaction_type") == "challenge"]
+                desired = [r for r in reactions if r.reaction_type == "challenge"]
                 if len(desired) > 0:
                     chosen_reaction = random.choice(desired)
                 else:
                     chosen_reaction = random.choice(reactions)
         elif mode == "random_block":
-                desired = [r for r in reactions if r.get_property("reaction_type") == "block"]
+                desired = [r for r in reactions if r.reaction_type == "block"]
                 if len(desired) > 0:
                     chosen_reaction = random.choice(desired)
                 else:
                     chosen_reaction = random.choice(reactions)
-        player = chosen_reaction.get_property("from_player")
-        reaction_type = chosen_reaction.get_property("reaction_type")
+        player = chosen_reaction.from_player
+        reaction_type = chosen_reaction.reaction_type
         is_block = reaction_type == "block"
-        character = chosen_reaction.get_property("as_character") if is_block else None
+        character = chosen_reaction.as_character if is_block else None
         print("Player {} does a {}{}".format(player, reaction_type, " as {}".format(character) if is_block else ""))
         return chosen_reaction
 
@@ -149,7 +149,7 @@ class Engine:
             if not action.ready():
                 card = self.query_player_card(target, ignore_if_dead)
                 if card is not None:
-                    action.set_property("kill_card_id", card)
+                    action.kill_card_id = card
                 else:   
                     # card is None because the player is already dead and there is no card to choose
                     ignore_killing = True
@@ -177,7 +177,7 @@ class Engine:
     def query_player_reactions(self, players : List[int], action : Action) -> List[Reaction]:
         """Given an action and a list of players to query, prompt players for reactions"""
         reactions = []
-        target = action.get_property("target")
+        target = action.target
         for player_id in players:
             while True:
                 if target is not None:
@@ -186,7 +186,7 @@ class Engine:
                     else:
                         message_action = "challenge"
                 else:
-                    challengeable = action.get_property("as_character") 
+                    challengeable = action.as_character 
                     blockable = action.is_blockable()
                     if challengeable and blockable:
                         message_action = "react"
@@ -335,19 +335,19 @@ class Engine:
 
     def validate_reaction(self, reaction : Reaction, action : Action) -> bool:
         """Given a reaction, return whether it can be done given the turn state."""
-        reaction_type = reaction.get_property("reaction_type")
+        reaction_type = reaction.reaction_type
         if reaction_type == "block":
-            target = action.get_property("target")
+            target = action.target
             if target is not None:
-                reactor = reaction.get_property("from_player")
+                reactor = reaction.from_player
                 if target != reactor:
                     print("Cannot block action when not the target")
                     return False
             if not action.is_blockable():
                 print("Action is unblockable")
                 return False
-            character = reaction.get_property("as_character")
-            blockable_by = action.get_property("blockable_by")
+            character = reaction.as_character
+            blockable_by = action.blockable_by
             if character not in blockable_by:
                 print("Specified character cannot block this action")
                 return False
@@ -362,7 +362,7 @@ class Engine:
 
     def exchange_player_card(self, player : int, move : Reaction) -> None:
         """Given a player and an action or reaction they did, exchange one of their cards appropriately. This is called when a player wins a challenge and needs to replace the challenged character."""
-        character = move.get_property("as_character")
+        character = move.as_character
         self._state.exchange_player_card(player, character)
 
     def get_config_status(self):
