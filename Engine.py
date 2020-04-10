@@ -248,7 +248,7 @@ class Engine:
             return options[0]
         else:
             while True:
-                response = input("Player {}, which card do you pick?\n".format(player_id))
+                response = input("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id))
                 try:
                     card = self.translate_card_choice(response, options)
                     return card

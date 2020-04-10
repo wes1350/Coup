@@ -124,11 +124,14 @@ class State:
         if action.get_property("exchange_with_deck"):
             n_to_draw = self.config.n_cards_for_exchange
             drawn_cards = self._deck.draw(n_to_draw)
-            message = "You have drawn: "
+            alive_cards = self.get_player_living_card_ids(player)
+            message = "For your exchange, you may choose {} of the following cards:\n    ".format(len(alive_cards))
+            for i in alive_cards:
+                message += " [{}] {} ".format(i, str(self.get_player_card(player, i).get_character()))
             in_hand = self.config.cards_per_player 
             for i in range(n_to_draw):
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
-            print(message)
+            print(message + "\n")
 
             cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw)
             
