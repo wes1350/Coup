@@ -18,6 +18,8 @@ class Config:
 
         self.n_cards_for_exchange = 2
 
+        self.private = False
+
         # initialize other parameters
         for key, value in kwargs.items():
             self.__setattr__(key, value)

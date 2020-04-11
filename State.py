@@ -2,20 +2,22 @@
     
 from typing import List
 
+from Config import Config
+from MessageHandler import MessageHandler
 from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
 from classes.actions.Action import Action
 from classes.actions.Assassinate import Assassinate
 from classes.actions.Coup import Coup
-from Config import Config
 
 
 class State:
 
-    def __init__(self, config : Config) -> None:
+    def __init__(self, config : Config, message_handler : MessageHandler) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self.config = config
+        self.m = message_handler
         self._n_players = config.n_players
         # Initialize the deck
         self._deck = Deck(self._n_players, config.cards_per_character)
@@ -66,10 +68,12 @@ class State:
         """Return the indicated card in the player's hand to the deck, and draw a new one at random."""
         new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))
         self._players[player_id].set_card(card_idx, new_card)
-        print("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())))
+        self.m.whisper("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())), player_id)
 
     def kill_player_card(self, player_id : int, card_idx : int) -> None:
         self.get_player_card(player_id, card_idx).die()
+        if not self.player_is_alive(player_id):
+            self.m.broadcast("Player {} has been eliminated!".format(player_id))
 
     def get_player_balance(self, player_id : int) -> int:
         return self._players[player_id].get_coins() 
@@ -147,7 +151,7 @@ class State:
             in_hand = self.config.cards_per_player 
             for i in range(n_to_draw):
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
-            print(message + "\n")
+            self.m.whisper(message + "\n", player)
 
             cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw)
             
@@ -175,7 +179,7 @@ class State:
         # Validate the cost 
         budget = self._players[player_id].get_coins()
         if action.cost > budget:
-            print("ERROR: not enough coins for action")
+            self.m.whisper("ERROR: not enough coins for action", player_id)
             return False
         
         # Validate the target, if applicable
@@ -184,15 +188,15 @@ class State:
         if has_target:
             # Target must be a valid Player. Bank doesn't count
             if target_id < 0 or target_id >= self.get_n_players():
-                print("ERROR: invalid player id")
+                self.m.whisper("ERROR: invalid player id", player_id)
                 return False 
             # Target must be alive
             if not self.player_is_alive(target_id):
-                print("ERROR: chosen player has been eliminated")
+                self.m.whisper("ERROR: chosen player has been eliminated", player_id)
                 return False
             # Target must not be self
             if target_id == player_id:
-                print("ERROR: cannot target self with action")
+                self.m.whisper("ERROR: cannot target self with action", player_id)
                 return False
         
         return True
@@ -204,12 +208,12 @@ class State:
             try: 
                 cards = self.translate_exchange(response)
             except ValueError:
-                print("Invalid exchange, please try again.")
+                self.m.whisper("Invalid exchange, please try again.", player)
             else:
                 valid = self.validate_exchange(player, cards, draw_start, draw_end)
                 if valid:
                     return cards
-                print("Impossible exchange, please try again.")
+                self.m.whisper("Impossible exchange, please try again.", player)
 
     def translate_exchange(self, response : str) -> List[int]:
         """Given an exchange response, translate it accordingly."""
