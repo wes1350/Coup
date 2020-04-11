@@ -187,7 +187,7 @@ class State:
     def query_exchange(self, player : int, draw_start : int, draw_end : int) -> List[int]:
         """For an Exchange, prompt the player for which cards they'd like to keep."""
         while True:
-            response = input("Pick {} cards to keep:\n".format(self.config.cards_per_player))
+            response = input("Pick the cards you wish to keep:\n")
             try: 
                 cards = self.translate_exchange(response)
             except ValueError:
