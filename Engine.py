@@ -175,16 +175,13 @@ class Engine:
         if self._state.player_must_coup(player_id):
             return self.query_player_coup_target(player_id)
         else:
-            player_balance = self._state.get_player_balance(player_id)
-            can_coup = player_balance >= Coup().cost
-            can_assassinate = player_balance >= Assassinate().cost
             while True:
                 query_msg = ("Player {}, what is your action?\n"
                              "You can: [I]ncome  [F]oreign Aid  [T]ax  [S]teal  [E]xchange"
                             .format(player_id))
-                if can_assassinate:
+                if self._state.player_can_assassinate(player_id):
                     query_msg += "  [A]ssassinate"
-                if can_coup:
+                if self._state.player_can_coup(player_id):
                     query_msg += "  [C]oup"
                 
                 response = input(query_msg + "\n")
@@ -293,19 +290,19 @@ class Engine:
         action_name = args[0]
         target = None if len(args) == 1 else int(args[1])
      
-        if action_name in ["i", "income"]:
+        if action_name in Income.aliases:
             return Income()
-        elif action_name in ["f", "foreignaid", "foreign aid"]:
+        elif action_name in ForeignAid.aliases:
             return ForeignAid()
-        elif action_name in ["t", "tax"]:
+        elif action_name in Tax.aliases:
             return Tax()
-        elif action_name in ["e", "exchange"]:
+        elif action_name in Exchange.aliases:
             return Exchange()
-        elif action_name in ["s", "steal"]:
+        elif action_name in Steal.aliases:
             return Steal(target=target)
-        elif action_name in ["a", "assassinate"]:
+        elif action_name in Assassinate.aliases:
             return Assassinate(target=target)
-        elif action_name in ["c", "coup"]:
+        elif action_name in Coup.aliases:
             return Coup(target=target)
         else:
             print("ERROR: invalid action name: {}".format(action_name))
@@ -320,7 +317,7 @@ class Engine:
         else:
             args = response.split(" ")
             reaction_type = args[0]
-            if reaction_type in ["b", "block"]:
+            if reaction_type in Block.aliases:
                 character_options = action.blockable_by
                 if len(character_options) == 1:
                     character = character_options[0] 
@@ -334,7 +331,7 @@ class Engine:
                     if character not in [c.lower() for c in character_options]:  
                         raise ValueError("Invalid character choice for block")
                 return Block(source_id, character.capitalize())
-            elif reaction_type in ["c", "challenge"]:
+            elif reaction_type in Challenge.aliases:
                 return Challenge(source_id)
             else:
                 raise ValueError("Invalid reaction type")
@@ -344,7 +341,7 @@ class Engine:
         response = response.strip().lower()
         if len(response) == 0 or response in ["no", "n"]:  
             return None
-        elif response in ["challenge", "c", "yes", "y"]:
+        elif response in ["yes", "y"] or response in Challenge.aliases:
             return Challenge(source_id)
         else:
             raise ValueError("Invalid challenge answer")

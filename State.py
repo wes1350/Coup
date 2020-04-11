@@ -6,7 +6,10 @@ from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
 from classes.actions.Action import Action
+from classes.actions.Assassinate import Assassinate
+from classes.actions.Coup import Coup
 from Config import Config
+
 
 class State:
 
@@ -85,6 +88,16 @@ class State:
         """Determine whether a player is obligated to coup based on their coin balance."""
         assert 0 <= player_id < self.get_n_players() 
         return self._players[player_id].get_coins() >= self.config.mandatory_coup_threshold
+
+    def player_can_coup(self, player_id : int) -> None:
+        """Determine whether a player can afford to coup."""
+        assert 0 <= player_id < self.get_n_players() 
+        return self._players[player_id].get_coins() >= Coup(None).cost
+
+    def player_can_assassinate(self, player_id : int) -> None:
+        """Determine whether a player can afford to assassinate."""
+        assert 0 <= player_id < self.get_n_players() 
+        return self._players[player_id].get_coins() >= Assassinate(None).cost
 
     def get_challenge_loser(self, claimed_character : str, actor : int, challenger : int) -> int:
         """Given two players and the claimed character, determine who loses the challenge."""

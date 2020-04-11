@@ -1,7 +1,9 @@
 from .Action import Action
 
 class Assassinate(Action):
-    def __init__(self, target : int = None, card_id : int = None):
+    aliases = ["assassinate", "a"]
+
+    def __init__(self, target : int, card_id : int = None):
         super().__init__(kill=True, target=target, kill_card_id=card_id, cost=3, blockable=True, blockable_by=["Contessa"], as_character="Assassin", pay_when_unsuccessful=True)
 
     def ready(self):

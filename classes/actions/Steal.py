@@ -1,6 +1,8 @@
 from .Action import Action
 
 class Steal(Action):
+    aliases = ["steal", "s"]
+
     def __init__(self, target : int, n_coins : int = 2):
         if target is None:
             raise ValueError("Must specify target to steal from")
