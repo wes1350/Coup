@@ -83,3 +83,45 @@ Contessa: Card:
 Preliminary Game Structure:
 - Command line interface
 - all players share the same terminal 
+
+
+
+engine runs, and sends output/queries input through server calls
+server.shout/whisper -> send to players and continue execution
+
+server.ask -> wait for response and then process
+
+Gameroom
+--- start server, wait for clients 
+--- when everyone joins
+----- run command start Engine(Server)
+
+- server maintains {client_address : player_id} (and reverse?)
+
+Server: 
+	server.shout(msg)
+	server.whisper(msg, player)
+	server.ask(msg, players)
+	server._responses : store responses from clients
+	server.get_responses()
+	server.clear_responses() - engine will send this to server once it determines all messages look good. That way engine doesn't access old responses from previous asks.
+
+engine.server.ask("Challenge?", players 1-5)
+server receives ask
+server sends requests to each player
+
+server continually receives responses
+when receiving a response:
+- server._responses[client] = response
+
+meanwhile:
+engine: 
+- while(True):
+--- check server.responses for new responses
+--- for all responses, if a response is bad: server.ask() again
+--- if all responses look good
+------ terminate, move onto processing responses
+--- else
+------ sleep(0.001)
+
+
