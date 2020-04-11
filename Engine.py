@@ -176,7 +176,15 @@ class Engine:
             return self.query_player_coup_target(player_id)
         else:
             while True:
-                response = input("Player {}, what is your action?\n".format(player_id))
+                query_msg = ("Player {}, what is your action?\n"
+                             "You can: [I]ncome  [F]oreign Aid  [T]ax  [S]teal  [E]xchange"
+                            .format(player_id))
+                if self._state.player_can_assassinate(player_id):
+                    query_msg += "  [A]ssassinate"
+                if self._state.player_can_coup(player_id):
+                    query_msg += "  [C]oup"
+                
+                response = input(query_msg + "\n")
                 try: 
                     action = self.translate_action_choice(response)
                 except ValueError:
@@ -196,23 +204,23 @@ class Engine:
             while True:
                 if target is not None:
                     if target == player_id:
-                        message_action = "react"
+                        message_action = "[B]lock or [C]hallenge"
                     else:
-                        message_action = "challenge"
+                        message_action = "[C]hallenge"
                 else:
                     challengeable = action.as_character 
                     blockable = action.is_blockable()
                     if challengeable and blockable:
-                        message_action = "react"
+                        message_action = "[B]lock or [C]hallenge"
                     elif challengeable:
-                        message_action = "challenge"
+                        message_action = "[C]hallenge"
                     elif blockable:
-                        message_action = "block"
+                        message_action = "[B]lock"
                     else:
                         raise ValueError("Should not ask for reaction to unreactionable action")
                 response = input("Player {}, are you going to {}?\n".format(player_id, message_action))
                 try: 
-                    reaction = self.translate_reaction_choice(response, player_id)
+                    reaction = self.translate_reaction_choice(response, player_id, action)
                 except ValueError:
                     print("Invalid reaction, please try again.")
                 else:
@@ -230,7 +238,7 @@ class Engine:
         challenges = []
         for player_id in players:
             while True:
-                response = input("Player {}, are you going to challenge?\n".format(player_id))
+                response = input("Player {}, are you going to [C]hallenge?\n".format(player_id))
                 try: 
                     reaction = self.translate_challenge_answer(response, player_id)
                     if reaction is not None:
@@ -277,53 +285,63 @@ class Engine:
 
     def translate_action_choice(self, response : str) -> Action:
         """Given an action response, translate it appropriately"""
-        response = response.strip()
+        response = response.strip().lower()
         args = response.split(" ")
         action_name = args[0]
         target = None if len(args) == 1 else int(args[1])
      
-        if action_name.lower() in ["i", "income"]:
+        if action_name in Income.aliases:
             return Income()
-        elif action_name.lower() in ["f", "foreignaid", "foreign aid"]:
+        elif action_name in ForeignAid.aliases:
             return ForeignAid()
-        elif action_name.lower() in ["t", "tax"]:
+        elif action_name in Tax.aliases:
             return Tax()
-        elif action_name.lower() in ["e", "exchange"]:
+        elif action_name in Exchange.aliases:
             return Exchange()
-        elif action_name.lower() in ["s", "steal"]:
+        elif action_name in Steal.aliases:
             return Steal(target=target)
-        elif action_name.lower() in ["a", "assassinate"]:
+        elif action_name in Assassinate.aliases:
             return Assassinate(target=target)
-        elif action_name.lower() in ["c", "coup"]:
+        elif action_name in Coup.aliases:
             return Coup(target=target)
         else:
             print("ERROR: invalid action name: {}".format(action_name))
             raise ValueError("Invalid action name: {}".format(action_name))
 
-    def translate_reaction_choice(self, response : str, source_id : int) -> Reaction:
+    def translate_reaction_choice(self, response : str, source_id : int, 
+                                  action : Action) -> Reaction:
         """Given a reaction response, translate it appropriately."""
-        response = response.strip()
+        response = response.strip().lower()
         if len(response) == 0:
             return None
         else:
             args = response.split(" ")
             reaction_type = args[0]
-            if reaction_type.lower() in ["b", "block"]:
-                if len(args) != 2:
-                    raise ValueError("Invalid number of arguments for block")
-                character = args[1]
-                return Block(source_id, character)
-            elif reaction_type.lower() in ["c", "challenge"]:
+            if reaction_type in Block.aliases:
+                character_options = action.blockable_by
+                if len(character_options) == 1:
+                    character = character_options[0] 
+                    if len(args) > 1:
+                        if args[1].lower() != character.lower():
+                            raise ValueError("Invalid character choice for block")
+                elif len(character_options) > 1:
+                    if len(args) != 2:
+                        raise ValueError("Invalid number of arguments for block")
+                    character = args[1]
+                    if character not in [c.lower() for c in character_options]:  
+                        raise ValueError("Invalid character choice for block")
+                return Block(source_id, character.capitalize())
+            elif reaction_type in Challenge.aliases:
                 return Challenge(source_id)
             else:
                 raise ValueError("Invalid reaction type")
 
     def translate_challenge_answer(self, response : str, source_id : int) -> Challenge:
         """Given a challenge response, translate it appropriately."""
-        response = response.strip()
-        if len(response) == 0 or response == "no":  
+        response = response.strip().lower()
+        if len(response) == 0 or response in ["no", "n"]:  
             return None
-        elif response.lower() in ["challenge", "yes"]:
+        elif response in ["yes", "y"] or response in Challenge.aliases:
             return Challenge(source_id)
         else:
             raise ValueError("Invalid challenge answer")

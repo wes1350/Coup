@@ -1,5 +1,7 @@
 
 class Action:
+    aliases = None
+
     def __init__(self, **kwargs):
         self.target = None
         self.steal = False

@@ -6,7 +6,10 @@ from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
 from classes.actions.Action import Action
+from classes.actions.Assassinate import Assassinate
+from classes.actions.Coup import Coup
 from Config import Config
+
 
 class State:
 
@@ -65,8 +68,11 @@ class State:
         self._players[player_id].set_card(card_idx, new_card)
         print("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())))
 
-    def kill_player_card(self, player_id, card_idx) -> None:
+    def kill_player_card(self, player_id : int, card_idx : int) -> None:
         self.get_player_card(player_id, card_idx).die()
+
+    def get_player_balance(self, player_id : int) -> int:
+        return self._players[player_id].get_coins() 
 
     def player_is_alive(self, id_ : int) -> bool:
         return self._players[id_].is_alive()
@@ -82,6 +88,16 @@ class State:
         """Determine whether a player is obligated to coup based on their coin balance."""
         assert 0 <= player_id < self.get_n_players() 
         return self._players[player_id].get_coins() >= self.config.mandatory_coup_threshold
+
+    def player_can_coup(self, player_id : int) -> None:
+        """Determine whether a player can afford to coup."""
+        assert 0 <= player_id < self.get_n_players() 
+        return self._players[player_id].get_coins() >= Coup(None).cost
+
+    def player_can_assassinate(self, player_id : int) -> None:
+        """Determine whether a player can afford to assassinate."""
+        assert 0 <= player_id < self.get_n_players() 
+        return self._players[player_id].get_coins() >= Assassinate(None).cost
 
     def get_challenge_loser(self, claimed_character : str, actor : int, challenger : int) -> int:
         """Given two players and the claimed character, determine who loses the challenge."""
@@ -184,7 +200,7 @@ class State:
     def query_exchange(self, player : int, draw_start : int, draw_end : int) -> List[int]:
         """For an Exchange, prompt the player for which cards they'd like to keep."""
         while True:
-            response = input("Pick {} cards to keep:\n".format(self.config.cards_per_player))
+            response = input("Pick the cards you wish to keep:\n")
             try: 
                 cards = self.translate_exchange(response)
             except ValueError:
