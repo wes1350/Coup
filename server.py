@@ -21,7 +21,7 @@ server.listen(10)
 # dict[conn] -> name
 client_connections = {}
 
-def send_message(conn, message) -> None:
+def send_message(conn, message):
     conn.send(message.encode())
 
 def handle_client(conn, addr):
@@ -31,7 +31,7 @@ def handle_client(conn, addr):
         try:
             message = conn.recv(2048)
             if message:
-                message_to_send = f"<{addr}>: {message}"
+                message_to_send = f"<{addr}>: {message.decode()}"
                 print(message_to_send)
                 broadcast(message_to_send, conn)
             else:
