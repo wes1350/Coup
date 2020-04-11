@@ -65,8 +65,11 @@ class State:
         self._players[player_id].set_card(card_idx, new_card)
         print("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())))
 
-    def kill_player_card(self, player_id, card_idx) -> None:
+    def kill_player_card(self, player_id : int, card_idx : int) -> None:
         self.get_player_card(player_id, card_idx).die()
+
+    def get_player_balance(self, player_id : int) -> int:
+        return self._players[player_id].get_coins() 
 
     def player_is_alive(self, id_ : int) -> bool:
         return self._players[id_].is_alive()

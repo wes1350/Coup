@@ -175,8 +175,19 @@ class Engine:
         if self._state.player_must_coup(player_id):
             return self.query_player_coup_target(player_id)
         else:
+            player_balance = self._state.get_player_balance(player_id)
+            can_coup = player_balance >= Coup().cost
+            can_assassinate = player_balance >= Assassinate().cost
             while True:
-                response = input("Player {}, what is your action?\n".format(player_id))
+                query_msg = ("Player {}, what is your action?\n"
+                             "You can: [I]ncome  [F]oreign Aid  [T]ax  [S]teal  [E]xchange"
+                            .format(player_id))
+                if can_assassinate:
+                    query_msg += "  [A]ssassinate"
+                if can_coup:
+                    query_msg += "  [C]oup"
+                
+                response = input(query_msg + "\n")
                 try: 
                     action = self.translate_action_choice(response)
                 except ValueError:
