@@ -3,17 +3,15 @@ import select
 import sys
 from _thread import start_new_thread 
 
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+class Server:
 
-if len(sys.argv) != 3:
-    print("Correct usage: script, IP add, port number")
-    exit()
-
-IP_ADD = str(sys.argv[1])
-PORT = int(sys.argv[2])
-
-server.bind((IP_ADD, PORT))
+def __init__(self, server_ip, server_port):
+	server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	self.server = server
+	self.address = server_ip
+	self.port = server_port
+	server.bind((self.server, self.port))
 
 # max connections
 server.listen(10)
@@ -42,9 +40,9 @@ def handle_client(conn, addr):
 def broadcast(message, conn):
     for client in client_connections:
         print(client)
-        if client == conn:
+        if client != conn:
             try:
-                send_message(conn, message)
+                send_message(client, message)
             except:
                 client.close()
                 remove(client)
