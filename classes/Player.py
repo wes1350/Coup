@@ -28,8 +28,6 @@ class Player:
 
     def kill_card(self, i : int) -> None:
         self._cards[i].die()
-        if self.is_eliminated():
-            print("Player {} has been eliminated!".format(self._id))
     
     def is_eliminated(self) -> bool:
         for card in self._cards:
