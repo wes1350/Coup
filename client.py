@@ -22,10 +22,9 @@ while True:
             message = sock.recv(2048)
             print(message.decode())
         else:
-            print('message from stdin')
             message = sys.stdin.readline()
             send_message(server, message)
-            sys.stdout.write("You")
+            sys.stdout.write("You: ")
             sys.stdout.write(message)
             sys.stdout.flush()
 
