@@ -13,20 +13,24 @@ server.connect((IP_ADD, PORT))
 
 def send_message(conn, message):
 	conn.send(message.encode())
-
-while True:
-    sockets_list = [sys.stdin, server]
-    read_sockets, write_socket, error_socket = select.select(sockets_list, [server], [])
-    for sock in read_sockets:
-        if sock == server:
-            message = sock.recv(2048)
-            print(message.decode())
-        else:
-            message = sys.stdin.readline()
-            send_message(server, message)
-            sys.stdout.write("You: ")
-            sys.stdout.write(message)
-            sys.stdout.flush()
-
-server.close()
+try:
+    while True:
+        sockets_list = [sys.stdin, server]
+        read_sockets, write_socket, error_socket = select.select(sockets_list, [server], [])
+        for sock in read_sockets:
+            if sock == server:
+                try:
+                    message = sock.recv(2048).decode()
+                    print(message)
+                except Exception as e:
+                    print(e)
+                    break
+            else:
+                message = sys.stdin.readline()
+                send_message(server, message)
+                sys.stdout.write("You: ")
+                sys.stdout.write(message)
+                sys.stdout.flush()
+except KeyboardInterrupt:
+    server.close()
 

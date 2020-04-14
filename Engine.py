@@ -1,4 +1,5 @@
 import random, time
+import sys
 from classes.Card import Card
 from State import State
 from classes.actions import Action, Income, ForeignAid, Tax, Steal, Assassinate, Coup, Exchange
@@ -7,15 +8,21 @@ from Config import Config
 
 class Engine:
 
-    def __init__(self) -> None:
+    def __init__(self, read_pipe, write_pipe) -> None:
         self.config = Config()
         self._state = State(self.config)
+        self.read_pipe = read_pipe
+        self.write_pipe = write_pipe
         self.run_game()
 
     def game_is_over(self) -> bool:
         return self._state.n_players_alive() == 1
 
     def run_game(self):
+        with open(self.write_pipe, "w") as f: 
+            f.write(str(self._state))
+        print("wrote from engine")
+        message = str(self._state)
         while not self.game_is_over():
             print(self._state)
             current_player = self._state.get_current_player_id()
