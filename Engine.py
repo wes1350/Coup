@@ -6,7 +6,6 @@ from typing import List, Optional, Dict, Any
 
 from State import State
 from Config import Config
-from Server import Server
 from classes.Card import Card
 from classes.actions.Action import Action
 from classes.actions.Income import Income
@@ -25,17 +24,16 @@ class Engine:
     """Maintains all the logic relevant to the game, such as the 
        game state, config, querying players, etc."""
 
-    def __init__(self, args : Dict[str, Any], server : Server = None) -> None:
+    def __init__(self, **kwargs) -> None:
         """Initialize a new Engine, with arguments from the command line."""
         self._config_status, self._config_err_msg = True, None
         try:
-            self._config = Config(**args)
+            self._config = Config(**kwargs)
         except ValueError as e:
             self._config_status = False
             self._config_err_msg = getattr(e, 'message', repr(e))
         else:
-            self._server = server
-            self._state = State(self._config, self._server)
+            self._state = State(self._config)
             self.shout(str(self._config))
 
     def game_is_over(self) -> bool:
@@ -171,22 +169,46 @@ class Engine:
                     ignore_killing = True
         self._state.execute_action(source, action, ignore_killing, only_pay_cost)
 
+    def determine_action_message(self, player_id : int) -> str:
+        query_msg = ("Player {}, what is your action?\n"
+                     "You can: [I]ncome  [F]oreign Aid  [T]ax  [S]teal  [E]xchange"
+                     .format(player_id))
+        if self._state.player_can_assassinate(player_id):
+            query_msg += "  [A]ssassinate"
+        if self._state.player_can_coup(player_id):
+            query_msg += "  [C]oup"
+        return query_msg
+
     def query_player_action(self, player_id : int) -> Action:
         """Given a player, query them for an action, validating it and reprompting as necessary."""
         # First, check if the player has 10 coins and is forced to coup
-        if self._state.player_must_coup(player_id):
-            return self.query_player_coup_target(player_id)
+        if self._server is None:
+            if self._state.player_must_coup(player_id):
+                return self.query_player_coup_target(player_id)
+            else:
+                while True:
+                    query_msg = self.determine_action_message(player_id)
+                    response = input(query_msg + "\n")
+                    try: 
+                        action = self.translate_action_choice(response)
+                    except ValueError:
+                        self.whisper("ERROR: invalid action name, please try again", player_id)
+                    else:
+                        valid = self.validate_action(action, player_id)
+                        if valid:
+                            return action
+                        self.whisper("Impossible action, please try again.", player_id)
         else:
-            while True:
-                query_msg = ("Player {}, what is your action?\n"
-                             "You can: [I]ncome  [F]oreign Aid  [T]ax  [S]teal  [E]xchange"
-                            .format(player_id))
-                if self._state.player_can_assassinate(player_id):
-                    query_msg += "  [A]ssassinate"
-                if self._state.player_can_coup(player_id):
-                    query_msg += "  [C]oup"
-                
-                response = input(query_msg + "\n")
+            return self.ask_player_action(player_id)
+
+    def ask_player_action(self, player_id : int) -> Action:
+        """Query server for player reaction."""
+        while True:
+            response = self.get_response(player_id) 
+            if response is None:
+                query_msg = self.determine_action_message(player_id)
+                self.whisper(query_msg + "\n", player_id)
+            else:
                 try: 
                     action = self.translate_action_choice(response)
                 except ValueError:
@@ -196,74 +218,148 @@ class Engine:
                     if valid:
                         return action
                     self.whisper("Impossible action, please try again.", player_id)
+            time.sleep(0.01)
                     
+    def determine_reaction_message(self, target : int, player_id : int, action : Action) -> str:
+        if target is not None:
+            if target == player_id:
+                message_action = "[B]lock or [C]hallenge"
+            else:
+                message_action = "[C]hallenge"
+        else:
+            challengeable = action.as_character 
+            blockable = action.is_blockable()
+            if challengeable and blockable:
+                message_action = "[B]lock or [C]hallenge"
+            elif challengeable:
+                message_action = "[C]hallenge"
+            elif blockable:
+                message_action = "[B]lock"
+            else:
+                 raise ValueError("Should not ask for reaction to unreactionable action")
+        return "Player {}, are you going to {}?\n".format(player_id, message_action)
 
     def query_player_reactions(self, players : List[int], action : Action) -> List[Reaction]:
         """Given an action and a list of players to query, prompt players for reactions"""
-        reactions = []
-        target = action.target
-        for player_id in players:
-            while True:
-                if target is not None:
-                    if target == player_id:
-                        message_action = "[B]lock or [C]hallenge"
+        if self._server is None:
+            reactions = []
+            target = action.target
+            for player_id in players:
+                while True:
+                    message = self.determine_reaction_message(target, player_id, action)
+                    response = input(message)
+                    try: 
+                        reaction = self.translate_reaction_choice(response, player_id, action)
+                    except ValueError:
+                        self.whisper("Invalid reaction, please try again.", player_id)
                     else:
-                        message_action = "[C]hallenge"
-                else:
-                    challengeable = action.as_character 
-                    blockable = action.is_blockable()
-                    if challengeable and blockable:
-                        message_action = "[B]lock or [C]hallenge"
-                    elif challengeable:
-                        message_action = "[C]hallenge"
-                    elif blockable:
-                        message_action = "[B]lock"
+                        if reaction is None:
+                            break
+                        valid = self.validate_reaction(reaction, action)
+                        if valid:
+                            reactions.append(reaction)
+                            break
+                        self.whisper("Impossible reaction, please try again.", player_id)
+            return reactions
+        else:
+            return self.ask_player_reactions(players, action)
+
+    def ask_player_reactions(self, players : List[int], action : Action) -> List[Reaction]:
+        """Query the server for reaction responses from a list of players."""
+        reactions = [False for _ in players]
+        while False in reactions:
+            for i, player in enumerate(players):
+                if not reactions[i] and reactions[i] is not None:
+                    response = self.get_response(player)
+                    if response is None:
+                        message = self.determine_reaction_message(target, player_id, action)
+                        self.whisper(message, player)
                     else:
-                        raise ValueError("Should not ask for reaction to unreactionable action")
-                response = input("Player {}, are you going to {}?\n".format(player_id, message_action))
-                try: 
-                    reaction = self.translate_reaction_choice(response, player_id, action)
-                except ValueError:
-                    self.whisper("Invalid reaction, please try again.", player_id)
-                else:
-                    if reaction is None:
-                        break
-                    valid = self.validate_reaction(reaction, action)
-                    if valid:
-                        reactions.append(reaction)
-                        break
-                    self.whisper("Impossible reaction, please try again.", player_id)
-        return reactions
+                        try: 
+                            reaction = self.translate_reaction_answer(response, player_id)
+                        except ValueError:
+                            self.whisper("Invalid response, please try again.", player_id)
+                        else:
+                            if reaction is None:
+                                reactions[i] = None
+                                continue
+                            valid = self.validate_reaction(reaction, action)
+                            if valid:
+                                reactions[i] = reaction
+                                continue
+                            self.whisper("Impossible reaction, please try again.", player_id)
+            time.sleep(0.01) 
+        return [r for r in reactions if r is not None]
 
     def query_challenges(self, players : List[int]) -> List[Challenge]:
         """Given a list of players to query, ask them if they want to challenge."""
-        challenges = []
-        for player_id in players:
-            while True:
-                response = input("Player {}, are you going to [C]hallenge?\n".format(player_id))
-                try: 
-                    reaction = self.translate_challenge_answer(response, player_id)
-                    if reaction is not None:
-                        challenges.append(reaction)
-                    break
-                except ValueError:
-                    self.whisper("Invalid response, please try again.", player_id)
-        return challenges
+        if self._server is None:
+            challenges = []
+            for player_id in players:
+                while True:
+                    response = input("Player {}, are you going to [C]hallenge?\n".format(player_id))
+                    try: 
+                        reaction = self.translate_challenge_answer(response, player_id)
+                        if reaction is not None:
+                            challenges.append(reaction)
+                        break
+                    except ValueError:
+                        self.whisper("Invalid response, please try again.", player_id)
+            return challenges
+        else:
+            return self.ask_challenges(players)
+
+    def ask_challenges(self, players : List[int]) -> List[Challenge]:
+        """Query the server for challenge responses from a list of players."""
+        challenges = [False for _ in players]        
+        while False in challenges:
+            for i, player in enumerate(players):
+                if not challenges[i] and challenges[i] is not None:
+                    response = server.get_response(player)
+                    if response is None:
+                        self.whisper("Player {}, are you going to [C]hallenge?\n".format(player), player)
+                    else:
+                        try: 
+                            challenges[i] = self.translate_challenge_answer(response, player_id)
+                        except ValueError:
+                            self.whisper("Invalid response, please try again.", player_id)
+            time.sleep(0.01) 
+        return [c for c in challenges if c is not None]
 
     def query_player_coup_target(self, player_id : int) -> int:
         """Given a player who must coup, ask them who they are going to coup."""
+        if self._server is None:
+            while True:
+                response = input("Player {}, who are you going to coup?\n".format(player_id))
+                try:
+                    action = self.translate_coup_target(response)
+                except ValueError:
+                    self.whisper("Invalid coup target, please try again.", player_id)
+                else:
+                    valid = self.validate_action(action, player_id)
+                    if valid:
+                        return action
+                    self.whisper("Invalid coup target, please try again.", player_id)
+        else:
+            return self.ask_player_coup_target(player_id)
+
+    def ask_player_coup_target(self, player_id : int) -> int:
+        """Query the server for a coup target."""
         while True:
-            response = input("Player {}, who are you going to coup?\n".format(player_id))
-            try:
-                action = self.translate_coup_target(response)
-            except ValueError:
-                self.whisper("Invalid coup target, please try again.", player_id)
+            response = self.get_response(player_id)
+            if response is None:
+                self.whisper("Player {}, who are you going to coup?\n".format(player_id))
             else:
-                valid = self.validate_action(action, player_id)
-                if valid:
-                    return action
-                self.whisper("Invalid coup target, please try again.", player_id)
-            
+                try:        
+                    action = self.translate_coup_target(response)
+                except ValueError:
+                    self.whisper("Invalid coup target, please try again.", player_id)
+                else:
+                    valid = self.validate_action(action, player_id)
+                    if valid:
+                        return action
+                    self.whisper("Invalid coup target, please try again.", player_id)
+            time.sleep(0.01)
 
     def query_player_card(self, player_id : int, ignore_if_dead : bool = False) -> int:
         """Given a player who must choose a card to discard, query them for their card choice."""
@@ -277,13 +373,30 @@ class Engine:
         elif len(options) == 1:
             return options[0]
         else:
-            while True:
-                response = input("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id))
+            if self._server is None:
+                while True:
+                    response = input("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id))
+                    try:
+                        card = self.translate_card_choice(response, options)
+                        return card
+                    except ValueError:
+                        self.whisper("ERROR: invalid card number, please try again.", player_id)
+            else:
+                return self.ask_player_card(player_id)
+
+    def ask_player_card(self, player_id : int) -> int:
+        """Query the server for a card choice."""
+        while True:
+            response = self.get_response(player_id)
+            if response is None:
+                self.whisper("Player {}, one of your characters must die. Which one do you pick?\n")
+            else:
                 try:
                     card = self.translate_card_choice(response, options)
                     return card
                 except ValueError:
                     self.whisper("ERROR: invalid card number, please try again.", player_id)
+            time.sleep(0.01)
 
     def translate_action_choice(self, response : str) -> Action:
         """Given an action response, translate it appropriately"""
@@ -417,9 +530,6 @@ class Engine:
         else:
             print(msg) 
 
-    def ask(self, msg : str, players : List[int]) -> Any:
-        """Query a player for a response."""
-        pass
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Customize game settings.")

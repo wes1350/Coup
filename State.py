@@ -1,9 +1,7 @@
 """Maintains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
     
 from typing import List
-
 from Config import Config
-from Server import Server
 from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
@@ -14,10 +12,9 @@ from classes.actions.Coup import Coup
 
 class State:
 
-    def __init__(self, config : Config, server : Server) -> None:
+    def __init__(self, config : Config) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
-        self._server = server
         self._n_players = config.n_players
         # Initialize the deck
         self._deck = Deck(self._n_players, config.cards_per_character)
