@@ -1,9 +1,8 @@
 """Master class for running Coup. Reads in arguments from the command line, 
    maintains and updates the state, and queries players for actions."""
 
-import random, time, argparse
+import random, time, argparse, sys
 from typing import List, Optional, Dict, Any
-
 from State import State
 from Config import Config
 from classes.Card import Card
@@ -24,7 +23,7 @@ class Engine:
     """Maintains all the logic relevant to the game, such as the 
        game state, config, querying players, etc."""
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, read_pipe, write_pipe, **kwargs) -> None:
         """Initialize a new Engine, with arguments from the command line."""
         self._config_status, self._config_err_msg = True, None
         try:
@@ -35,6 +34,8 @@ class Engine:
         else:
             self._state = State(self._config)
             self.shout(str(self._config))
+            self.read_pipe = read_pipe
+            self.write_pipe = write_pipe
 
     def game_is_over(self) -> bool:
         """Determine if the win condition is satisfied."""
@@ -42,6 +43,10 @@ class Engine:
 
     def run_game(self) -> int:
         """Start and run a game until completion, handling game logic as necessary."""
+        with open(self.write_pipe, "w") as f: 
+            f.write(str(self._state))
+        print("wrote from engine")
+        message = str(self._state)
         while not self.game_is_over():
             print(self._state)
             self.play_turn()
