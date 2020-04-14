@@ -12,9 +12,12 @@ from classes.actions.Coup import Coup
 
 class State:
 
-    def __init__(self, config : Config) -> None:
+    def __init__(self, config : Config, read_pipe=None, write_pipe=None) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
+        self.local = self.read_pipe is None or self.write_pipe is None
+        self.read_pipe = read_pipe
+        self.write_pipe = write_pipe
         self._n_players = config.n_players
         # Initialize the deck
         self._deck = Deck(self._n_players, config.cards_per_character)
@@ -245,15 +248,17 @@ class State:
 
     def shout(self, msg : str) -> None:
         """Send a message to all players."""
-        if self._server:
-            self._server.shout(msg)
-        else:       
+        if self.local:
             print(msg)
+        else:       
+            with open(self.write_pipe, "w") as f: 
+                f.write("shout {}".format(msg))
 
     def whisper(self, msg : str, player : int) -> None:
         """Send a message only to a specific player."""
-        if self._server:
-            self._server.whisper(msg, player)
-        else:
+        if self.local:
             print(msg) 
+        else:
+            with open(self.write_pipe, "w") as f: 
+                f.write("whisper {} {}".format(player, msg))
 

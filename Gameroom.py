@@ -14,7 +14,7 @@ class Gameroom:
     def start_game(self):
         # open subprocess to run engine and pass pipe into it
         print('starting the game..')
-        self.engine = Engine(self.read_pipe, self.write_pipe)
+        self.engine = Engine(self.read_pipe, self.write_pipe, Engine.parse_args())
         print('here')
 
 Gameroom()

@@ -23,7 +23,7 @@ class Engine:
     """Maintains all the logic relevant to the game, such as the 
        game state, config, querying players, etc."""
 
-    def __init__(self, read_pipe, write_pipe, **kwargs) -> None:
+    def __init__(self, read_pipe=None, write_pipe=None, **kwargs) -> None:
         """Initialize a new Engine, with arguments from the command line."""
         self._config_status, self._config_err_msg = True, None
         try:
@@ -34,6 +34,7 @@ class Engine:
         else:
             self._state = State(self._config)
             self.shout(str(self._config))
+            self.local = read_pipe is None or write_pipe is None
             self.read_pipe = read_pipe
             self.write_pipe = write_pipe
 
@@ -43,8 +44,7 @@ class Engine:
 
     def run_game(self) -> int:
         """Start and run a game until completion, handling game logic as necessary."""
-        with open(self.write_pipe, "w") as f: 
-            f.write(str(self._state))
+        self.shout(str(self._state))
         print("wrote from engine")
         message = str(self._state)
         while not self.game_is_over():
@@ -187,7 +187,7 @@ class Engine:
     def query_player_action(self, player_id : int) -> Action:
         """Given a player, query them for an action, validating it and reprompting as necessary."""
         # First, check if the player has 10 coins and is forced to coup
-        if self._server is None:
+        if self.local:
             if self._state.player_must_coup(player_id):
                 return self.query_player_coup_target(player_id)
             else:
@@ -246,7 +246,7 @@ class Engine:
 
     def query_player_reactions(self, players : List[int], action : Action) -> List[Reaction]:
         """Given an action and a list of players to query, prompt players for reactions"""
-        if self._server is None:
+        if self.local:
             reactions = []
             target = action.target
             for player_id in players:
@@ -298,7 +298,7 @@ class Engine:
 
     def query_challenges(self, players : List[int]) -> List[Challenge]:
         """Given a list of players to query, ask them if they want to challenge."""
-        if self._server is None:
+        if self.local:
             challenges = []
             for player_id in players:
                 while True:
@@ -320,7 +320,7 @@ class Engine:
         while False in challenges:
             for i, player in enumerate(players):
                 if not challenges[i] and challenges[i] is not None:
-                    response = server.get_response(player)
+                    response = self.get_response(player)
                     if response is None:
                         self.whisper("Player {}, are you going to [C]hallenge?\n".format(player), player)
                     else:
@@ -333,7 +333,7 @@ class Engine:
 
     def query_player_coup_target(self, player_id : int) -> int:
         """Given a player who must coup, ask them who they are going to coup."""
-        if self._server is None:
+        if self.local:
             while True:
                 response = input("Player {}, who are you going to coup?\n".format(player_id))
                 try:
@@ -378,7 +378,7 @@ class Engine:
         elif len(options) == 1:
             return options[0]
         else:
-            if self._server is None:
+            if self.local:
                 while True:
                     response = input("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id))
                     try:
@@ -523,17 +523,33 @@ class Engine:
 
     def shout(self, msg : str) -> None:
         """Send a message to all players."""
-        if self._server:
-            self._server.shout(msg)
-        else:       
+        if self.local:
             print(msg)
+        else:       
+            with open(self.write_pipe, "w") as f: 
+                f.write("shout {}".format(msg))
 
     def whisper(self, msg : str, player : int) -> None:
         """Send a message only to a specific player."""
-        if self._server:
-            self._server.whisper(msg, player)
-        else:
+        if self.local:
             print(msg) 
+        else:
+            with open(self.write_pipe, "w") as f: 
+                f.write("whisper {} {}".format(player, msg))
+
+    def get_response(self, player : int) -> str:
+        """Query server for a response."""
+        with open(self.write_pipe, "w") as f: 
+            f.write("retrieve {}".format(player))
+        while True:
+            with open(self.read_pipe, "r") as f:
+                print('able to open pipe')
+                message = f.read()
+                if message == "No response":
+                    return None
+                elif message:
+                    return message
+            time.sleep(0.01)
 
 
 def parse_args():
@@ -547,12 +563,12 @@ def parse_args():
     parser.add_argument("-m", "--reaction_choice_mode", type=str, choices=["first", "random", "first_block", "first_challenge", "random_block", "random_challenge"], help="How to prioritize reactions when there are multiple")
     parser.add_argument("-ct", "--mandatory_coup_threshold", type=int, help="How many coins a player starts a turn with that obligates them to coup on that turn.")
     parser.add_argument("-ne", "--n_cards_for_exchange", type=int, help="How many cards a player draws during an Exchange.")
-    return parser.parse_args()
+    args = parser.parse_args()
+    specified_args = {k: v for k, v in vars(args).items() if v is not None}
+    return specified_args
 
 if __name__ == "__main__":
-    args = parse_args()
-    specified_args = {k: v for k, v in vars(args).items() if v is not None}
-    engine = Engine(specified_args)
+    engine = Engine(parse_args())
     if not engine.get_config_status():
         print("\nInvalid configuration: " + engine.get_config_err_msg().split("'")[1])
         print("\nCannot run game; exiting.")
