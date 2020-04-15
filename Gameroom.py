@@ -2,6 +2,7 @@ import subprocess
 import os
 from Engine import Engine
 from Server import Server
+from utils.argument_parsing import parse_args
 
 class Gameroom:
     def __init__(self):
@@ -14,7 +15,7 @@ class Gameroom:
     def start_game(self):
         # open subprocess to run engine and pass pipe into it
         print('starting the game..')
-        self.engine = Engine(self.read_pipe, self.write_pipe, Engine.parse_args())
+        self.engine = Engine(self.read_pipe, self.write_pipe)
         print('here')
 
 Gameroom()

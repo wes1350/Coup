@@ -18,7 +18,7 @@ try:
         sockets_list = [sys.stdin, server]
         read_sockets, write_socket, error_socket = select.select(sockets_list, [server], [])
         for sock in read_sockets:
-            if sock == server:
+            if sock is server:
                 try:
                     message = sock.recv(2048).decode()
                     print(message)

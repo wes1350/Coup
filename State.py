@@ -15,7 +15,7 @@ class State:
     def __init__(self, config : Config, read_pipe=None, write_pipe=None) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
-        self.local = self.read_pipe is None or self.write_pipe is None
+        self.local = read_pipe is None or write_pipe is None
         self.read_pipe = read_pipe
         self.write_pipe = write_pipe
         self._n_players = config.n_players

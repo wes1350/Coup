@@ -1,8 +1,4 @@
-import socket
-import os
-import select
-import sys
-import ctypes
+import socket, os, select, sys, ctypes, time
 from ClientMapping import ClientMapping
 from _thread import start_new_thread 
 
@@ -30,9 +26,8 @@ class Server:
             conn, addr = self.server.accept()
             if self.admin is None:
                 self.admin = conn
-            self.client_connections[conn] = {"name": None}
             print(f"{addr} connected")
-            start_new_thread(self.handle_client, (conn, addr))
+            start_new_thread(self.handle_client, (conn, ))
         print('closing server')
         self.terminate_server()
 
@@ -44,6 +39,7 @@ class Server:
         # try to just read from read_pipe
         while(True):
             try:
+                message = None
                 #message = self.read_pipe.stdout.read().decode()
                 with open(self.read_pipe, "r") as f:
                     print('able to open pipe')
@@ -54,58 +50,69 @@ class Server:
             except Exception as e:
                 print(e)
                 return
+            time.sleep(0.01)
 
-    def parse_engine_message(self, message):
+    def parse_engine_message(self, message : str):
+        """Given a message from the engine, parse it and take the appropriate action."""
         components = message.split(" ")
         if components[0] == "shout":
             self.shout(components[1])
         elif components[0] == "whisper":
             self.whisper(components[2], components[1])
         elif components[0] == "retrieve":
-            response = self.client_connections.get_message_with_name(components[1])
+            response = self.client_connections.get_response_from_id(components[1])
             self.answer(response)
         else:
             print("Could not parse engine message: " + message)
             pass
 
-    def handle_client(self, conn, addr):
-        self.send_message(conn, "Welcome to the coup game! What is your name?")
+    def handle_client(self, conn):
+        self.send_message(conn, "Welcome to Coup! What is your name?")
         first_message = True
         name = None
 
         while(True):
-            try:
-                message = conn.recv(2048).decode()
-                if message:
-                    message = message.rstrip()
-                    args = message.split(" ")
-                    # set name
-                    if first_message:
-                        self.client_connections.set_conn_name(conn, message)
-                        name = message
-                    if conn == self.admin and args[0] == "admin":
-                        # this is a command
+            #try:
+            message = conn.recv(2048).decode()
+            if message:
+                message = message.rstrip()
+                args = message.split(" ")
+                if first_message:
+                    # Name setting
+                    # Don't accept new players once the game has started
+                    assert not self.game_started
+                    # Make sure player name is unique
+                    name = message
+                    assert name not in self.client_connections.get_all_names()
+                    self.client_connections.add(name, conn, len(self.client_connections))
+
+                    self.shout(f"{name} joined the room!")
+                    first_message = False
+                elif conn is self.admin and args[0] == "admin":
+                    if len(args) > 1:
+                        # Admin messages
                         if args[1] == "start_game" and not self.game_started:
                             print('starting new thread here')
                             start_new_thread(self.handle_engine, ())
                             self.game_started = True
                             self.start_game_func()
+                            print("Successfully started game")
 
                         elif args[1] == "terminate_server":
                             self.terminate_server()
                             return
-                    else:
-                        if first_message:
-                            message_to_send = f"{name} joined the room!"
-                            self.shout(message_to_send, conn)
-                            first_message = False
-                        else:
-                            message_to_send = f"<{name}>: {message}"
-                            self.shout(message_to_send, conn)
-            except Exception as e:
-                print(e)
-                self.terminate_conn(conn)
-                break
+                elif self.game_started:
+                    # In-game messages
+                    self.client_connections.store(message, conn)
+                else:
+                    # Pre-game messages
+                    message_to_send = f"<{name}>: {message}"
+                    self.shout(message_to_send)
+            #except Exception as e:
+            #    print(e)
+            #    self.terminate_conn(conn)
+            #    break
+            time.sleep(0.01)
 
     def terminate_server(self):
         print('terminating server')
@@ -115,28 +122,31 @@ class Server:
     
     def terminate_conn(self, conn):
         print('terminating connection')
-        self.client_connections.remove_conn(conn)
+        self.client_connections.remove_connection(conn)
         conn.shutdown(socket.SHUT_RDWR)
         conn.close()
 
-    def whisper(self, message, name):
+    def whisper(self, message, id_):
         print('whispering')
-        conn = self.client_connections.get_conn(name)
+        conn = self.client_connections.get_connection_from_id(id_)
         if conn:
-            self.send_message(conn, message)
+            try:
+                self.send_message(conn, message)
+            except Exception as e:
+                print(e)
+                self.terminate_conn(conn)
 
-    def shout(self, message, conn=None):
+    def shout(self, message):
         print('shouting')
         print(self.client_connections)
-        for client in self.client_connections.get_all_conns():
-            if client != conn:
-                try:
-                    self.send_message(client, message)
-                except Exception as e:
-                    print(e)
-                    self.terminate_conn(client)
+        for client in self.client_connections.get_all_connections():
+            try:
+                self.send_message(client, message)
+            except Exception as e:
+                print(e)
+                self.terminate_conn(client)
 
     def answer(self, message : str) -> str:
-        with open(self.write, "w") as f:
+        with open(self.write_pipe, "w") as f:
             print('able to open pipe')
             f.write(message)
