@@ -90,7 +90,7 @@ class PlayerConnection:
         self._queue = [response] 
 
     def retrieve(self):
-        if len(self.queue) > 0:
+        if len(self._queue) > 0:
             return self._queue.pop(0)
         else:
             return None

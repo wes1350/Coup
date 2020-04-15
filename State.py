@@ -2,6 +2,7 @@
     
 from typing import List
 from Config import Config
+from utils.pipes import engine_read_pipe, engine_write_pipe
 from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
@@ -252,7 +253,7 @@ class State:
             print(msg)
         else:       
 #            with open(self.write_pipe, "w") as f: 
-            os.write(self.write_pipe, "shout {}".format(msg).encode())
+            engine_write_pipe(self.read_pipe, self.write_pipe, "shout {}".format(msg))
 
     def whisper(self, msg : str, player : int) -> None:
         """Send a message only to a specific player."""
@@ -260,5 +261,5 @@ class State:
             print(msg) 
         else:
 #            with open(self.write_pipe, "w") as f: 
-            os.write(self.write_pipe, "whisper {} {}".format(player, msg).encode())
+            engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
 

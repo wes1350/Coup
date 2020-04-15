@@ -6,6 +6,7 @@ from typing import List, Optional, Dict, Any
 from State import State
 from Config import Config
 from utils.argument_parsing import parse_args
+from utils.pipes import engine_write_pipe, engine_read_pipe
 from classes.Card import Card
 from classes.actions.Action import Action
 from classes.actions.Income import Income
@@ -66,7 +67,9 @@ class Engine:
         else:
             # Blocks and/or Challenges are possible. See if anyone decides to challenge
             query_players = [p for p in self._state.get_alive_players() if p != current_player]
+            print('-------Engine----- reactions')
             reactions = self.query_player_reactions(query_players, action)
+            print('-------Engine----- reactions')
             if len(reactions) > 0:
                 # At least one player reacted, so handle it
                 chosen_reaction = self.choose_among_reactions(reactions)
@@ -226,7 +229,7 @@ class Engine:
                     if valid:
                         return action
                     self.whisper("Impossible action, please try again.", player_id)
-            time.sleep(0.01)
+            time.sleep(0.5)
                     
     def determine_reaction_message(self, target : int, player_id : int, action : Action) -> str:
         if target is not None:
@@ -274,17 +277,21 @@ class Engine:
 
     def ask_player_reactions(self, players : List[int], action : Action) -> List[Reaction]:
         """Query the server for reaction responses from a list of players."""
+        target = action.target
+        for i, player_id in enumerate(players):
+            message = self.determine_reaction_message(target, player_id, action)
+            self.whisper(message, player_id)
         reactions = [False for _ in players]
         while False in reactions:
-            for i, player in enumerate(players):
+            for i, player_id in enumerate(players):
                 if not reactions[i] and reactions[i] is not None:
-                    response = self.get_response(player)
+                    response = self.get_response(player_id)
                     if response is None:
                         message = self.determine_reaction_message(target, player_id, action)
-                        self.whisper(message, player)
+                        self.whisper(message, player_id)
                     else:
                         try: 
-                            reaction = self.translate_reaction_answer(response, player_id)
+                            reaction = self.translate_reaction_choice(response, player_id, action)
                         except ValueError:
                             self.whisper("Invalid response, please try again.", player_id)
                         else:
@@ -296,7 +303,7 @@ class Engine:
                                 reactions[i] = reaction
                                 continue
                             self.whisper("Impossible reaction, please try again.", player_id)
-            time.sleep(0.01) 
+            time.sleep(0.5) 
         return [r for r in reactions if r is not None]
 
     def query_challenges(self, players : List[int]) -> List[Challenge]:
@@ -321,17 +328,17 @@ class Engine:
         """Query the server for challenge responses from a list of players."""
         challenges = [False for _ in players]        
         while False in challenges:
-            for i, player in enumerate(players):
+            for i, player_id in enumerate(players):
                 if not challenges[i] and challenges[i] is not None:
-                    response = self.get_response(player)
+                    response = self.get_response(player_id)
                     if response is None:
-                        self.whisper("Player {}, are you going to [C]hallenge?\n".format(player), player)
+                        self.whisper("Player {}, are you going to [C]hallenge?\n".format(player_id), player_id)
                     else:
                         try: 
                             challenges[i] = self.translate_challenge_answer(response, player_id)
                         except ValueError:
                             self.whisper("Invalid response, please try again.", player_id)
-            time.sleep(0.01) 
+            time.sleep(0.5) 
         return [c for c in challenges if c is not None]
 
     def query_player_coup_target(self, player_id : int) -> int:
@@ -353,6 +360,7 @@ class Engine:
 
     def ask_player_coup_target(self, player_id : int) -> int:
         """Query the server for a coup target."""
+        self.whisper("Player {}, who are you going to coup?\n".format(player_id))
         while True:
             response = self.get_response(player_id)
             if response is None:
@@ -367,7 +375,7 @@ class Engine:
                     if valid:
                         return action
                     self.whisper("Invalid coup target, please try again.", player_id)
-            time.sleep(0.01)
+            time.sleep(0.5)
 
     def query_player_card(self, player_id : int, ignore_if_dead : bool = False) -> int:
         """Given a player who must choose a card to discard, query them for their card choice."""
@@ -394,17 +402,18 @@ class Engine:
 
     def ask_player_card(self, player_id : int) -> int:
         """Query the server for a card choice."""
+        self.whisper("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id), player_id)
         while True:
             response = self.get_response(player_id)
             if response is None:
-                self.whisper("Player {}, one of your characters must die. Which one do you pick?\n")
+                self.whisper("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id), player_id)
             else:
                 try:
                     card = self.translate_card_choice(response, options)
                     return card
                 except ValueError:
                     self.whisper("ERROR: invalid card number, please try again.", player_id)
-            time.sleep(0.01)
+            time.sleep(0.5)
 
     def translate_action_choice(self, response : str) -> Action:
         """Given an action response, translate it appropriately"""
@@ -434,7 +443,7 @@ class Engine:
                                   action : Action) -> Reaction:
         """Given a reaction response, translate it appropriately."""
         response = response.strip().lower()
-        if len(response) == 0:
+        if len(response) == 0 or response == 'n':
             return None
         else:
             args = response.split(" ")
@@ -529,10 +538,7 @@ class Engine:
         if self.local:
             print(msg)
         else:       
-#            print(msg + "\n\n")
-#            with open(self.write_pipe, "w") as f: 
-#                f.write("shout {}".format(msg))
-            os.write(self.write_pipe, "shout {}".format(msg).encode())
+            engine_write_pipe(self.read_pipe, self.write_pipe, "shout {}".format(msg))
             pass
     
     def whisper(self, msg : str, player : int) -> None:
@@ -540,19 +546,17 @@ class Engine:
         if self.local:
             print(msg) 
         else:
-#            with open(self.write_pipe, "w") as f: 
-#                f.write("whisper {} {}".format(player, msg))
-            os.write(self.write_pipe, "whisper {} {}".format(player, msg).encode())
+            engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
 
     def get_response(self, player : int) -> str:
         """Query server for a response."""
         while True:
-            print("-----Engine----sending retrieve") 
-            os.write(self.write_pipe, "retrieve {}".format(player).encode())
-            print("-----Engine----sent retrieve")
-            print('-----Engine----able to open pipe in get_response in Engine')
-            message = os.read(self.read_pipe, 1).decode()
-            print("-----Engine----NOT STUCK IN GET RESPONSE")
+            # print("-----Engine----sending retrieve") 
+            engine_write_pipe(self.read_pipe, self.write_pipe, "retrieve {}".format(player))
+            # print("-----Engine----sent retrieve")
+            # print('-----Engine----able to open pipe in get_response in Engine')
+            message = engine_read_pipe(self.read_pipe) 
+           # print("-----Engine----NOT STUCK IN GET RESPONSE")
             if message == "No response":
                 print("-----Engine----Didn't get a response")
                 time.sleep(0.5)

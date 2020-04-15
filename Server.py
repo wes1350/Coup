@@ -47,22 +47,23 @@ class Server:
                 print("Server:------not stuck on reading in handle engine")
                 if message:
 #                    print(message)
+                    self.server_ack()
                     self.parse_engine_message(message)
                 else:   
                     raise ValueError
 #            except Exception as e:
 #                print(e)
 #                return
-            time.sleep(0.01)
+            time.sleep(0.5)
 
     def parse_engine_message(self, message : str):
         """Given a message from the engine, parse it and take the appropriate action."""
         components = message.split(" ")
         print("&-" + message +"-&")
         if components[0] == "shout":
-            self.shout("".join(components[1:]))
+            self.shout(" ".join(components[1:]))
         elif components[0] == "whisper":
-            self.whisper(components[2], components[1])
+            self.whisper(" ".join(components[2:]), components[1])
         elif components[0] == "retrieve":
             print("handling retrieve")
             response = self.client_connections.get_response_from_id(components[1])
@@ -90,7 +91,7 @@ class Server:
                     # Make sure player name is unique
                     name = message
                     assert name not in self.client_connections.get_all_names()
-                    self.client_connections.add(name, conn, len(self.client_connections))
+                    self.client_connections.add(name, conn, str(len(self.client_connections)))
 
                     self.shout(f"{name} joined the room!")
                     first_message = False
@@ -119,7 +120,7 @@ class Server:
             #    print(e)
             #    self.terminate_conn(conn)
             #    break
-            time.sleep(0.01)
+            time.sleep(0.5)
 
     def terminate_server(self):
         print('terminating server')
@@ -134,7 +135,7 @@ class Server:
         conn.close()
 
     def whisper(self, message, id_):
-        print('whispering')
+        print('whispering to player: ', "-"+id_+"-")
         conn = self.client_connections.get_connection_from_id(id_)
         if conn:
             try:
@@ -167,4 +168,5 @@ class Server:
         else:
             os.write(self.write_pipe, message.encode())
 
-        
+    def server_ack(self):
+        os.write(self.write_pipe, 'ack'.encode())

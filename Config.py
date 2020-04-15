@@ -5,7 +5,7 @@ from typing import NoReturn
 class Config:
     """The class storing all the config parameters."""
     def __init__(self, **kwargs) -> None:
-        self.n_players = 3
+        self.n_players = 2
         self.cards_per_player = 2
         self.cards_per_character = 3
         self.starting_coins = 2
