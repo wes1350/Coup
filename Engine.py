@@ -1,7 +1,7 @@
 """Master class for running Coup. Reads in arguments from the command line, 
    maintains and updates the state, and queries players for actions."""
 
-import random, time, sys
+import random, time, sys, os
 from typing import List, Optional, Dict, Any
 from State import State
 from Config import Config
@@ -46,10 +46,8 @@ class Engine:
     def run_game(self) -> int:
         """Start and run a game until completion, handling game logic as necessary."""
         self.shout(str(self._state))
-        print("wrote from engine")
-        message = str(self._state)
         while not self.game_is_over():
-            print(self._state)
+            self.shout(str(self._state))
             self.play_turn()
             self.next_turn()
         winner = self._state.get_alive_players()[0]
@@ -209,8 +207,12 @@ class Engine:
 
     def ask_player_action(self, player_id : int) -> Action:
         """Query server for player reaction."""
+        query_msg = self.determine_action_message(player_id)
+        self.whisper(query_msg + "\n", player_id)
         while True:
             response = self.get_response(player_id) 
+            print("Got some sort of response")
+            print(response)
             if response is None:
                 query_msg = self.determine_action_message(player_id)
                 self.whisper(query_msg + "\n", player_id)
@@ -527,30 +529,41 @@ class Engine:
         if self.local:
             print(msg)
         else:       
-            with open(self.write_pipe, "w") as f: 
-                f.write("shout {}".format(msg))
-
+#            print(msg + "\n\n")
+#            with open(self.write_pipe, "w") as f: 
+#                f.write("shout {}".format(msg))
+            os.write(self.write_pipe, "shout {}".format(msg).encode())
+            pass
+    
     def whisper(self, msg : str, player : int) -> None:
         """Send a message only to a specific player."""
         if self.local:
             print(msg) 
         else:
-            with open(self.write_pipe, "w") as f: 
-                f.write("whisper {} {}".format(player, msg))
+#            with open(self.write_pipe, "w") as f: 
+#                f.write("whisper {} {}".format(player, msg))
+            os.write(self.write_pipe, "whisper {} {}".format(player, msg).encode())
 
     def get_response(self, player : int) -> str:
         """Query server for a response."""
-        with open(self.write_pipe, "w") as f: 
-            f.write("retrieve {}".format(player))
         while True:
-            with open(self.read_pipe, "r") as f:
-                print('able to open pipe')
-                message = f.read()
-                if message == "No response":
-                    return None
-                elif message:
-                    return message
-            time.sleep(0.01)
+            print("-----Engine----sending retrieve") 
+            os.write(self.write_pipe, "retrieve {}".format(player).encode())
+            print("-----Engine----sent retrieve")
+            print('-----Engine----able to open pipe in get_response in Engine')
+            message = os.read(self.read_pipe, 1).decode()
+            print("-----Engine----NOT STUCK IN GET RESPONSE")
+            if message == "No response":
+                print("-----Engine----Didn't get a response")
+                time.sleep(0.5)
+#                return None
+                continue
+            elif message:
+                print("-----Engine----got a message!")
+                return message
+            else:
+                print("????????????")
+            time.sleep(0.1)
 
 
 if __name__ == "__main__":

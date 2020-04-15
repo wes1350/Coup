@@ -251,14 +251,14 @@ class State:
         if self.local:
             print(msg)
         else:       
-            with open(self.write_pipe, "w") as f: 
-                f.write("shout {}".format(msg))
+#            with open(self.write_pipe, "w") as f: 
+            os.write(self.write_pipe, "shout {}".format(msg).encode())
 
     def whisper(self, msg : str, player : int) -> None:
         """Send a message only to a specific player."""
         if self.local:
             print(msg) 
         else:
-            with open(self.write_pipe, "w") as f: 
-                f.write("whisper {} {}".format(player, msg))
+#            with open(self.write_pipe, "w") as f: 
+            os.write(self.write_pipe, "whisper {} {}".format(player, msg).encode())
 

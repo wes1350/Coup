@@ -20,6 +20,7 @@ class Server:
         self.server.bind((self.address, self.port))
         self.server.listen(Server.MAX_CONNECTIONS)
         self.run()
+        
 
     def run(self) -> None:
         while self.running:
@@ -38,28 +39,32 @@ class Server:
         print('thread spawned')
         # try to just read from read_pipe
         while(True):
-            try:
+            #try:
+            if True:
                 message = None
-                #message = self.read_pipe.stdout.read().decode()
-                with open(self.read_pipe, "r") as f:
-                    print('able to open pipe')
-                    message = f.read()
+                print('Server:------able to open pipe in handle_engine')
+                message = os.read(self.read_pipe, 1000).decode()
+                print("Server:------not stuck on reading in handle engine")
                 if message:
-                    print(message)
+#                    print(message)
                     self.parse_engine_message(message)
-            except Exception as e:
-                print(e)
-                return
+                else:   
+                    raise ValueError
+#            except Exception as e:
+#                print(e)
+#                return
             time.sleep(0.01)
 
     def parse_engine_message(self, message : str):
         """Given a message from the engine, parse it and take the appropriate action."""
         components = message.split(" ")
+        print("&-" + message +"-&")
         if components[0] == "shout":
-            self.shout(components[1])
+            self.shout("".join(components[1:]))
         elif components[0] == "whisper":
             self.whisper(components[2], components[1])
         elif components[0] == "retrieve":
+            print("handling retrieve")
             response = self.client_connections.get_response_from_id(components[1])
             self.answer(response)
         else:
@@ -74,6 +79,7 @@ class Server:
         while(True):
             #try:
             message = conn.recv(2048).decode()
+            print("Got incoming message: " + message)
             if message:
                 message = message.rstrip()
                 args = message.split(" ")
@@ -91,11 +97,12 @@ class Server:
                 elif conn is self.admin and args[0] == "admin":
                     if len(args) > 1:
                         # Admin messages
-                        if args[1] == "start_game" and not self.game_started:
+                        if args[1] in ["start_game", "s"] and not self.game_started:
                             print('starting new thread here')
                             start_new_thread(self.handle_engine, ())
+                            print("\n\n CAN START GAME \n\n")
                             self.game_started = True
-                            self.start_game_func()
+                            start_new_thread(self.start_game_func, ())
                             print("Successfully started game")
 
                         elif args[1] == "terminate_server":
@@ -138,15 +145,26 @@ class Server:
 
     def shout(self, message):
         print('shouting')
+        print(message)
         print(self.client_connections)
         for client in self.client_connections.get_all_connections():
-            try:
-                self.send_message(client, message)
-            except Exception as e:
-                print(e)
-                self.terminate_conn(client)
+#            try:
+             self.send_message(client, message)
+#            except Exception as e:
+#                print(e)
+#                self.terminate_conn(client)
 
     def answer(self, message : str) -> str:
-        with open(self.write_pipe, "w") as f:
-            print('able to open pipe')
-            f.write(message)
+#        with open(self.write_pipe, "w") as f:
+#            print('able to open pipe in answer')
+#            if message is None:
+#                f.write("No response")
+#            else:
+#                f.write(message)
+        print('able to open pipe in answer')
+        if message is None:
+            os.write(self.write_pipe, "No response".encode())
+        else:
+            os.write(self.write_pipe, message.encode())
+
+        
