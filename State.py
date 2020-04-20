@@ -285,3 +285,17 @@ class State:
         else:
             engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
 
+    def get_response(self, player : int) -> str:
+            """Query server for a response."""
+            while True:
+                engine_write_pipe(self.read_pipe, self.write_pipe, "retrieve {}".format(player))
+                if message == "No response":
+                    print("-----Engine----Didn't get a response")
+                    time.sleep(0.5)
+                    continue
+                elif message:
+                    print("-----Engine----got a message!")
+                    return message
+                else:
+                    print("????????????")
+                time.sleep(0.1)
