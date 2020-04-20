@@ -12,7 +12,10 @@ PORT = int(sys.argv[2])
 server.connect((IP_ADD, PORT))
 
 def send_message(conn, message):
-	conn.send(message.encode())
+    if message.strip() == "":
+        return
+    conn.send(message.encode())
+
 try:
     while True:
         sockets_list = [sys.stdin, server]

@@ -1,5 +1,5 @@
 """Maintains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
-    
+import time 
 from typing import List
 from Config import Config
 from utils.pipes import engine_read_pipe, engine_write_pipe
@@ -217,7 +217,7 @@ class State:
                         return cards
                     self.whisper("Impossible exchange, please try again.", player)
         else:
-            self.ask_exchange(player, draw_start, draw_end)
+            return self.ask_exchange(player, draw_start, draw_end)
 
     def ask_exchange(self, player : int, draw_start : int, draw_end : int) -> List[int]:
         message = "Pick the cards you wish to keep:\n"
@@ -286,16 +286,17 @@ class State:
             engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
 
     def get_response(self, player : int) -> str:
-            """Query server for a response."""
-            while True:
-                engine_write_pipe(self.read_pipe, self.write_pipe, "retrieve {}".format(player))
-                if message == "No response":
-                    print("-----Engine----Didn't get a response")
-                    time.sleep(0.5)
-                    continue
-                elif message:
-                    print("-----Engine----got a message!")
-                    return message
-                else:
-                    print("????????????")
-                time.sleep(0.1)
+        """Query server for a response."""
+        while True:
+            engine_write_pipe(self.read_pipe, self.write_pipe, "retrieve {}".format(player))
+            message = engine_read_pipe(self.read_pipe)
+            if message == "No response":
+                print("-----Engine----Didn't get a response")
+                time.sleep(0.5)
+                continue
+            elif message:
+                print("-----Engine----got a message!")
+                return message
+            else:
+                print("????????????")
+            time.sleep(0.1)
