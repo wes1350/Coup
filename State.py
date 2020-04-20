@@ -260,6 +260,5 @@ class State:
         if self.local:
             print(msg) 
         else:
-#            with open(self.write_pipe, "w") as f: 
             engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
 

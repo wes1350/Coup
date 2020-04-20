@@ -34,7 +34,7 @@ class Engine:
             self._config_status = False
             self._config_err_msg = getattr(e, 'message', repr(e))
         else:
-            self._state = State(self._config)
+            self._state = State(self._config, read_pipe=read_pipe, write_pipe=write_pipe)
             self.local = read_pipe is None or write_pipe is None
             self.read_pipe = read_pipe
             self.write_pipe = write_pipe
@@ -326,6 +326,8 @@ class Engine:
 
     def ask_challenges(self, players : List[int]) -> List[Challenge]:
         """Query the server for challenge responses from a list of players."""
+        for i, player_id in enumerate(players):
+            self.whisper("Player {}, are you going to [C]hallenge?\n".format(player_id), player_id)
         challenges = [False for _ in players]        
         while False in challenges:
             for i, player_id in enumerate(players):
@@ -398,9 +400,9 @@ class Engine:
                     except ValueError:
                         self.whisper("ERROR: invalid card number, please try again.", player_id)
             else:
-                return self.ask_player_card(player_id)
+                return self.ask_player_card(player_id, options)
 
-    def ask_player_card(self, player_id : int) -> int:
+    def ask_player_card(self, player_id : int, options: List[int]) -> int:
         """Query the server for a card choice."""
         self.whisper("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id), player_id)
         while True:
