@@ -204,17 +204,40 @@ class State:
 
     def query_exchange(self, player : int, draw_start : int, draw_end : int) -> List[int]:
         """For an Exchange, prompt the player for which cards they'd like to keep."""
+        if self.local:
+            while True:
+                response = input("Pick the cards you wish to keep:\n")
+                try: 
+                    cards = self.translate_exchange(response)
+                except ValueError:
+                    self.whisper("Invalid exchange, please try again.", player)
+                else:
+                    valid = self.validate_exchange(player, cards, draw_start, draw_end)
+                    if valid:
+                        return cards
+                    self.whisper("Impossible exchange, please try again.", player)
+        else:
+            self.ask_exchange(player, draw_start, draw_end)
+
+    def ask_exchange(self, player : int, draw_start : int, draw_end : int) -> List[int]:
+        message = "Pick the cards you wish to keep:\n"
+        self.whisper(message, player)
         while True:
-            response = input("Pick the cards you wish to keep:\n")
-            try: 
-                cards = self.translate_exchange(response)
-            except ValueError:
-                self.whisper("Invalid exchange, please try again.", player)
+            response = self.get_response(player)
+            if response is None:
+                self.whisper(message, player)
             else:
-                valid = self.validate_exchange(player, cards, draw_start, draw_end)
-                if valid:
-                    return cards
-                self.whisper("Impossible exchange, please try again.", player)
+                try:
+                    cards = self.translate_exchange(response)
+                except ValueError:
+                    self.whisper("ERROR: invalid exchange choice, please try again", player)
+                else:
+                    valid = self.validate_exchange(player, cards, draw_start, draw_end)
+                    if valid:
+                        return cards
+                    self.whisper("Impossible exchange, please try again", player)
+            time.sleep(0.5) 
+
 
     def translate_exchange(self, response : str) -> List[int]:
         """Given an exchange response, translate it accordingly."""
