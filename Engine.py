@@ -564,19 +564,19 @@ class Engine:
             # print("-----Engine----sent retrieve")
             # print('-----Engine----able to open pipe in get_response in Engine')
 #             message = engine_read_pipe(self.read_pipe) 
-            self.query_f(message, player)
+            response = self.query_f(player)
            # print("-----Engine----NOT STUCK IN GET RESPONSE")
-            if message == "No response":
+            if response == "No response":
                 print("-----Engine----Didn't get a response")
                 time.sleep(0.5)
 #                return None
                 continue
-            elif message:
-                print("-----Engine----got a message!")
-                return message
+            elif response:
+                print("-----Engine----got a response!")
+                return response
             else:
                 print("????????????")
-            time.sleep(0.1)
+            time.sleep(0.5)
 
 
 if __name__ == "__main__":

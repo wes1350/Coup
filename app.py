@@ -17,14 +17,14 @@ def index():
 def on_connect():
     print(clients)
     print(started)
-    clients[len(clients)] = request.sid
+    clients[len(clients)] = {"sid": request.sid, "response": "No response"}
     print("Client connected")
     print(clients)
 
 @socketio.on('disconnect')
 def on_disconnect():
     for client_id in clients:
-        if clients[client_id] == request.sid:
+        if clients[client_id]["sid"] == request.sid:
             clients.remove(entry)
     print("Client disconnected")
     print(clients)
@@ -37,16 +37,21 @@ def on_start():
     if not started:  # Don't allow multiple starts
         print("Starting")
         started = True
-        engine = Engine(send_to_client, lambda msg: send(msg, broadcast=True), emit_to_client, n_players=len(clients))
+        engine = Engine(send_to_client, lambda msg: send(msg, broadcast=True), retrieve_response, n_players=len(clients))
         winner = engine.run_game()
 
 def send_to_client(msg, client_id):
-    socketio.send(msg, room=clients[client_id])
+    # Clear response before whispering, to ensure we don't keep a stale one
+    clients[client_id]["response"] = "No response"
+    socketio.send(msg, room=clients[client_id]["sid"])
 
 def emit_to_client(name, msg, client_id):
-    emit(name, msg, room=clients[client_id])
+    emit(name, msg, room=clients[client_id]["sid"])
+
+def retrieve_response(client_id):
+    return clients[client_id]["response"]
 
 if __name__ == '__main__':
     started = False
-    clients = {}
+    clients = {} 
     socketio.run(app)#, host='0.0.0.0')

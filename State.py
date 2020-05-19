@@ -296,13 +296,14 @@ class State:
         while True:
 #             engine_write_pipe(self.read_pipe, self.write_pipe, "retrieve {}".format(player))
 #             message = engine_read_pipe(self.read_pipe)
-            if message == "No response":
-                print("-----Engine----Didn't get a response")
+            response = self.query_f(player)
+            if response == "No response":
+                print("-----State----Didn't get a response")
                 time.sleep(0.5)
                 continue
-            elif message:
-                print("-----Engine----got a message!")
-                return message
+            elif response:
+                print("-----State----got a response!")
+                return response
             else:
                 print("????????????")
-            time.sleep(0.1)
+            time.sleep(0.5)
