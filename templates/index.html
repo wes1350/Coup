@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 	<meta charset="UTF-8">
-    <title>{% block title %}{% endblock %} - Coup</title>
+    <title>Coup</title>
     <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
     <script type="text/javascript" charset="utf-8">
         var socket = io('http://localhost:5000');
@@ -13,10 +13,20 @@
 </head>
 <body>
 <section class="content">
+    <div>
+        {{ state }} 
+    </div>
     {% for button in buttons %}
-        <div>
-            <button type="button">{{ button }}</button>
-        </div>
+        {% if loop.first %}
+            <div>
+                <button type="button" onclick="socket.emit('start game');">{{ button }}</button>
+            </div>
+        {% else %}
+            <div>
+                <button type="button">{{ button }}</button>
+            </div>
+        {% endif %}
+
         {% if not loop.last %}
             <hr>
         {% endif %}
