@@ -6,9 +6,6 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
-clients = []
-started = False
-n_clients = 0
 
 @app.route('/')
 def index():
@@ -18,32 +15,38 @@ def index():
 
 @socketio.on('connect')
 def on_connect():
-    clients.append(request.sid)
+    print(clients)
+    print(started)
+    clients[len(clients)] = request.sid
     print("Client connected")
-    emit('after connect',  {'data':'Client connected'})
+    print(clients)
 
 @socketio.on('disconnect')
 def on_disconnect():
-    clients.remove(request.sid)
-    emit('after disconnect',  {'data':'Client disconnected'})
+    for client_id in clients:
+        if clients[client_id] == request.sid:
+            clients.remove(entry)
+    print("Client disconnected")
+    print(clients)
 
 @socketio.on('start game')
 def on_start():
-    print("Starting")
-    started = True
-    n_clients = len(clients)
-    engine = Engine()
-    if not engine.get_config_status():
-        print("\nInvalid configuration: " + engine.get_config_err_msg().split("'")[1])
-        print("\nCannot run game; exiting.")
-    else:
+    global started
+#     global clients
+    print(clients)
+    if not started:  # Don't allow multiple starts
+        print("Starting")
+        started = True
+        engine = Engine(send_to_client, lambda msg: send(msg, broadcast=True), emit_to_client, n_players=len(clients))
         winner = engine.run_game()
 
 def send_to_client(msg, client_id):
-    send(msg, room=client_id)
+    socketio.send(msg, room=clients[client_id])
 
 def emit_to_client(name, msg, client_id):
-    emit(name, msg, room=client_id)
+    emit(name, msg, room=clients[client_id])
 
 if __name__ == '__main__':
+    started = False
+    clients = {}
     socketio.run(app)#, host='0.0.0.0')

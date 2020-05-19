@@ -7,8 +7,17 @@
     <script type="text/javascript" charset="utf-8">
         var socket = io('http://localhost:5000');
         socket.on('connect', function() {
-            socket.emit('my event', {data: 'I\'m connected!'});
+            socket.emit('my event', {data: 'i\'m connected!'});
         });
+        socket.on('Hi', function(msg) {
+            console.log("HERE!" + msg)
+            socket.emit('my event', {data: 'i\'m connected!'});
+        });
+        socket.on('message', function(msg) {
+            console.log("HELLO!!" + msg)
+            socket.emit('my event', {data: 'i\'m connected!'});
+        });
+
     </script>
 </head>
 <body>

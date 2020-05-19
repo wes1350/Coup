@@ -6,7 +6,7 @@ from typing import List, Optional, Dict, Any
 from State import State
 from Config import Config
 from utils.argument_parsing import parse_args
-from utils.pipes import engine_write_pipe, engine_read_pipe
+# from utils.pipes import engine_write_pipe, engine_read_pipe
 from classes.Card import Card
 from classes.actions.Action import Action
 from classes.actions.Income import Income
@@ -25,19 +25,23 @@ class Engine:
     """Maintains all the logic relevant to the game, such as the 
        game state, config, querying players, etc."""
 
-    def __init__(self, read_pipe=None, write_pipe=None, **kwargs) -> None:
+    def __init__(self, whisper_f=None, shout_f=None, query_f=None, **kwargs) -> None:
         """Initialize a new Engine, with arguments from the command line."""
         self._config_status, self._config_err_msg = True, None
+        self.whisper_f = whisper_f
+        self.shout_f = shout_f
+        self.query_f = query_f
         try:
             self._config = Config(**kwargs)
         except ValueError as e:
             self._config_status = False
             self._config_err_msg = getattr(e, 'message', repr(e))
         else:
-            self._state = State(self._config, read_pipe=read_pipe, write_pipe=write_pipe)
-            self.local = read_pipe is None or write_pipe is None
-            self.read_pipe = read_pipe
-            self.write_pipe = write_pipe
+            self._state = State(self._config, whisper_f, shout_f, query_f)
+#             self.local = read_pipe is None or write_pipe is None
+#             self.read_pipe = read_pipe
+#             self.write_pipe = write_pipe
+            self.local = self.whisper_f is None or self.shout_f is None or self.query_f is None
             self.shout(str(self._config))
 
     def game_is_over(self) -> bool:
@@ -540,7 +544,8 @@ class Engine:
         if self.local:
             print(msg)
         else:       
-            engine_write_pipe(self.read_pipe, self.write_pipe, "shout {}".format(msg))
+#             engine_write_pipe(self.read_pipe, self.write_pipe, "shout {}".format(msg))
+            self.shout_f(msg)
             pass
     
     def whisper(self, msg : str, player : int) -> None:
@@ -548,16 +553,18 @@ class Engine:
         if self.local:
             print(msg) 
         else:
-            engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
+#             engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
+            self.whisper_f(msg, player)
 
     def get_response(self, player : int) -> str:
         """Query server for a response."""
         while True:
             # print("-----Engine----sending retrieve") 
-            engine_write_pipe(self.read_pipe, self.write_pipe, "retrieve {}".format(player))
+#             engine_write_pipe(self.read_pipe, self.write_pipe, "retrieve {}".format(player))
             # print("-----Engine----sent retrieve")
             # print('-----Engine----able to open pipe in get_response in Engine')
-            message = engine_read_pipe(self.read_pipe) 
+#             message = engine_read_pipe(self.read_pipe) 
+            self.query_f(message, player)
            # print("-----Engine----NOT STUCK IN GET RESPONSE")
             if message == "No response":
                 print("-----Engine----Didn't get a response")
