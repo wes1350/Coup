@@ -274,6 +274,11 @@ class State:
         
         return rep
 
+    def masked_rep(self, player : Player):
+        rep = "-"*40
+        rep += "{}\n".format("".join([str(p) if p.get_id() == player.get_id() else p.masked_rep() for p in self._players]))
+        return rep
+
     def shout(self, msg : str) -> None:
         """Send a message to all players."""
         if self.local:
@@ -307,3 +312,8 @@ class State:
             else:
                 print("????????????")
             time.sleep(0.5)
+
+    def broadcast_state(self) -> None:
+        """Broadcast the masked state representation to all players."""
+        for p in self._players:
+            self.whisper(self.masked_rep(p), p.get_id())

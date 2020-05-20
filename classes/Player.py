@@ -41,3 +41,7 @@ class Player:
     def __str__(self) -> str:
         rep = "\nPlayer {}: {} coins, {}".format(self._id, self._coins, ", ".join([str(c) for c in self._cards])) 
         return rep
+
+    def masked_rep(self) -> str:
+        rep = "\nPlayer {}: {} coins, {}".format(self._id, self._coins, ", ".join([str(c) if not c.is_alive() else "--Hidden--" for c in self._cards])) 
+        return rep

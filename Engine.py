@@ -50,9 +50,9 @@ class Engine:
 
     def run_game(self) -> int:
         """Start and run a game until completion, handling game logic as necessary."""
-        self.shout(str(self._state))
+        self.broadcast_state()
         while not self.game_is_over():
-            self.shout(str(self._state))
+            self.broadcast_state()
             self.play_turn()
             self.next_turn()
         winner = self._state.get_alive_players()[0]
@@ -578,6 +578,8 @@ class Engine:
                 print("????????????")
             time.sleep(0.5)
 
+    def broadcast_state(self) -> None:
+        self._state.broadcast_state()
 
 if __name__ == "__main__":
     engine = Engine(parse_args())
