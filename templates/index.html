@@ -4,6 +4,7 @@
 	<meta charset="UTF-8">
     <title>Coup</title>
     <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
     <script type="text/javascript" charset="utf-8">
         var socket = io('http://localhost:5000');
         socket.on('connect', function() {
@@ -17,29 +18,38 @@
             console.log("HELLO!!" + msg)
             socket.emit('my event', {data: 'i\'m connected!'});
         });
-
+        // $('button#submission').on('click', function (e) {
+            // e.preventDefault();
+            // console.log("Got a click!!!")
+            // console.log($("#actions").val());
+            // socket.emit('action', {data: $("#actions").val()});
+            // return false;
+        // });
+        $(document).ready(function(){ 
+            $("button#submission").click(function(){ 
+                console.log("Got a click!!!");
+                socket.emit('action', $("#actions").val());
+            }) 
+        }); 
     </script>
+
 </head>
 <body>
 <section class="content">
     <div>
         {{ state }} 
     </div>
-    {% for button in buttons %}
-        {% if loop.first %}
-            <div>
-                <button type="button" onclick="socket.emit('start game');">{{ button }}</button>
-            </div>
-        {% else %}
-            <div>
-                <button type="button">{{ button }}</button>
-            </div>
-        {% endif %}
+    <div>
+    </div>
+    <div>
+        <button type="button" onclick="socket.emit('start game');">Start</button>
+    </div>
+    <!--<form class="submissionform">-->
+    <input id="actions"></input>
+    <button id="submission">Submit</button>
+        <!--<input type="submit" value="Submit" id="submission"/>-->
+    <!--</form>-->
 
-        {% if not loop.last %}
-            <hr>
-        {% endif %}
-    {% endfor %}
 </section>
 </body>
 </html>

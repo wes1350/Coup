@@ -6,6 +6,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+def get_id_from_sid(sid):
+    for c in clients:
+        if clients[c]["sid"] == sid:
+            return c
+    raise ValueError("Invalid sid request")
 
 @app.route('/')
 def index():
@@ -23,9 +28,7 @@ def on_connect():
 
 @socketio.on('disconnect')
 def on_disconnect():
-    for client_id in clients:
-        if clients[client_id]["sid"] == request.sid:
-            clients.remove(entry)
+    del clients[get_id_from_sid(request.sid)]
     print("Client disconnected")
     print(clients)
 
@@ -50,6 +53,11 @@ def emit_to_client(name, msg, client_id):
 
 def retrieve_response(client_id):
     return clients[client_id]["response"]
+
+@socketio.on('action')
+def store_action(message):
+    print("Got an action: " + message)
+    clients[get_id_from_sid(request.sid)]["response"] = message
 
 if __name__ == '__main__':
     started = False
