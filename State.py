@@ -2,7 +2,6 @@
 import time 
 from typing import List
 from Config import Config
-# from utils.pipes import engine_read_pipe, engine_write_pipe
 from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
@@ -16,9 +15,6 @@ class State:
     def __init__(self, config : Config, whisper_f=None, shout_f=None, query_f=None) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
-#         self.local = read_pipe is None or write_pipe is None
-#         self.read_pipe = read_pipe
-#         self.write_pipe = write_pipe
         self.whisper_f = whisper_f
         self.shout_f = shout_f
         self.query_f = query_f
@@ -271,7 +267,6 @@ class State:
     def __str__(self):
         rep = "-"*40
         rep += "{}\n".format("".join([str(p) for p in self._players]))
-        
         return rep
 
     def masked_rep(self, player : Player):
@@ -284,8 +279,6 @@ class State:
         if self.local:
             print(msg)
         else:       
-#            with open(self.write_pipe, "w") as f: 
-#             engine_write_pipe(self.read_pipe, self.write_pipe, "shout {}".format(msg))
             self.shout_f(msg)
 
     def whisper(self, msg : str, player : int, whisper_type : str = None) -> None:
@@ -293,24 +286,21 @@ class State:
         if self.local:
             print(msg) 
         else:
-#             engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
             self.whisper_f(msg, player, whisper_type)
 
     def get_response(self, player : int) -> str:
         """Query server for a response."""
         while True:
-#             engine_write_pipe(self.read_pipe, self.write_pipe, "retrieve {}".format(player))
-#             message = engine_read_pipe(self.read_pipe)
             response = self.query_f(player)
             if response == "No response":
-                print("-----State----Didn't get a response")
+                print("-----State---- Didn't get a response")
                 time.sleep(0.5)
                 continue
             elif response:
-                print("-----State----got a response!")
+                print("-----State---- Got a response!")
                 return response
             else:
-                print("????????????")
+                assert False
             time.sleep(0.5)
 
     def broadcast_state(self) -> None:

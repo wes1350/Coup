@@ -6,7 +6,6 @@ from typing import List, Optional, Dict, Any
 from State import State
 from Config import Config
 from utils.argument_parsing import parse_args
-# from utils.pipes import engine_write_pipe, engine_read_pipe
 from classes.Card import Card
 from classes.actions.Action import Action
 from classes.actions.Income import Income
@@ -38,9 +37,6 @@ class Engine:
             self._config_err_msg = getattr(e, 'message', repr(e))
         else:
             self._state = State(self._config, whisper_f, shout_f, query_f)
-#             self.local = read_pipe is None or write_pipe is None
-#             self.read_pipe = read_pipe
-#             self.write_pipe = write_pipe
             self.local = None in [self.whisper_f, self.shout_f, self.query_f]
             self.shout(str(self._config))
 
@@ -544,7 +540,6 @@ class Engine:
         if self.local:
             print(msg)
         else:       
-#             engine_write_pipe(self.read_pipe, self.write_pipe, "shout {}".format(msg))
             self.shout_f(msg)
             pass
     
@@ -553,29 +548,21 @@ class Engine:
         if self.local:
             print(msg) 
         else:
-#             engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
             self.whisper_f(msg, player, whisper_type)
 
     def get_response(self, player : int) -> str:
         """Query server for a response."""
         while True:
-            # print("-----Engine----sending retrieve") 
-#             engine_write_pipe(self.read_pipe, self.write_pipe, "retrieve {}".format(player))
-            # print("-----Engine----sent retrieve")
-            # print('-----Engine----able to open pipe in get_response in Engine')
-#             message = engine_read_pipe(self.read_pipe) 
             response = self.query_f(player)
-           # print("-----Engine----NOT STUCK IN GET RESPONSE")
             if response == "No response":
-                print("-----Engine----Didn't get a response")
+                print("-----Engine---- Didn't get a response")
                 time.sleep(0.5)
-#                return None
                 continue
             elif response:
-                print("-----Engine----got a response!")
+                print("-----Engine---- Got a response!")
                 return response
             else:
-                print("????????????")
+                assert False
             time.sleep(0.5)
 
     def broadcast_state(self) -> None:

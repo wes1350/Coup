@@ -41,11 +41,6 @@ def on_start():
         engine = Engine(emit_to_client, lambda msg: send(msg, broadcast=True), retrieve_response, n_players=len(clients))
         winner = engine.run_game()
 
-# def send_to_client(msg, client_id):
-#     # Clear response before whispering, to ensure we don't keep a stale one
-#     clients[client_id]["response"] = "No response"
-#     socketio.send(msg, room=clients[client_id]["sid"])
-
 def emit_to_client(msg, client_id, name=None):
     # Clear response before whispering, to ensure we don't keep a stale one
     clients[client_id]["response"] = "No response"

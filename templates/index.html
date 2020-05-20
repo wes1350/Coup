@@ -27,13 +27,6 @@
             console.log(msg)
             document.getElementById("info").innerText = msg
         });
-        // $('button#submission').on('click', function (e) {
-            // e.preventDefault();
-            // console.log("Got a click!!!")
-            // console.log($("#actions").val());
-            // socket.emit('action', {data: $("#actions").val()});
-            // return false;
-        // });
         $(document).ready(function(){ 
             $("button#submission").click(function(){ 
                 console.log("Got a click!!!");
@@ -60,12 +53,8 @@
     <div>
         <button type="button" onclick="socket.emit('start game');">Start</button>
     </div>
-    <!--<form class="submissionform">-->
     <input id="actions"></input>
     <button id="submission">Submit</button>
-        <!--<input type="submit" value="Submit" id="submission"/>-->
-    <!--</form>-->
-
 </section>
 </body>
 </html>
