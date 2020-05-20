@@ -7,16 +7,25 @@
     <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
     <script type="text/javascript" charset="utf-8">
         var socket = io('http://localhost:5000');
-        socket.on('connect', function() {
-            socket.emit('my event', {data: 'i\'m connected!'});
-        });
-        socket.on('Hi', function(msg) {
-            console.log("HERE!" + msg)
-            socket.emit('my event', {data: 'i\'m connected!'});
-        });
         socket.on('message', function(msg) {
-            console.log("HELLO!!" + msg)
-            socket.emit('my event', {data: 'i\'m connected!'});
+            console.log(msg)
+            document.getElementById("info").innerText = msg
+        });
+        socket.on('state', function(msg) {
+            console.log(msg)
+            document.getElementById("state").innerText = msg
+        });
+        socket.on('prompt', function(msg) {
+            console.log(msg)
+            document.getElementById("prompt").innerText = msg
+        });
+        socket.on('error', function(msg) {
+            console.log(msg)
+            document.getElementById("error").innerText = msg
+        });
+        socket.on('info', function(msg) {
+            console.log(msg)
+            document.getElementById("info").innerText = msg
         });
         // $('button#submission').on('click', function (e) {
             // e.preventDefault();
@@ -36,10 +45,17 @@
 </head>
 <body>
 <section class="content">
-    <div>
-        {{ state }} 
+    <div id="state" style="color:blue;">
     </div>
-    <div>
+    <hr />
+    <div id="prompt" style="color:green;">
+    </div>
+    <hr />
+    <div id="error" style="color:red;">
+    </div>
+    <hr />
+    <div id="info" style="color:black;">
+    <hr />
     </div>
     <div>
         <button type="button" onclick="socket.emit('start game');">Start</button>

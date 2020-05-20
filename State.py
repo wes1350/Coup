@@ -73,7 +73,7 @@ class State:
         """Return the indicated card in the player's hand to the deck, and draw a new one at random."""
         new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))
         self._players[player_id].set_card(card_idx, new_card)
-        self.whisper("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())), player_id)
+        self.whisper("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())), player_id, "info")
 
     def kill_player_card(self, player_id : int, card_idx : int) -> None:
         self.get_player_card(player_id, card_idx).die()
@@ -156,7 +156,7 @@ class State:
             in_hand = self._config.cards_per_player 
             for i in range(n_to_draw):
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
-            self.whisper(message + "\n", player)
+            self.whisper(message + "\n", player, "info")
 
             cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw)
             
@@ -184,7 +184,7 @@ class State:
         # Validate the cost 
         budget = self._players[player_id].get_coins()
         if action.cost > budget:
-            self.whisper("ERROR: not enough coins for action", player_id)
+            self.whisper("ERROR: not enough coins for action", player_id, "error")
             return False
         
         # Validate the target, if applicable
@@ -193,15 +193,15 @@ class State:
         if has_target:
             # Target must be a valid Player. Bank doesn't count
             if target_id < 0 or target_id >= self.get_n_players():
-                self.whisper("ERROR: invalid player id", player_id)
+                self.whisper("ERROR: invalid player id", player_id, "error")
                 return False 
             # Target must be alive
             if not self.player_is_alive(target_id):
-                self.whisper("ERROR: chosen player has been eliminated", player_id)
+                self.whisper("ERROR: chosen player has been eliminated", player_id, "error")
                 return False
             # Target must not be self
             if target_id == player_id:
-                self.whisper("ERROR: cannot target self with action", player_id)
+                self.whisper("ERROR: cannot target self with action", player_id, "error")
                 return False
         
         return True
@@ -225,21 +225,21 @@ class State:
 
     def ask_exchange(self, player : int, draw_start : int, draw_end : int) -> List[int]:
         message = "Pick the cards you wish to keep:\n"
-        self.whisper(message, player)
+        self.whisper(message, player, "prompt")
         while True:
             response = self.get_response(player)
             if response is None:
-                self.whisper(message, player)
+                self.whisper(message, player, "prompt")
             else:
                 try:
                     cards = self.translate_exchange(response)
                 except ValueError:
-                    self.whisper("ERROR: invalid exchange choice, please try again", player)
+                    self.whisper("ERROR: invalid exchange choice, please try again", player, "error")
                 else:
                     valid = self.validate_exchange(player, cards, draw_start, draw_end)
                     if valid:
                         return cards
-                    self.whisper("Impossible exchange, please try again", player)
+                    self.whisper("Impossible exchange, please try again", player, "error")
             time.sleep(0.5) 
 
 
@@ -288,13 +288,13 @@ class State:
 #             engine_write_pipe(self.read_pipe, self.write_pipe, "shout {}".format(msg))
             self.shout_f(msg)
 
-    def whisper(self, msg : str, player : int) -> None:
+    def whisper(self, msg : str, player : int, whisper_type : str = None) -> None:
         """Send a message only to a specific player."""
         if self.local:
             print(msg) 
         else:
 #             engine_write_pipe(self.read_pipe, self.write_pipe, "whisper {} {}".format(player, msg))
-            self.whisper_f(msg, player)
+            self.whisper_f(msg, player, whisper_type)
 
     def get_response(self, player : int) -> str:
         """Query server for a response."""
@@ -316,4 +316,4 @@ class State:
     def broadcast_state(self) -> None:
         """Broadcast the masked state representation to all players."""
         for p in self._players:
-            self.whisper(self.masked_rep(p), p.get_id())
+            self.whisper(self.masked_rep(p), p.get_id(), "state")

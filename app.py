@@ -14,9 +14,7 @@ def get_id_from_sid(sid):
 
 @app.route('/')
 def index():
-    buttons = ["Start", "Income", "Foreign Aid", "Tax", "Steal", "Exchange", "Assassinate", "Coup", "Block", "Challenge", "0", "1"]
-    state = "Everyone wins!"
-    return render_template('index.html', buttons=buttons, state=state)
+    return render_template('index.html')
 
 @socketio.on('connect')
 def on_connect():
@@ -40,16 +38,21 @@ def on_start():
     if not started:  # Don't allow multiple starts
         print("Starting")
         started = True
-        engine = Engine(send_to_client, lambda msg: send(msg, broadcast=True), retrieve_response, n_players=len(clients))
+        engine = Engine(emit_to_client, lambda msg: send(msg, broadcast=True), retrieve_response, n_players=len(clients))
         winner = engine.run_game()
 
-def send_to_client(msg, client_id):
+# def send_to_client(msg, client_id):
+#     # Clear response before whispering, to ensure we don't keep a stale one
+#     clients[client_id]["response"] = "No response"
+#     socketio.send(msg, room=clients[client_id]["sid"])
+
+def emit_to_client(msg, client_id, name=None):
     # Clear response before whispering, to ensure we don't keep a stale one
     clients[client_id]["response"] = "No response"
-    socketio.send(msg, room=clients[client_id]["sid"])
-
-def emit_to_client(name, msg, client_id):
-    emit(name, msg, room=clients[client_id]["sid"])
+    if name is None:
+        socketio.send(msg, room=clients[client_id]["sid"])
+    else:
+        emit(name, msg, room=clients[client_id]["sid"])
 
 def retrieve_response(client_id):
     return clients[client_id]["response"]
@@ -62,4 +65,4 @@ def store_action(message):
 if __name__ == '__main__':
     started = False
     clients = {} 
-    socketio.run(app)#, host='0.0.0.0')
+    socketio.run(app, host='0.0.0.0')
