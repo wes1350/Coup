@@ -1,6 +1,10 @@
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, send, emit
 from Engine import Engine
+import eventlet
+# Eventlet isn't compatible with some python modules (e.g. time) so monkeypatch to resolve 
+# bugs that result from such conflicts
+eventlet.monkey_patch()
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -20,6 +24,7 @@ def index():
 def on_connect():
     print(clients)
     print(started)
+
     clients[len(clients)] = {"sid": request.sid, "response": "No response"}
     print("Client connected")
     print(clients)
