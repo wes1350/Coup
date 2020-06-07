@@ -189,37 +189,14 @@ class Engine:
     def query_player_action(self, player_id : int) -> Action:
         """Given a player, query them for an action, validating it and reprompting as necessary."""
         # First, check if the player has 10 coins and is forced to coup
-        if self.local:
-            if self._state.player_must_coup(player_id):
-                return self.query_player_coup_target(player_id)
-            else:
-                while True:
-                    query_msg = self.determine_action_message(player_id)
-                    response = input(query_msg + "\n")
-                    try: 
-                        action = self.translate_action_choice(response)
-                    except ValueError:
-                        self.whisper("ERROR: invalid action name, please try again", player_id)
-                    else:
-                        valid = self.validate_action(action, player_id)
-                        if valid:
-                            return action
-                        self.whisper("Impossible action, please try again.", player_id)
+        if self._state.player_must_coup(player_id):
+            return self.query_player_coup_target(player_id)
         else:
-            return self.ask_player_action(player_id)
-
-    def ask_player_action(self, player_id : int) -> Action:
-        """Query server for player reaction."""
-        query_msg = self.determine_action_message(player_id)
-        self.whisper(query_msg + "\n", player_id, "prompt")
-        while True:
-            response = self.get_response(player_id) 
-            print("Got some sort of response")
-            print(response)
-            if response is None:
-                query_msg = self.determine_action_message(player_id)
+            query_msg = self.determine_action_message(player_id)
+            if not self.local:
                 self.whisper(query_msg + "\n", player_id, "prompt")
-            else:
+            while True:
+                response = input(query_msg + "\n") if self.local else self.get_response(player_id)
                 try: 
                     action = self.translate_action_choice(response)
                 except ValueError:
@@ -229,8 +206,7 @@ class Engine:
                     if valid:
                         return action
                     self.whisper("Impossible action, please try again.", player_id, "error")
-            time.sleep(0.5)
-                    
+
     def determine_reaction_message(self, target : int, player_id : int, action : Action) -> str:
         if target is not None:
             if target == player_id:
@@ -285,25 +261,25 @@ class Engine:
         while False in reactions:
             for i, player_id in enumerate(players):
                 if not reactions[i] and reactions[i] is not None:
-                    response = self.get_response(player_id)
+                    response = self.get_response(player_id, sleep=False)
                     if response is None:
-                        message = self.determine_reaction_message(target, player_id, action)
-                        self.whisper(message, player_id, "prompt")
+                        continue
+                    try: 
+                        reaction = self.translate_reaction_choice(response, player_id, action)
+                    except ValueError:
+                        self.whisper("Invalid response, please try again.", player_id, "error")
                     else:
-                        try: 
-                            reaction = self.translate_reaction_choice(response, player_id, action)
-                        except ValueError:
-                            self.whisper("Invalid response, please try again.", player_id, "error")
-                        else:
-                            if reaction is None:
-                                reactions[i] = None
-                                continue
-                            valid = self.validate_reaction(reaction, action)
-                            if valid:
-                                reactions[i] = reaction
-                                continue
-                            self.whisper("Impossible reaction, please try again.", player_id, "error")
-            time.sleep(0.5) 
+                        if reaction is None:
+                            reactions[i] = None
+                            continue
+                        valid = self.validate_reaction(reaction, action)
+                        if valid:
+                            reactions[i] = reaction
+                            continue
+                        self.whisper("Impossible reaction, please try again.", player_id, "error")
+            # Sleep in order to not poll too often, but only after we check each player's response
+            if False in reactions:
+                time.sleep(0.5) 
         return [r for r in reactions if r is not None]
 
     def query_challenges(self, players : List[int]) -> List[Challenge]:
@@ -327,57 +303,40 @@ class Engine:
     def ask_challenges(self, players : List[int]) -> List[Challenge]:
         """Query the server for challenge responses from a list of players."""
         for i, player_id in enumerate(players):
-            self.whisper("Player {}, are you going to [C]hallenge?\n".format(player_id), player_id, "prompt")
+            query_msg = "Player {}, are you going to [C]hallenge?\n".format(player_id)
+            self.whisper(query_msg, player_id, "prompt")
         challenges = [False for _ in players]        
         while False in challenges:
             for i, player_id in enumerate(players):
                 if not challenges[i] and challenges[i] is not None:
-                    response = self.get_response(player_id)
+                    response = self.get_response(player_id, sleep=False)
                     if response is None:
-                        self.whisper("Player {}, are you going to [C]hallenge?\n".format(player_id), player_id, "prompt")
-                    else:
-                        try: 
-                            challenges[i] = self.translate_challenge_answer(response, player_id)
-                        except ValueError:
-                            self.whisper("Invalid response, please try again.", player_id, "error")
-            time.sleep(0.5) 
+                        continue
+                    try: 
+                        challenges[i] = self.translate_challenge_answer(response, player_id)
+                    except ValueError:
+                        self.whisper("Invalid response, please try again.", player_id, "error")
+            # Sleep in order to not poll too often, but only after we check each player's response
+            if False in challenges:
+                time.sleep(0.5) 
         return [c for c in challenges if c is not None]
 
     def query_player_coup_target(self, player_id : int) -> int:
         """Given a player who must coup, ask them who they are going to coup."""
-        if self.local:
-            while True:
-                response = input("Player {}, who are you going to coup?\n".format(player_id))
-                try:
-                    action = self.translate_coup_target(response)
-                except ValueError:
-                    self.whisper("Invalid coup target, please try again.", player_id)
-                else:
-                    valid = self.validate_action(action, player_id)
-                    if valid:
-                        return action
-                    self.whisper("Invalid coup target, please try again.", player_id)
-        else:
-            return self.ask_player_coup_target(player_id)
-
-    def ask_player_coup_target(self, player_id : int) -> int:
-        """Query the server for a coup target."""
-        self.whisper("Player {}, who are you going to coup?\n".format(player_id), "prompt")
+        query_msg = "Player {}, who are you going to coup?\n".format(player_id)
+        if not self.local:
+            self.whisper(query_msg, player_id, "prompt")
         while True:
-            response = self.get_response(player_id)
-            if response is None:
-                self.whisper("Player {}, who are you going to coup?\n".format(player_id), "prompt")
+            response = input(query_msg) if self.local else self.get_response(player_id)
+            try:
+                action = self.translate_coup_target(response)
+            except ValueError:
+                self.whisper("Invalid coup target, please try again.", player_id)
             else:
-                try:        
-                    action = self.translate_coup_target(response)
-                except ValueError:
-                    self.whisper("Invalid coup target, please try again.", player_id, "error")
-                else:
-                    valid = self.validate_action(action, player_id)
-                    if valid:
-                        return action
-                    self.whisper("Invalid coup target, please try again.", player_id, "error")
-            time.sleep(0.5)
+                valid = self.validate_action(action, player_id)
+                if valid:
+                    return action
+                self.whisper("Invalid coup target, please try again.", player_id)
 
     def query_player_card(self, player_id : int, ignore_if_dead : bool = False) -> int:
         """Given a player who must choose a card to discard, query them for their card choice."""
@@ -391,31 +350,16 @@ class Engine:
         elif len(options) == 1:
             return options[0]
         else:
-            if self.local:
-                while True:
-                    response = input("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id))
-                    try:
-                        card = self.translate_card_choice(response, options)
-                        return card
-                    except ValueError:
-                        self.whisper("ERROR: invalid card number, please try again.", player_id)
-            else:
-                return self.ask_player_card(player_id, options)
-
-    def ask_player_card(self, player_id : int, options: List[int]) -> int:
-        """Query the server for a card choice."""
-        self.whisper("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id), player_id, "prompt")
-        while True:
-            response = self.get_response(player_id)
-            if response is None:
-                self.whisper("Player {}, one of your characters must die. Which one do you pick?\n".format(player_id), player_id, "prompt")
-            else:
+            query_msg = "Player {}, one of your characters must die. Which one do you pick?\n".format(player_id)
+            if not self.local:
+                self.whisper(query_msg, player_id, "prompt")
+            while True:
+                response = input(query_msg) if self.local else self.get_response(player_id)
                 try:
                     card = self.translate_card_choice(response, options)
                     return card
                 except ValueError:
                     self.whisper("ERROR: invalid card number, please try again.", player_id, "error")
-            time.sleep(0.5)
 
     def translate_action_choice(self, response : str) -> Action:
         """Given an action response, translate it appropriately"""
@@ -550,20 +494,22 @@ class Engine:
         else:
             self.whisper_f(msg, player, whisper_type)
 
-    def get_response(self, player : int) -> str:
+    def get_response(self, player : int, sleep : bool = True) -> str:
         """Query server for a response."""
         while True:
             response = self.query_f(player)
             if response == "No response":
                 print("-----Engine---- Didn't get a response")
-                time.sleep(0.5)
-                continue
-            elif response:
+                if sleep:
+                    time.sleep(0.5)
+                    continue
+                else:
+                    return None
+            elif response is not None:
                 print("-----Engine---- Got a response!")
                 return response
             else:
                 assert False
-            time.sleep(0.5)
 
     def broadcast_state(self) -> None:
         self._state.broadcast_state()

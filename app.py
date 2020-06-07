@@ -1,10 +1,10 @@
-from flask import Flask, render_template, request
-from flask_socketio import SocketIO, send, emit
-from Engine import Engine
 import eventlet
 # Eventlet isn't compatible with some python modules (e.g. time) so monkeypatch to resolve 
 # bugs that result from such conflicts
 eventlet.monkey_patch()
+from flask import Flask, render_template, request
+from flask_socketio import SocketIO, send, emit
+from Engine import Engine
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -55,6 +55,7 @@ def emit_to_client(msg, client_id, name=None):
         emit(name, msg, room=clients[client_id]["sid"])
 
 def retrieve_response(client_id):
+    """Get the current stored response corresponding to the requested client."""
     return clients[client_id]["response"]
 
 @socketio.on('action')
