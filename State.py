@@ -57,7 +57,7 @@ class State:
         return self.get_player_cards(player_id)[card_idx]
 
     def get_player_living_card_ids(self, player_id : int) -> List[int]:
-        """Return the indices of the living cards in a player's house. Note: these are not the ids that the Card objects themselves own."""
+        """Return the indices of the living cards in a player's hand. Note: these are not the ids that the Card objects themselves own."""
         cards = self.get_player_cards(player_id)
         chosen_cards = []
         for i, card in enumerate(cards):
@@ -159,7 +159,7 @@ class State:
             # Return all cards from our hand we decided not to keep
             returned = []
             for i in range(in_hand):
-                if i not in cards_to_keep:
+                if i not in cards_to_keep and i in alive_cards:
                     self._deck.return_card(self.get_player_card(player, i).get_id())
                     returned.append(i)
 
