@@ -36,8 +36,8 @@ class Engine:
             self._config_status = False
             self._config_err_msg = getattr(e, 'message', repr(e))
         else:
-            self._state = State(self._config, whisper_f, shout_f, query_f)
             self.local = None in [self.whisper_f, self.shout_f, self.query_f]
+            self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local)
             self.shout(str(self._config))
 
     def game_is_over(self) -> bool:

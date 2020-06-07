@@ -12,13 +12,13 @@ from classes.actions.Coup import Coup
 
 class State:
 
-    def __init__(self, config : Config, whisper_f=None, shout_f=None, query_f=None) -> None:
+    def __init__(self, config : Config, whisper=None, shout=None, get_response=None, local=True) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
-        self.whisper_f = whisper_f
-        self.shout_f = shout_f
-        self.query_f = query_f
-        self.local = None in (whisper_f, shout_f, query_f) 
+        self.whisper = whisper
+        self.shout = shout
+        self.get_response = get_response
+        self.local = local
         self._n_players = config.n_players
         # Initialize the deck
         self._deck = Deck(self._n_players, config.cards_per_character)
@@ -253,35 +253,6 @@ class State:
         rep = "-"*40
         rep += "{}\n".format("".join([str(p) if p.get_id() == player.get_id() else p.masked_rep() for p in self._players]))
         return rep
-
-    def shout(self, msg : str) -> None:
-        """Send a message to all players."""
-        if self.local:
-            print(msg)
-        else:       
-            self.shout_f(msg)
-
-    def whisper(self, msg : str, player : int, whisper_type : str = None) -> None:
-        """Send a message only to a specific player."""
-        if self.local:
-            print(msg) 
-        else:
-            self.whisper_f(msg, player, whisper_type)
-
-    def get_response(self, player : int) -> str:
-        """Query server for a response."""
-        while True:
-            response = self.query_f(player)
-            if response == "No response":
-                print("-----State---- Didn't get a response")
-                time.sleep(0.5)
-                continue
-            elif response:
-                print("-----State---- Got a response!")
-                return response
-            else:
-                assert False
-            time.sleep(0.5)
 
     def broadcast_state(self) -> None:
         """Broadcast the masked state representation to all players."""
