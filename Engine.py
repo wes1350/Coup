@@ -367,6 +367,9 @@ class Engine:
         args = response.split(" ")
         action_name = args[0]
         target = None if len(args) == 1 else int(args[1])
+        if action_name in [Steal.aliases, Assassinate.aliases, Coup.aliases]:
+            if target is None:
+                raise ValueError("Need to specify target for assassinate/steal")
      
         if action_name in Income.aliases:
             return Income()
