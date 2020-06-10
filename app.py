@@ -2,7 +2,7 @@ import eventlet
 # Eventlet isn't compatible with some python modules (e.g. time) so monkeypatch to resolve 
 # bugs that result from such conflicts
 eventlet.monkey_patch()
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, g
 from flask_socketio import SocketIO, send, emit
 from Engine import Engine
 from GameInfo import GameInfo
@@ -19,6 +19,7 @@ def get_id_from_sid(sid):
 
 @app.route('/')
 def index():
+    g.started = False
     return render_template('index.html')
 
 @socketio.on('connect')
@@ -43,8 +44,11 @@ def on_start():
     print(clients)
     if not started:  # Don't allow multiple starts
         print("Starting")
+        broadcast("",  "start game")
         started = True
+        g.started = True
         game_info = GameInfo()
+        g.game_info = game_info
         engine = Engine(emit_to_client, broadcast, retrieve_response, game_info=game_info, n_players=len(clients))
         broadcast(game_info.config_settings, "settings")
         winner = engine.run_game()

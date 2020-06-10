@@ -3,6 +3,9 @@
 <head>
 	<meta charset="UTF-8">
     <title>Coup</title>
+    <style>
+      .action-container {display: none}
+    </style>
     <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
     <script type="text/javascript" charset="utf-8">
@@ -32,11 +35,20 @@
             console.log(msg)
             document.getElementById("info").innerText = msg
         });
+        socket.on('start game', function(msg) {
+            document.getElementById("info").innerText = msg
+            $("div.action-container").show();
+            $("#start-button").hide();
+        });
         $(document).ready(function(){ 
             $("button#submission").click(function(){ 
                 console.log("Got a click!!!");
                 socket.emit('action', $("#actions").val());
             }) 
+            $("button.action-button").click(function(event){
+                console.log("Got a action-button click");
+                socket.emit('action', event.target.innerHTML)
+            })
         }); 
     </script>
 
@@ -58,17 +70,35 @@
     <hr />
     </div>
     <div>
-        <button type="button" onclick="socket.emit('start game');">Start</button>
+        <button type="button" id="start-button" onclick="socket.emit('start game');">Start</button>
     </div>
-    <input id="actions"></input>
-    <button id="submission">Submit</button>
-    <button id="Income">Income</button>
-    <button id="Foreign Aid">Foreign Aid</button>
-    <button id="Tax">Tax</button>
-    <button id="Steal">Steal</button>
-    <button id="Exchange">Exchange</button>
-    <button id="Assassinate">Assassinate</button>
-    <button id="Coup">Coup</button>
+    <div>
+      <input id="actions"></input>
+    </div>
+    <div>
+      <button id="submission">Submit</button>
+    </div>
+    <div class="action-container neutral-action-container">
+      <button id="Income" class="action-button">Income</button>
+    </div> 
+    <div class="action-container neutral-action-container">
+      <button id="Foreign Aid" class="action-button">Foreign Aid</button>
+    </div>
+    <div class="action-container neutral-action-container">
+      <button id="Tax" class="action-button">Tax</button>
+    </div>
+    <div class="action-container neutral-action-container">
+      <button id="Exchange" class="action-button">Exchange</button>
+    </div>
+    <div class="action-container targeted-action-container">
+      <button id="Steal0" class="action-button">Steal 0</button><button id="Steal1" class="action-button">Steal 1</button><button id="Steal2" class="action-button">Steal 2</button><button id="Steal3" class="action-button">Steal 3</button><button id="Steal4" class="action-button">Steal 4</button><button id="Steal5" class="action-button">Steal 5</button>
+    </div>
+    <div class="action-container targeted-action-container">
+      <button id="Assassinate0" class="action-button">Assassinate 0</button><button id="Assassinate1" class="action-button">Assassinate 1</button><button id="Assassinate2" class="action-button">Assassinate 2</button><button id="Assassinate3" class="action-button">Assassinate 3</button><button id="Assassinate4" class="action-button">Assassinate 4</button><button id="Assassinate5" class="action-button">Assassinate 5</button>
+    </div>
+    <div class="action-container targeted-action-container">
+      <button id="Coup0" class="action-button">Coup 0</button><button id="Coup1" class="action-button">Coup 1</button><button id="Coup2" class="action-button">Coup 2</button><button id="Coup3" class="action-button">Coup 3</button><button id="Coup4" class="action-button">Coup 4</button><button id="Coup5" class="action-button">Coup 5</button>
+    </div>
 </section>
 </body>
 </html>
