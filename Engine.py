@@ -406,6 +406,9 @@ class Engine:
             reaction_type = args[0]
             if reaction_type in Block.aliases:
                 character_options = action.blockable_by
+                if character_options is None:
+                    # action is not blockable, invalid response
+                    raise ValueError("Cannot block unblockable action")
                 if len(character_options) == 1:
                     character = character_options[0] 
                     if len(args) > 1:
