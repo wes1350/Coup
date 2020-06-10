@@ -44,6 +44,7 @@
             $("button#submission").click(function(){ 
                 console.log("Got a click!!!");
                 socket.emit('action', $("#actions").val());
+                document.getElementById("actions").value = "";
             }) 
             $("button.action-button").click(function(event){
                 console.log("Got a action-button click");
