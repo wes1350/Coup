@@ -366,9 +366,13 @@ class Engine:
     def translate_action_choice(self, response : str) -> Action:
         """Given an action response, translate it appropriately"""
         response = response.strip().lower()
-        args = response.split(" ")
-        action_name = args[0]
-        target = None if len(args) == 1 else int(args[1])
+        if response == "foreign aid":
+            action_name = response
+            target = None
+        else:
+            args = response.split(" ")
+            action_name = args[0] if response != "foreign aid" else response
+            target = None if len(args) == 1 else int(args[1])
         if action_name in [Steal.aliases, Assassinate.aliases, Coup.aliases]:
             if target is None:
                 raise ValueError("Need to specify target for assassinate/steal")
