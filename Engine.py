@@ -24,7 +24,7 @@ class Engine:
     """Maintains all the logic relevant to the game, such as the 
        game state, config, querying players, etc."""
 
-    def __init__(self, whisper_f=None, shout_f=None, query_f=None, **kwargs) -> None:
+    def __init__(self, whisper_f=None, shout_f=None, query_f=None, game_info=None, **kwargs) -> None:
         """Initialize a new Engine, with arguments from the command line."""
         self._config_status, self._config_err_msg = True, None
         self.whisper_f = whisper_f
@@ -38,7 +38,9 @@ class Engine:
         else:
             self.local = None in [self.whisper_f, self.shout_f, self.query_f]
             self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local)
-            self.shout(str(self._config))
+#             self.shout(str(self._config))
+            self.game_info = game_info
+            self.game_info.config_settings = str(self._config)
 
     def game_is_over(self) -> bool:
         """Determine if the win condition is satisfied."""

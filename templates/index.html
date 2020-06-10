@@ -12,6 +12,10 @@
             console.log(msg)
             document.getElementById("info").innerText = msg
         });
+        socket.on('settings', function(msg) {
+            console.log(msg)
+            document.getElementById("settings").innerText = msg
+        });
         socket.on('state', function(msg) {
             console.log(msg)
             document.getElementById("state").innerText = msg
@@ -39,6 +43,8 @@
 </head>
 <body>
 <section class="content">
+    <div id="settings" style="color:black;">
+    </div>
     <div id="state" style="color:blue;">
     </div>
     <hr />
@@ -56,6 +62,13 @@
     </div>
     <input id="actions"></input>
     <button id="submission">Submit</button>
+    <button id="Income">Income</button>
+    <button id="Foreign Aid">Foreign Aid</button>
+    <button id="Tax">Tax</button>
+    <button id="Steal">Steal</button>
+    <button id="Exchange">Exchange</button>
+    <button id="Assassinate">Assassinate</button>
+    <button id="Coup">Coup</button>
 </section>
 </body>
 </html>

@@ -5,6 +5,7 @@ eventlet.monkey_patch()
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO, send, emit
 from Engine import Engine
+from GameInfo import GameInfo
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -43,16 +44,26 @@ def on_start():
     if not started:  # Don't allow multiple starts
         print("Starting")
         started = True
-        engine = Engine(emit_to_client, lambda msg: send(msg, broadcast=True), retrieve_response, n_players=len(clients))
+        game_info = GameInfo()
+        engine = Engine(emit_to_client, broadcast, retrieve_response, game_info=game_info, n_players=len(clients))
+        broadcast(game_info.config_settings, "settings")
         winner = engine.run_game()
 
-def emit_to_client(msg, client_id, name=None):
+def broadcast(msg, tag=None):
+    """Send a message to all clients."""
+    if tag is None:
+        send(msg, broadcast=True)
+    else:
+        for client in clients:
+            emit_to_client(msg, client, tag)
+
+def emit_to_client(msg, client_id, tag=None):
     # Clear response before whispering, to ensure we don't keep a stale one
     clients[client_id]["response"] = "No response"
-    if name is None:
+    if tag is None:
         socketio.send(msg, room=clients[client_id]["sid"])
     else:
-        emit(name, msg, room=clients[client_id]["sid"])
+        emit(tag, msg, room=clients[client_id]["sid"])
 
 def retrieve_response(client_id):
     """Get the current stored response corresponding to the requested client."""
