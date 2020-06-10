@@ -38,6 +38,5 @@ class Card:
     def __str__(self):
         rep = "["
         rep += str(self._character) + ", "
-        rep += ("Alive" if self._alive else "Dead") + ", "
-        rep += str(self._id) + "]"
+        rep += ("Alive" if self._alive else "Dead") + "]"
         return rep
