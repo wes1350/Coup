@@ -25,3 +25,6 @@ class Action:
 
     def ready(self) -> bool:
         return True
+
+    def output_rep(self) -> str:
+        return None

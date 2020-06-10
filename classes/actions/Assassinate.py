@@ -8,3 +8,6 @@ class Assassinate(Action):
 
     def ready(self):
         return self.kill_card_id is not None and self.target is not None
+
+    def output_rep(self) -> str:
+        return "Assassinates Player {}".format(self.target)

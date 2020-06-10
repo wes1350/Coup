@@ -207,6 +207,8 @@ class Engine:
                 else:
                     valid = self.validate_action(action, player_id)
                     if valid:
+                        as_character = " as " + action.as_character if action.as_character else ""
+                        self.shout("Player {} {}".format(player_id, action.output_rep()) + as_character)
                         return action
                     self.whisper("Impossible action, please try again.", player_id, "error")
 
