@@ -55,6 +55,7 @@ def on_start():
 
 def broadcast(msg, tag=None):
     """Send a message to all clients."""
+    clear_old_info()
     if tag is None:
         send(msg, broadcast=True)
     else:
@@ -73,10 +74,18 @@ def retrieve_response(client_id):
     """Get the current stored response corresponding to the requested client."""
     return clients[client_id]["response"]
 
+def clear_old_info(specific_client=None):
+    # Erase outdated info
+    for client in ([specific_client] if specific_client else clients):
+        emit_to_client("", client, "error")
+        emit_to_client("", client, "prompt")
+
 @socketio.on('action')
 def store_action(message):
     print("Got an action: " + message)
-    clients[get_id_from_sid(request.sid)]["response"] = message
+    sender_id = get_id_from_sid(request.sid)
+    clear_old_info(sender_id)
+    clients[sender_id]["response"] = message
 
 if __name__ == '__main__':
     started = False

@@ -124,6 +124,7 @@ class Engine:
     def next_turn(self) -> None:
         """Move on to the next turn, updating the game state as necessary."""
         self._state.update_current_player() 
+        self.shout("It is now Player {}'s turn".format(self._state.get_current_player_id()))
 
     def choose_among_reactions(self, reactions : List[Reaction]) -> Reaction:
         """Given a list of reactions, return one based on the selection setting."""
