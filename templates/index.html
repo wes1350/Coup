@@ -49,6 +49,10 @@
                 console.log("Got a action-button click");
                 socket.emit('action', event.target.innerHTML)
             })
+            $("button#pass-button").click(function(event){
+                console.log("Passing");
+                socket.emit('action', "n");
+            })
         }); 
     </script>
 
@@ -95,12 +99,17 @@
     <div class="action-container targeted-action-container">
       <button id="Coup0" class="action-button">Coup 0</button><button id="Coup1" class="action-button">Coup 1</button><button id="Coup2" class="action-button">Coup 2</button><button id="Coup3" class="action-button">Coup 3</button><button id="Coup4" class="action-button">Coup 4</button><button id="Coup5" class="action-button">Coup 5</button>
     </div>
+    <br />
     <div class="action-container reaction-container">
       <button id="block" class="action-button">Block Ambassador</button><button id="block" class="action-button">Block Captain</button><button id="block" class="action-button">Block Contessa</button><button id="block" class="action-button">Block Duke</button>
     </div> 
     <div class="action-container reaction-container">
       <button id="challenge" class="action-button">Challenge</button>
     </div> 
+    <div class="action-container reaction-container">
+      <button id="pass-button" class="action-button">Pass</button>
+    </div> 
+    <br />
     <div class="action-container card-choice-container">
       <button id="card0" class="action-button">0</button><button id="card1" class="action-button">1</button>
     </div> 
