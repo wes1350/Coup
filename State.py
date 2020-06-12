@@ -264,12 +264,5 @@ class State:
     def build_state_json(self, player: Player) -> str:
         state_json = {}
         state_json['currentPlayer'] = self._current_player_id
-        state_json['players'] = []
-        for p in self._players:
-            if p.get_id() == player.get_id():
-                state_json['self'] = player.get_json(mask=False)
-            else:
-                player_json = p.get_json(mask=True)
-                state_json['players'].append(player_json)
-
+        state_json['players'] = [p.get_json(mask = p.get_id() != player.get_id()) for p in self._players]
         return json.dumps(state_json)

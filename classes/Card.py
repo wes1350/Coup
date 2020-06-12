@@ -12,12 +12,8 @@ class Card:
         self._assigned = assigned
         self._id = id_
 
-    def get_json(self, mask) -> dict:
-        card_json = {}
-        card_json['character'] = self.get_character_type()
-        if self._alive and mask:
-            card_json['character'] = None
-        return card_json
+    def get_json(self, mask : bool) -> dict:
+        return {'character': None if self._alive and mask else self.get_character_type()}
         
     def get_character(self) -> Character:
         return self._character
@@ -29,7 +25,7 @@ class Card:
     def die(self):
         self._alive = False
 
-    def is_alive(self):
+    def is_alive(self) -> bool:
         return self._alive
 
     def is_assigned(self) -> bool:
@@ -42,7 +38,7 @@ class Card:
     def get_id(self) -> int:
         return self._id
 
-    def __str__(self):
+    def __str__(self) -> str:
         rep = "["
         rep += str(self._character) + ", "
         rep += ("Alive" if self._alive else "Dead") + "]"
