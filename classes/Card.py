@@ -11,6 +11,13 @@ class Card:
         self._alive = True
         self._assigned = assigned
         self._id = id_
+
+    def get_json(self, mask) -> dict:
+        card_json = {}
+        card_json['character'] = self.get_character_type()
+        if self._alive and mask:
+            card_json['character'] = None
+        return card_json
         
     def get_character(self) -> Character:
         return self._character

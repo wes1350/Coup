@@ -1,5 +1,6 @@
 """Maintains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
 import time 
+import json
 from typing import List
 from Config import Config
 from classes.Player import Player
@@ -258,3 +259,17 @@ class State:
         """Broadcast the masked state representation to all players."""
         for p in self._players:
             self.whisper(self.masked_rep(p), p.get_id(), "state")
+            self.whisper(self.build_state_json(p), p.get_id(), "state_json")
+
+    def build_state_json(self, player: Player) -> str:
+        state_json = {}
+        state_json['currentPlayer'] = self._current_player_id
+        state_json['players'] = []
+        for p in self._players:
+            if p.get_id() == player.get_id():
+                state_json['self'] = player.get_json(mask=False)
+            else:
+                player_json = p.get_json(mask=True)
+                state_json['players'].append(player_json)
+
+        return json.dumps(state_json)

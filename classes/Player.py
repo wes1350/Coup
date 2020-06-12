@@ -9,6 +9,13 @@ class Player:
         self._id = id_
         self._coins = coins
         self._cards = cards
+
+    def get_json(self, mask) -> dict:
+        player_json = {} 
+        player_json['id'] = self._id
+        player_json['coins'] = self._coins
+        player_json['cards'] = [card.get_json(mask) for card in self._cards]
+        return player_json
     
     def get_id(self) -> int:
         return self._id
