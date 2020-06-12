@@ -1,5 +1,3 @@
-import 'test'
-
 var socket = io();
 // var socket = io('http://localhost:5000');
 socket.on('message', function(msg) {
