@@ -8,3 +8,6 @@ class Income(Action):
 
     def output_rep(self) -> str:
         return "takes Income"
+
+    def __str__(self) -> str:
+        return "Income"

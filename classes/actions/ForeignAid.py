@@ -8,3 +8,6 @@ class ForeignAid(Action):
 
     def output_rep(self) -> str:
         return "takes Foreign Aid"
+
+    def __str__(self) -> str:
+        return "ForeignAid"

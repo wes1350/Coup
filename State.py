@@ -7,7 +7,12 @@ from classes.Player import Player
 from classes.Deck import Deck
 from classes.Card import Card
 from classes.actions.Action import Action
+from classes.actions.ForeignAid import ForeignAid
+from classes.actions.Tax import Tax
+from classes.actions.Steal import Steal
+from classes.actions.Exchange import Exchange
 from classes.actions.Assassinate import Assassinate
+from classes.actions.Income import Income
 from classes.actions.Coup import Coup
 
 
@@ -153,9 +158,8 @@ class State:
             in_hand = self._config.cards_per_player 
             for i in range(n_to_draw):
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
-            self.whisper(message + "\n", player, "info")
 
-            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw)
+            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n")
             
             # Return all cards from our hand we decided not to keep
             returned = []
@@ -176,12 +180,13 @@ class State:
                 if i + in_hand not in cards_to_keep:
                     self._deck.return_card(card.get_id())
 
-    def validate_action(self, action : Action, player_id : int) -> bool:
+    def validate_action(self, action : Action, player_id : int, whisper: bool = True) -> bool:
         """Given an action, ensure it can be applied given the game state."""
         # Validate the cost 
         budget = self._players[player_id].get_coins()
         if action.cost > budget:
-            self.whisper("ERROR: not enough coins for action", player_id, "error")
+            if whisper:
+                self.whisper("ERROR: not enough coins for action", player_id, "error")
             return False
         
         # Validate the target, if applicable
@@ -190,24 +195,27 @@ class State:
         if has_target:
             # Target must be a valid Player. Bank doesn't count
             if target_id < 0 or target_id >= self.get_n_players():
-                self.whisper("ERROR: invalid player id", player_id, "error")
+                if whisper:
+                    self.whisper("ERROR: invalid player id", player_id, "error")
                 return False 
             # Target must be alive
             if not self.player_is_alive(target_id):
-                self.whisper("ERROR: chosen player has been eliminated", player_id, "error")
+                if whisper:
+                    self.whisper("ERROR: chosen player has been eliminated", player_id, "error")
                 return False
             # Target must not be self
             if target_id == player_id:
-                self.whisper("ERROR: cannot target self with action", player_id, "error")
+                if whisper:
+                    self.whisper("ERROR: cannot target self with action", player_id, "error")
                 return False
         
         return True
 
-    def query_exchange(self, player : int, draw_start : int, draw_end : int) -> List[int]:
+    def query_exchange(self, player : int, draw_start : int, draw_end : int, prompt_message) -> List[int]:
         """For an Exchange, prompt the player for which cards they'd like to keep."""
         query_msg = "Pick the cards you wish to keep:\n"
         if not self.local:
-            self.whisper(query_msg, player, "prompt")
+            self.whisper(query_msg + prompt_message, player, "prompt")
         while True:
             response = input(query_msg) if self.local else self.get_response(player)
             try: 
@@ -260,9 +268,26 @@ class State:
         for p in self._players:
             self.whisper(self.masked_rep(p), p.get_id(), "state")
             self.whisper(self.build_state_json(p), p.get_id(), "state_json")
+            self.whisper(self.build_action_space(p), p.get_id(), "action_space")
+
+    def build_action_space(self, player: Player) -> str:
+        actions = {}
+
+        # these actions are always executable
+        actions[Tax().__str__()] = True
+        actions[Income().__str__()] = True
+        actions[Exchange().__str__()] = True
+        actions[ForeignAid().__str__()] = True
+
+        for action in [Steal, Assassinate, Coup]:
+            targets = [p.get_id() for p in self._players if (p != player and self.validate_action(action(p.get_id()), player.get_id(), whisper=False))]
+            actions[action(0).__str__()] = targets
+
+        return json.dumps(actions)
 
     def build_state_json(self, player: Player) -> str:
         state_json = {}
         state_json['currentPlayer'] = self._current_player_id
+        state_json['playerId'] = player.get_id()
         state_json['players'] = [p.get_json(mask = p.get_id() != player.get_id()) for p in self._players]
         return json.dumps(state_json)

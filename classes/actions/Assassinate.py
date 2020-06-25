@@ -11,3 +11,6 @@ class Assassinate(Action):
 
     def output_rep(self) -> str:
         return "Assassinates Player {}".format(self.target)
+
+    def __str__(self) -> str:
+        return "Assassinate"

@@ -11,3 +11,6 @@ class Coup(Action):
 
     def output_rep(self) -> str:
         return "Coups Player {}".format(self.target)
+
+    def __str__(self) -> str:
+        return "Coup"

@@ -10,3 +10,6 @@ class Steal(Action):
 
     def output_rep(self) -> str:
         return "Steals from Player {}".format(self.target)
+
+    def __str__(self) -> str:
+        return "Steal"
