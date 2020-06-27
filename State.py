@@ -274,14 +274,14 @@ class State:
         actions = {}
 
         # these actions are always executable
-        actions[Tax().__str__()] = True
-        actions[Income().__str__()] = True
-        actions[Exchange().__str__()] = True
-        actions[ForeignAid().__str__()] = True
+        actions[str(Tax())] = True
+        actions[str(Income())] = True
+        actions[str(Exchange())] = True
+        actions[str(ForeignAid())] = True
 
         for action in [Steal, Assassinate, Coup]:
             targets = [p.get_id() for p in self._players if (p != player and self.validate_action(action(p.get_id()), player.get_id(), whisper=False))]
-            actions[action(0).__str__()] = targets
+            actions[str(action(0))] = targets
 
         return json.dumps(actions)
 
