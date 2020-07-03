@@ -76,7 +76,8 @@ class State:
         """Return the indicated card in the player's hand to the deck, and draw a new one at random."""
         new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))
         self._players[player_id].set_card(card_idx, new_card)
-        self.whisper("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())), player_id, "info")
+        self.whisper("Player {}, your new card {} is {}".format(player_id, card_idx, 
+                                                                str(new_card.get_character())), player_id, "info")
 
     def kill_player_card(self, player_id : int, card_idx : int) -> None:
         self.get_player_card(player_id, card_idx).die()
@@ -119,8 +120,10 @@ class State:
                 return challenger
         return actor
 
-    def execute_action(self, player : int, action : Action, ignore_killing : bool = False, only_pay_cost : bool = False) -> None:
-        """Execute a given action and update the game state accordingly. Can involve querying players, e.g. for Exchange. """
+    def execute_action(self, player : int, action : Action, ignore_killing : bool = False, 
+                       only_pay_cost : bool = False) -> None:
+        """Execute a given action and update the game state accordingly. Can involve 
+           querying players, e.g. for Exchange. """
 
         cost = action.cost
         # Sometimes an action was blocked, but the original actor still needs to pay. 
@@ -253,7 +256,8 @@ class State:
         return True
 
     def exchange_player_card(self, player : int, character : str) -> None:
-        """Given a player and character, find the character in the player's hand and swap it with a new card from the Deck."""
+        """Given a player and character, find the character in the player's 
+           hand and swap it with a new card from the Deck."""
         for id_ in self.get_player_living_card_ids(player):
             if self.get_player_card(player, id_).get_character_type() == character:
                 self.switch_player_card(player, id_)
@@ -267,7 +271,8 @@ class State:
 
     def masked_rep(self, player : Player):
         rep = "-"*40
-        rep += "{}\n".format("".join([str(p) if p.get_id() == player.get_id() else p.masked_rep() for p in self._players]))
+        rep += "{}\n".format("".join([str(p) if p.get_id() == player.get_id() 
+                                             else p.masked_rep() for p in self._players]))
         return rep
 
     def broadcast_state(self) -> None:
@@ -284,8 +289,11 @@ class State:
             actions[str(action())] = self.validate_action(action(), player.get_id())
 
         for action in [Steal, Assassinate, Coup]:
-            targets = [p.get_id() for p in self._players if (p != player and self.validate_action(action(p.get_id()), player.get_id(), whisper=False))]
-            actions[str(action(0))] = targets
+            targets = [p.get_id() for p in self._players 
+                       if (p != player and 
+                           self.validate_action(action(target=p.get_id()), 
+                                                player.get_id(), whisper=False))]
+            actions[str(action(target=0))] = targets
 
         return json.dumps(actions)
 
