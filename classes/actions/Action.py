@@ -26,5 +26,8 @@ class Action:
     def ready(self) -> bool:
         return True
 
+    def history_rep(self) -> dict:
+        return {"type": str(self), "as_character": self.as_character, "target": self.target}
+
     def output_rep(self) -> str:
         return None

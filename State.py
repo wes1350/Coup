@@ -40,9 +40,10 @@ class State:
             self._players[0].change_coins(-1 * config.first_player_coin_penalty)
 
         self._current_player_id = 0
-        # Initialize the current turn
-        self._current_turn = []
-    
+
+        # Initialize the history
+        self._history = []
+
     def get_n_players(self) -> int:
         return self._n_players
 
@@ -120,6 +121,7 @@ class State:
 
     def execute_action(self, player : int, action : Action, ignore_killing : bool = False, only_pay_cost : bool = False) -> None:
         """Execute a given action and update the game state accordingly. Can involve querying players, e.g. for Exchange. """
+
         cost = action.cost
         # Sometimes an action was blocked, but the original actor still needs to pay. 
         # In this case, charge them accordingly but don't do anything else.
@@ -293,3 +295,6 @@ class State:
         state_json['playerId'] = player.get_id()
         state_json['players'] = [p.get_json(mask = p.get_id() != player.get_id()) for p in self._players]
         return json.dumps(state_json)
+
+    def add_to_history(self, event_type : str, event_info : dict) -> None:
+        self._history.append((event_type, event_info))
