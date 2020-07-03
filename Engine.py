@@ -61,6 +61,7 @@ class Engine:
         """Play one turn of the game."""
         current_player = self._state.get_current_player_id()
         action = self.query_player_action(current_player)
+        self.add_to_history("action", action.history_rep())
         target = action.target
         
         if not action.is_blockable() and not action.is_challengeable():
@@ -78,6 +79,7 @@ class Engine:
                 reaction_type = chosen_reaction.reaction_type
                 if reaction_type == "block":
                     # Handle block reactions
+                    self.add_to_history("block", chosen_reaction.history_rep())
                     blocker = chosen_reaction.from_player
                     query_challenge_players = [p for p in self._state.get_alive_players() 
                                                if p != blocker]
@@ -85,6 +87,7 @@ class Engine:
                     if len(challenges) > 0:
                         # Someone challenged the block, so resolve the challenge 
                         chosen_challenge = self.choose_among_reactions(challenges)
+                        self.add_to_history("challenge", chosen_challenge.history_rep())
                         challenger = chosen_challenge.from_player
                         claimed_character = chosen_reaction.as_character
                         losing_player = self._state.get_challenge_loser(claimed_character, 
@@ -98,11 +101,14 @@ class Engine:
                             # Enforce any costs to original action executor
                             self.exchange_player_card(blocker, chosen_reaction)
                             self.execute_action(action, current_player, only_pay_cost=True)
+                        self.add_to_history("challenge_resolution", {"success": losing_player == blocker})
+                        self.add_to_history("block_resolution", {"success": losing_player != blocker})
                         self.shout("Player {} loses the challenge".format(losing_player))
                     else:
                         # Nobody challenged, so the block is successful
                         # Enforce any costs to original action executor
                         self.execute_action(action, current_player, only_pay_cost=True)
+                        self.add_to_history("block_resolution", {"success": True})
                         self.shout("Action blocked with {}".format(chosen_reaction.as_character))    
                 elif reaction_type == "challenge":
                     challenger = chosen_reaction.from_player
@@ -114,6 +120,7 @@ class Engine:
                     if losing_player == challenger:
                         self.exchange_player_card(current_player, action)
                         self.execute_action(action, current_player, target, ignore_if_dead=True)
+                    self.add_to_history("challenge resolution", {"success": losing_player != challenger})
                     self.shout("Player {} loses the challenge".format(losing_player))
                 else:           
                     raise ValueError("Invalid reaction type encountered")
@@ -167,6 +174,10 @@ class Engine:
 
     def execute_action(self, action: Action = None, source : int = None, target : int = None, ignore_if_dead : bool = False, only_pay_cost : bool = False) -> None:
         """Given an action, execute it based on the parameters provided."""
+
+        # Add the action resolution to the history
+        self.add_to_history("action_resolution", {"success": not only_pay_cost})
+
         ignore_killing = False
         if not only_pay_cost:
             # Query affected player if necessary
@@ -528,6 +539,11 @@ class Engine:
 
     def broadcast_state(self) -> None:
         self._state.broadcast_state()
+    
+    def add_to_history(self, event_type : str, event_info : dict) -> None:
+        # Add the action resolution to the history
+        self._state.add_to_history(event_type, event_info)
+        print(event_type, event_info)
 
 if __name__ == "__main__":
     engine = Engine(parse_args())
