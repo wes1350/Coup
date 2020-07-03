@@ -70,9 +70,7 @@ class Engine:
         else:
             # Blocks and/or Challenges are possible. See if anyone decides to challenge
             query_players = [p for p in self._state.get_alive_players() if p != current_player]
-            print('-------Engine----- reactions')
             reactions = self.query_player_reactions(query_players, action)
-            print('-------Engine----- reactions')
             if len(reactions) > 0:
                 # At least one player reacted, so handle it
                 chosen_reaction = self.choose_among_reactions(reactions)
@@ -522,17 +520,16 @@ class Engine:
 
     def get_response(self, player : int, sleep : bool = True) -> str:
         """Query server for a response."""
+        print("Waiting for a response...")
         while True:
             response = self.query_f(player)
             if response == "No response":
-                print("-----Engine---- Didn't get a response")
                 if sleep:
                     time.sleep(0.5)
                     continue
                 else:
                     return None
             elif response is not None:
-                print("-----Engine---- Got a response!")
                 return response
             else:
                 assert False
