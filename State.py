@@ -18,7 +18,7 @@ from classes.actions.Coup import Coup
 
 class State:
 
-    def __init__(self, config : Config, whisper=None, shout=None, get_response=None, local=True) -> None:
+    def __init__(self, config : Config, whisper=None, shout=None, get_response=None, local=True, ai_players=[]) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
         self.whisper = whisper
@@ -26,6 +26,7 @@ class State:
         self.get_response = get_response
         self.local = local
         self._n_players = config.n_players
+        self.ai_players = ai_players
         # Initialize the deck
         self._deck = Deck(self._n_players, config.cards_per_character)
         # Initialize the players and assign them cards from the deck
@@ -158,13 +159,17 @@ class State:
             drawn_cards = self._deck.draw(n_to_draw)
             alive_cards = self.get_player_living_card_ids(player)
             message = "For your exchange, you may choose {} of the following cards:\n    ".format(len(alive_cards))
+            options = {"n": len(alive_cards)}
             for i in alive_cards:
                 message += " [{}] {} ".format(i, str(self.get_player_card(player, i).get_character()))
+                options[i] = str(self.get_player_card(player, i).get_character())
             in_hand = self._config.cards_per_player 
             for i in range(n_to_draw):
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
+                options[i + in_hand] = str(drawn_cards[i].get_character())
 
-            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n")
+            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n", 
+                                                chars_for_ai=options)
             
             # Return all cards from our hand we decided not to keep
             returned = []
@@ -216,11 +221,15 @@ class State:
         
         return True
 
-    def query_exchange(self, player : int, draw_start : int, draw_end : int, prompt_message) -> List[int]:
+    def query_exchange(self, player : int, draw_start : int, draw_end : int, prompt_message : str, 
+                       chars_for_ai : dict = None) -> List[int]:
         """For an Exchange, prompt the player for which cards they'd like to keep."""
         query_msg = "Pick the cards you wish to keep:\n"
         if not self.local:
-            self.whisper(query_msg + prompt_message, player, "prompt")
+            if player in self.ai_players:
+                self.whisper(player=player, ai_query_type="exchange", ai_query_options=chars_for_ai)
+            else:
+                self.whisper(query_msg + prompt_message, player, "prompt")
         while True:
             response = input(query_msg) if self.local else self.get_response(player)
             try: 
