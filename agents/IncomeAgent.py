@@ -1,11 +1,15 @@
-import json
-from . import Agent
+"""An Agent that always takes Income unless forced to Coup, and that never Blocks or Challenges."""
+
+if __name__ == "__main__":
+    from Agent import Agent
+else:
+    from .Agent import Agent
 
 class IncomeAgent(Agent):
     def __init__(self):
         super().__init__()
     
-    def react(self, message):
+    def react(self, message : dict):
         if message["type"] == "action":
             return self.decide_action(message["options"]) 
         elif message["type"] == "reaction":
@@ -13,8 +17,8 @@ class IncomeAgent(Agent):
         elif message["type"] == "card_selection":
             return self.decide_card(message["options"]) 
         elif message["type"] == "exchange":
-            return self.decide_exchange(message["options"]) 
-            
+            raise Exception("Income Agent shouldn't ever exchange")
+
     def decide_action(self, actions : dict):
         if "Income" in actions:
             return "Income"
@@ -30,6 +34,6 @@ class IncomeAgent(Agent):
     def decide_card(self, cards):
         return cards[0]
 
-    def decide_exchange(self, options):
-        return " ".join([str(i) for i in range(options["n"])])
-        
+
+if __name__ == "__main__":
+    ia = IncomeAgent()
