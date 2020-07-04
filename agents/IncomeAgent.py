@@ -1,39 +1,56 @@
 """An Agent that always takes Income unless forced to Coup, and that never Blocks or Challenges."""
 
-if __name__ == "__main__":
-    from Agent import Agent
-else:
-    from .Agent import Agent
+import socketio
+import json
 
-class IncomeAgent(Agent):
-    def __init__(self):
-        super().__init__()
-    
-    def react(self, message : dict):
-        if message["type"] == "action":
-            return self.decide_action(message["options"]) 
-        elif message["type"] == "reaction":
-            return self.decide_reaction(message["options"]) 
-        elif message["type"] == "card_selection":
-            return self.decide_card(message["options"]) 
-        elif message["type"] == "exchange":
-            raise Exception("Income Agent shouldn't ever exchange")
+sio = socketio.Client()
 
-    def decide_action(self, actions : dict):
-        if "Income" in actions:
-            return "Income"
-        else:
-            if "Coup" in actions:
-                if actions["Coup"]:
-                    return "Coup " + str(actions["Coup"][0])
-            assert False
+@sio.on('ai')
+def on_prompt(message):
+    print("ON PROMPT:", message)
+    response = react(json.loads(message))
+    sio.emit("action", response)
 
-    def decide_reaction(self, reactions):
-        return "Pass"
+@sio.event
+def connect():
+    print("I'm connected!")
+    sio.emit("ai_connect")
 
-    def decide_card(self, cards):
-        return cards[0]
+@sio.event
+def connect_error():
+    print("The connection failed!")
+
+@sio.event
+def disconnect():
+    print("I'm disconnected!")
+
+def react(message : dict):
+    print(message)
+    if message["type"] == "action":
+        return decide_action(message["options"]) 
+    elif message["type"] == "reaction":
+        return decide_reaction(message["options"]) 
+    elif message["type"] == "card_selection":
+        return decide_card(message["options"]) 
+    elif message["type"] == "exchange":
+        raise Exception("Income Agent shouldn't ever exchange")
+    else:
+        assert False
+
+def decide_action(actions : dict):
+    if "Income" in actions:
+        return "Income"
+    else:
+        if "Coup" in actions:
+            if actions["Coup"]:
+                return "Coup " + str(actions["Coup"][0])
+        assert False
+
+def decide_reaction(reactions):
+    return "Pass"
+
+def decide_card(cards):
+    return cards[0]
 
 
-if __name__ == "__main__":
-    ia = IncomeAgent()
+sio.connect('http://localhost:5000')

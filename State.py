@@ -287,10 +287,10 @@ class State:
         """Broadcast the masked state representation to all players."""
         for p in self._players:
             self.whisper(self.masked_rep(p), p.get_id(), "state")
-            self.whisper(self.build_state_json(p), p.get_id(), "state_json")
-            self.whisper(self.build_action_space(p), p.get_id(), "action_space")
+            self.whisper(self.build_state_json(p.get_id()), p.get_id(), "state_json")
+            self.whisper(self.build_action_space(p.get_id()), p.get_id(), "action_space")
 
-    def build_action_space(self, player: Player) -> str:
+    def build_action_space(self, player_id : int) -> str:
         actions = {}
 
         for action in [Income, ForeignAid, Tax, Exchange]:
@@ -298,18 +298,18 @@ class State:
 
         for action in [Steal, Assassinate, Coup]:
             targets = [p.get_id() for p in self._players 
-                       if (p != player and 
+                       if (p.get_id() != player_id and 
                            self.validate_action(action(target=p.get_id()), 
-                                                player.get_id(), whisper=False))]
+                                                player_id, whisper=False))]
             actions[str(action(target=0))] = targets
 
         return json.dumps(actions)
 
-    def build_state_json(self, player: Player) -> str:
+    def build_state_json(self, player_id : int) -> str:
         state_json = {}
         state_json['currentPlayer'] = self._current_player_id
-        state_json['playerId'] = player.get_id()
-        state_json['players'] = [p.get_json(mask = p.get_id() != player.get_id()) for p in self._players]
+        state_json['playerId'] = player_id
+        state_json['players'] = [p.get_json(mask = p.get_id() != player_id) for p in self._players]
         return json.dumps(state_json)
 
     def add_to_history(self, event_type : str, event_info : dict) -> None:
