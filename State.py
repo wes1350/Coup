@@ -168,8 +168,7 @@ class State:
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
                 options[i + in_hand] = str(drawn_cards[i].get_character())
 
-            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n", 
-                                                chars_for_ai=options)
+            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n", options)
             
             # Return all cards from our hand we decided not to keep
             returned = []
@@ -222,12 +221,12 @@ class State:
         return True
 
     def query_exchange(self, player : int, draw_start : int, draw_end : int, prompt_message : str, 
-                       chars_for_ai : dict = None) -> List[int]:
+                       options : dict = None) -> List[int]:
         """For an Exchange, prompt the player for which cards they'd like to keep."""
         query_msg = "Pick the cards you wish to keep:\n"
         if not self.local:
             if player in self.ai_players:
-                self.whisper(player=player, ai_query_type="exchange", ai_query_options=chars_for_ai)
+                self.whisper(player=player, ai_query_type="exchange", ai_query_options=options)
             else:
                 self.whisper(query_msg + prompt_message, player, "prompt")
         while True:
