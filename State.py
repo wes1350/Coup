@@ -191,7 +191,8 @@ class State:
 
         # Check if player must Coup
         if self.player_must_coup(player_id):
-            return "coup" in action.aliases
+            if "coup" not in action.aliases:
+                return False
         
         # Validate the target, if applicable
         target_id = action.target 
