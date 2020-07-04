@@ -438,7 +438,7 @@ class Engine:
             query_msg = "Player {}, one of your characters must die. Which one do you pick?\n".format(player_id)
             if not self.local:
                 if self.is_ai_player(player_id):
-                    self.whisper(player=player_id, ai_query_type="card_selection", ai_options={"options": options})
+                    self.whisper(player=player_id, ai_query_type="card_selection", ai_options=options)
                 else:
                     self.whisper(query_msg, player_id, "prompt")
             while True:
