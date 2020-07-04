@@ -261,7 +261,7 @@ class Engine:
         reaction_space = {}
         if target is not None:
             if target == player_id:
-                reaction_space["Block"] = Action.blockable_by
+                reaction_space["Block"] = action.blockable_by
                 reaction_space["Challenge"] = True
             else:
                 reaction_space["Challenge"] = True
@@ -270,13 +270,13 @@ class Engine:
             challengeable = action.as_character 
             blockable = action.is_blockable()
             if challengeable and blockable:
-                reaction_space["Block"] = Action.blockable_by
+                reaction_space["Block"] = action.blockable_by
                 reaction_space["Challenge"] = True
             elif challengeable:
                 reaction_space["Challenge"] = True
                 reaction_space["Block"] = []
             elif blockable:
-                reaction_space["Block"] = Action.blockable_by
+                reaction_space["Block"] = action.blockable_by
                 reaction_space["Challenge"] = False
             else:
                  raise ValueError("Should not ask for reaction to unreactionable action")
@@ -315,7 +315,7 @@ class Engine:
             message = self.determine_reaction_message(target, player_id, action)
             if self.is_ai_player(player_id):
                 self.whisper(player=player_id, ai_query_type="reaction", 
-                             ai_options=determine_reaction_space(target, player_id, action))
+                             ai_options=self.determine_reaction_space(target, player_id, action))
             else:
                 self.whisper(message, player_id, "prompt")
         reactions = [False for _ in players]
@@ -408,7 +408,7 @@ class Engine:
         query_msg = "Player {}, who are you going to coup?\n".format(player_id)
         if not self.local:
             if self.is_ai_player(player_id):
-                self.whisper(player=player_id, ai_query_type="action", ai_options=self._state.build_action_space())
+                self.whisper(player=player_id, ai_query_type="action", ai_options=self._state.build_action_space(player_id))
             else:
                 self.whisper(query_msg, player_id, "prompt")
         while True:
@@ -416,12 +416,12 @@ class Engine:
             try:
                 action = self.translate_coup_target(response)
             except ValueError:
-                self.whisper("Invalid coup target, please try again.", player_id)
+                self.whisper("Invalid coup target, please try again.", player_id, "error")
             else:
                 valid = self.validate_action(action, player_id)
                 if valid:
                     return action
-                self.whisper("Invalid coup target, please try again.", player_id)
+                self.whisper("Invalid coup target, please try again.", player_id, "error")
 
     def query_player_card(self, player_id : int, ignore_if_dead : bool = False) -> int:
         """Given a player who must choose a card to discard, query them for their card choice."""
