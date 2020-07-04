@@ -188,6 +188,10 @@ class State:
             if whisper:
                 self.whisper("ERROR: not enough coins for action", player_id, "error")
             return False
+
+        # Check if player must Coup
+        if self.player_must_coup(player_id):
+            return "coup" in action.aliases
         
         # Validate the target, if applicable
         target_id = action.target 
@@ -273,11 +277,8 @@ class State:
     def build_action_space(self, player: Player) -> str:
         actions = {}
 
-        # these actions are always executable
-        actions[str(Tax())] = True
-        actions[str(Income())] = True
-        actions[str(Exchange())] = True
-        actions[str(ForeignAid())] = True
+        for action in [Income, ForeignAid, Tax, Exchange]:
+            actions[str(action())] = self.validate_action(action(), player.get_id())
 
         for action in [Steal, Assassinate, Coup]:
             targets = [p.get_id() for p in self._players if (p != player and self.validate_action(action(p.get_id()), player.get_id(), whisper=False))]
