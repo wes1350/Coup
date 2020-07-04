@@ -24,11 +24,18 @@ def index():
 
 @socketio.on('connect')
 def on_connect():
-    print(clients)
     print(started)
 
-    clients[len(clients)] = {"sid": request.sid, "response": "No response"}
+    clients[len(clients)] = {"sid": request.sid, "response": "No response", "ai": False}
     print("Client connected")
+    print(clients)
+
+@socketio.on('connect_ai')
+def on_connect_ai():
+    print(started)
+
+    clients[len(clients)] = {"sid": request.sid, "response": "No response", "ai": True}
+    print("AI client connected")
     print(clients)
 
 @socketio.on('disconnect')
@@ -48,6 +55,7 @@ def on_start():
         started = True
         g.started = True
         game_info = GameInfo()
+        game_info.ai_players = [c for c in clients if clients[c]["ai"]]
         g.game_info = game_info
         engine = Engine(emit_to_client, broadcast, retrieve_response, game_info=game_info, n_players=len(clients))
         broadcast(game_info.config_settings, "settings")

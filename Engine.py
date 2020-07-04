@@ -1,7 +1,7 @@
 """Master class for running Coup. Reads in arguments from the command line, 
    maintains and updates the state, and queries players for actions."""
 
-import random, time, sys, os
+import random, time, sys, os, json
 from typing import List, Optional, Dict, Any
 from State import State
 from Config import Config
@@ -37,7 +37,7 @@ class Engine:
             self._config_err_msg = getattr(e, 'message', repr(e))
         else:
             self.local = None in [self.whisper_f, self.shout_f, self.query_f]
-            self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local)
+            self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local, game_info.ai_players)
 #             self.shout(str(self._config))
             self.game_info = game_info
             self.game_info.config_settings = str(self._config)
@@ -220,6 +220,8 @@ class Engine:
             return self.query_player_coup_target(player_id)
         else:
             query_msg = self.determine_action_message(player_id)
+            if self.is_ai_player(player_id):
+                self.whisper(player=player_id, ai_query_type="action", ai_options=self._state.build_action_space(player_id))
             if not self.local:
                 self.whisper(query_msg + "\n", player_id, "prompt")
             while True:
@@ -255,8 +257,34 @@ class Engine:
                  raise ValueError("Should not ask for reaction to unreactionable action")
         return "Player {}, are you going to {}?\n".format(player_id, message_action)
 
+    def determine_reaction_space(self, target : int, player_id : int, action : Action) -> str:
+        reaction_space = {}
+        if target is not None:
+            if target == player_id:
+                reaction_space["Block"] = Action.blockable_by
+                reaction_space["Challenge"] = True
+            else:
+                reaction_space["Challenge"] = True
+                reaction_space["Block"] = []
+        else:
+            challengeable = action.as_character 
+            blockable = action.is_blockable()
+            if challengeable and blockable:
+                reaction_space["Block"] = Action.blockable_by
+                reaction_space["Challenge"] = True
+            elif challengeable:
+                reaction_space["Challenge"] = True
+                reaction_space["Block"] = []
+            elif blockable:
+                reaction_space["Block"] = Action.blockable_by
+                reaction_space["Challenge"] = False
+            else:
+                 raise ValueError("Should not ask for reaction to unreactionable action")
+        reaction_space["Pass"] = True
+        return reaction_space
+
     def query_player_reactions(self, players : List[int], action : Action) -> List[Reaction]:
-        """Given an action and a list of players to query, prompt players for reactions"""
+        """Given an action and a list of players to query, prompt players for reactions."""
         if self.local:
             reactions = []
             target = action.target
@@ -285,7 +313,11 @@ class Engine:
         target = action.target
         for i, player_id in enumerate(players):
             message = self.determine_reaction_message(target, player_id, action)
-            self.whisper(message, player_id, "prompt")
+            if self.is_ai_player(player_id):
+                self.whisper(player=player_id, ai_query_type="reaction", 
+                             ai_options=determine_reaction_space(target, player_id, action))
+            else:
+                self.whisper(message, player_id, "prompt")
         reactions = [False for _ in players]
         while False in reactions:
             for i, player_id in enumerate(players):
@@ -350,7 +382,11 @@ class Engine:
         """Query the server for challenge responses from a list of players."""
         for i, player_id in enumerate(players):
             query_msg = "Player {}, are you going to [C]hallenge?\n".format(player_id)
-            self.whisper(query_msg, player_id, "prompt")
+            if self.is_ai_player(player_id):
+                self.whisper(player=player_id, ai_query_type="reaction", 
+                             ai_options={"Challenge": True, "Block": [], "Pass": True})
+            else:
+                self.whisper(query_msg, player_id, "prompt")
         challenges = [False for _ in players]        
         while False in challenges:
             for i, player_id in enumerate(players):
@@ -371,7 +407,10 @@ class Engine:
         """Given a player who must coup, ask them who they are going to coup."""
         query_msg = "Player {}, who are you going to coup?\n".format(player_id)
         if not self.local:
-            self.whisper(query_msg, player_id, "prompt")
+            if self.is_ai_player(player_id):
+                self.whisper(player=player_id, ai_query_type="action", ai_options=self._state.build_action_space())
+            else:
+                self.whisper(query_msg, player_id, "prompt")
         while True:
             response = input(query_msg) if self.local else self.get_response(player_id)
             try:
@@ -398,7 +437,10 @@ class Engine:
         else:
             query_msg = "Player {}, one of your characters must die. Which one do you pick?\n".format(player_id)
             if not self.local:
-                self.whisper(query_msg, player_id, "prompt")
+                if self.is_ai_player(player_id):
+                    self.whisper(player=player_id, ai_query_type="card_selection", ai_options={"options": options})
+                else:
+                    self.whisper(query_msg, player_id, "prompt")
             while True:
                 response = input(query_msg) if self.local else self.get_response(player_id)
                 try:
@@ -543,12 +585,18 @@ class Engine:
             self.shout_f(msg)
             pass
     
-    def whisper(self, msg : str, player : int, whisper_type : str = None) -> None:
+    def whisper(self, msg : str, player : int, whisper_type : str = None, 
+                ai_query_type : str = None, ai_options : dict = None) -> None:
         """Send a message only to a specific player."""
-        if self.local:
-            print(msg) 
+        if self.is_ai_player(player):
+            if ai_query_type is None or ai_options is None:
+                assert False
+            self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player)
         else:
-            self.whisper_f(msg, player, whisper_type)
+            if self.local:
+                print(msg) 
+            else:
+                self.whisper_f(msg, player, whisper_type)
 
     def get_response(self, player : int, sleep : bool = True) -> str:
         """Query server for a response."""
@@ -573,6 +621,9 @@ class Engine:
         # Add the action resolution to the history
         self._state.add_to_history(event_type, event_info)
         print(event_type, event_info)
+
+    def is_ai_player(self, i : int) -> bool:
+        return i in self.game_info.ai_players
 
 if __name__ == "__main__":
     engine = Engine(parse_args())
