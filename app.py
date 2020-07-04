@@ -30,13 +30,13 @@ def on_connect():
     print("Client connected")
     print(clients)
 
-@socketio.on('connect_ai')
-def on_connect_ai():
-    print(started)
-
-    clients[len(clients)] = {"sid": request.sid, "response": "No response", "ai": True}
-    print("AI client connected")
-    print(clients)
+@socketio.on('ai_connect')
+def mark_as_ai():
+    for c in clients:
+        if clients[c]["sid"] == request.sid:
+            clients[c]["ai"] = True
+            print("Marked {} as AI".format(c))
+            break
 
 @socketio.on('disconnect')
 def on_disconnect():

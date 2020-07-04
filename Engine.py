@@ -591,7 +591,7 @@ class Engine:
         if self.is_ai_player(player):
             if ai_query_type is None or ai_options is None:
                 assert False
-            self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player)
+            self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player, "ai")
         else:
             if self.local:
                 print(msg) 
