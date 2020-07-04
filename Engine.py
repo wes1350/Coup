@@ -553,14 +553,19 @@ class Engine:
             self.shout_f(msg)
             pass
     
-    def whisper(self, msg : str, player : int, whisper_type : str = None, 
+    def whisper(self, msg : str = None, player : int = None, whisper_type : str = None, 
                 ai_query_type : str = None, ai_options : dict = None) -> None:
         """Send a message only to a specific player."""
+        if player is None:
+            raise ValueError("Must specify a player to whisper to")
         if self.is_ai_player(player):
-            if ai_query_type is None or ai_options is None:
-                assert False
-            self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player, "ai")
+            if whisper_type is None:
+                if ai_query_type is None or ai_options is None:
+                    assert False
+                self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player, "ai")
         else:
+            if msg is None:
+                raise ValueError("Must specify a message for human players")
             if self.local:
                 print(msg) 
             else:
