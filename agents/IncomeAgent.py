@@ -7,7 +7,6 @@ sio = socketio.Client()
 
 @sio.on('ai')
 def on_prompt(message):
-    print("ON PROMPT:", message)
     response = react(json.loads(message))
     sio.emit("action", response)
 
@@ -25,7 +24,7 @@ def disconnect():
     print("I'm disconnected!")
 
 def react(message : dict):
-    print(message)
+    print("Reacting to:", message)
     if message["type"] == "action":
         return decide_action(message["options"]) 
     elif message["type"] == "reaction":
@@ -47,10 +46,10 @@ def decide_action(actions : dict):
         assert False
 
 def decide_reaction(reactions):
-    return "Pass"
+    return "n"
 
 def decide_card(cards):
-    return cards[0]
+    return str(cards[0])
 
 
 sio.connect('http://localhost:5000')
