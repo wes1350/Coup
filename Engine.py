@@ -527,8 +527,12 @@ class Engine:
             raise ValueError("Invalid challenge answer")
 
     def translate_coup_target(self, response : str) -> Action:
-        response = response.strip()
         """Given a coup target response, translate it appropriately."""
+        response = response.strip().lower()
+        if response.startswith("coup "):
+            response = response[5:]
+        elif response.startswith("c "):
+            response = response[2:]
         target = int(response)
         return Coup(target=target)
 
