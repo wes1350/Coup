@@ -222,7 +222,13 @@ class State:
                 if whisper:
                     self.whisper("ERROR: cannot target self with action", player_id, "error")
                 return False
-        
+            # If we are stealing, target must have coins to steal
+            if self._players[target_id].get_coins() <= 0:
+                if "steal" in action.aliases:
+                    if whisper:
+                        self.whisper("ERROR: cannot steal from player with no coins", player_id, "error")
+                    return False
+                        
         return True
 
     def query_exchange(self, player : int, draw_start : int, draw_end : int, prompt_message : str, 
