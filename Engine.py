@@ -131,9 +131,10 @@ class Engine:
                                                 "unsuccessful challenge that doesn't have a target "
                                                 "(only Steal and Assassinate can be blocked after "
                                                 "an unsuccessful challenge.)"))
-                            block = self.query_player_block(target, action)
-                            if block:
-                                handle_block(block)
+                            if self._state.player_is_alive(target):
+                                block = self.query_player_block(target, action)
+                                if block:
+                                    handle_block(block)
                     self.add_to_history("challenge resolution", {"success": losing_player != challenger})
                 else:           
                     raise ValueError("Invalid reaction type encountered")
