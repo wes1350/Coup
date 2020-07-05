@@ -159,14 +159,14 @@ class State:
             drawn_cards = self._deck.draw(n_to_draw)
             alive_cards = self.get_player_living_card_ids(player)
             message = "For your exchange, you may choose {} of the following cards:\n    ".format(len(alive_cards))
-            options = {"n": len(alive_cards)}
+            options = {"n": len(alive_cards), "cards": {}}
             for i in alive_cards:
                 message += " [{}] {} ".format(i, str(self.get_player_card(player, i).get_character()))
-                options[i] = str(self.get_player_card(player, i).get_character())
+                options["cards"][i] = str(self.get_player_card(player, i).get_character())
             in_hand = self._config.cards_per_player 
             for i in range(n_to_draw):
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
-                options[i + in_hand] = str(drawn_cards[i].get_character())
+                options["cards"][i + in_hand] = str(drawn_cards[i].get_character())
 
             cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n", options)
             
@@ -237,7 +237,7 @@ class State:
         query_msg = "Pick the cards you wish to keep:\n"
         if not self.local:
             if player in self.ai_players:
-                self.whisper(player=player, ai_query_type="exchange", ai_query_options=options)
+                self.whisper(player=player, ai_query_type="exchange", ai_options=options)
             else:
                 self.whisper(query_msg + prompt_message, player, "prompt")
         while True:

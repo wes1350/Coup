@@ -38,7 +38,6 @@ class Engine:
         else:
             self.local = None in [self.whisper_f, self.shout_f, self.query_f]
             self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local, game_info.ai_players)
-#             self.shout(str(self._config))
             self.game_info = game_info
             self.game_info.config_settings = str(self._config)
 

@@ -39,4 +39,7 @@ def can_pass(options):
 
 """Exchange Selection"""
 
+"""Misc"""
 
+def possible_responses(options):
+    return [r for r in options if options[r]]
