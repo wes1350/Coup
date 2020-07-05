@@ -42,7 +42,6 @@ def mark_as_ai():
 def on_disconnect():
     del clients[get_id_from_sid(request.sid)]
     print("Client disconnected")
-    print(clients)
 
 @socketio.on('start game')
 def on_start():
@@ -68,11 +67,12 @@ def broadcast(msg, tag=None):
         send(msg, broadcast=True)
     else:
         for client in clients:
-            emit_to_client(msg, client, tag)
+            emit_to_client(msg, client, tag, clear=False)
 
-def emit_to_client(msg, client_id, tag=None):
+def emit_to_client(msg, client_id, tag=None, clear=True):
     # Clear response before whispering, to ensure we don't keep a stale one
-    clients[client_id]["response"] = "No response"
+    if clear:
+        clients[client_id]["response"] = "No response"
     if tag is None:
         socketio.send(msg, room=clients[client_id]["sid"])
     else:
@@ -84,7 +84,7 @@ def retrieve_response(client_id):
 
 def clear_old_info(specific_client=None):
     # Erase outdated info
-    for client in ([specific_client] if specific_client else clients):
+    for client in ([specific_client] if specific_client is not None else clients):
         emit_to_client("", client, "error")
         emit_to_client("", client, "prompt")
 

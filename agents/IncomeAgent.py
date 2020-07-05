@@ -25,24 +25,25 @@ def disconnect():
 
 def react(message : dict):
     print("Reacting to:", message)
+    options = json.loads(message["options"]) if isinstance(message["options"], str) \
+                                             else message["options"]
     if message["type"] == "action":
-        return decide_action(message["options"]) 
+        return decide_action(options) 
     elif message["type"] == "reaction":
-        return decide_reaction(message["options"]) 
+        return decide_reaction(options) 
     elif message["type"] == "card_selection":
-        return decide_card(message["options"]) 
+        return decide_card(options) 
     elif message["type"] == "exchange":
         raise Exception("Income Agent shouldn't ever exchange")
     else:
         assert False
 
 def decide_action(actions : dict):
-    if "Income" in actions:
+    if actions["Income"]:
         return "Income"
     else:
-        if "Coup" in actions:
-            if actions["Coup"]:
-                return "Coup " + str(actions["Coup"][0])
+        if actions["Coup"]:
+            return str(actions["Coup"][0])
         assert False
 
 def decide_reaction(reactions):

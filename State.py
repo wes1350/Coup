@@ -294,7 +294,7 @@ class State:
         actions = {}
 
         for action in [Income, ForeignAid, Tax, Exchange]:
-            actions[str(action())] = self.validate_action(action(), player.get_id())
+            actions[str(action())] = self.validate_action(action(), player_id)
 
         for action in [Steal, Assassinate, Coup]:
             targets = [p.get_id() for p in self._players 

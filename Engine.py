@@ -347,7 +347,11 @@ class Engine:
         """Query player for a block after an unsuccessful challenge."""
         query_msg = "Player {}, do you want to block?\n".format(player_id)
         if not self.local:
-            self.whisper(query_msg, player_id, "prompt")
+            if self.is_ai_player(player_id):
+                self.whisper(player=player_id, ai_query_type="reaction", 
+                             ai_options={"Challenge": False, "Block": action.blockable_by, "Pass": True})
+            else:
+                self.whisper(query_msg, player_id, "prompt")
         while True:
             response = input(query_msg) if self.local else self.get_response(player_id)
             try:
@@ -605,7 +609,7 @@ class Engine:
 
     def get_response(self, player : int, sleep : bool = True) -> str:
         """Query server for a response."""
-        print("Waiting for a response...")
+        print("Waiting for a response from player {}...".format(player))
         while True:
             response = self.query_f(player)
             if response == "No response":
