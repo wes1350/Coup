@@ -62,6 +62,35 @@ class Engine:
         current_player = self._state.get_current_player_id()
         action = self.query_player_action(current_player)
         target = action.target
+
+        def handle_block(chosen_reaction):
+            # Handle block reactions
+            blocker = chosen_reaction.from_player
+            query_challenge_players = [p for p in self._state.get_alive_players() 
+                                       if p != blocker]
+            challenges = self.query_challenges(query_challenge_players)
+            if len(challenges) > 0:
+                # Someone challenged the block, so resolve the challenge 
+                chosen_challenge = self.choose_among_reactions(challenges)
+                challenger = chosen_challenge.from_player
+                claimed_character = chosen_reaction.as_character
+                losing_player = self._state.get_challenge_loser(claimed_character, 
+                                                                blocker, challenger)
+                card = self.query_player_card(losing_player)
+                self._state.kill_player_card(losing_player, card)
+                if losing_player == blocker:
+                    self.execute_action(action, current_player, target, 
+                                        ignore_if_dead=True)
+                else:
+                    # Enforce any costs to original action executor
+                    self.exchange_player_card(blocker, chosen_reaction)
+                    self.execute_action(action, current_player, only_pay_cost=True)
+                self.shout("Player {} loses the challenge".format(losing_player))
+            else:
+                # Nobody challenged, so the block is successful
+                # Enforce any costs to original action executor
+                self.execute_action(action, current_player, only_pay_cost=True)
+                self.shout("Action blocked with {}".format(chosen_reaction.as_character))    
         
         if not action.is_blockable() and not action.is_challengeable():
             # Action always goes through, e.g. Income
@@ -77,33 +106,7 @@ class Engine:
                 chosen_reaction = self.choose_among_reactions(reactions)
                 reaction_type = chosen_reaction.reaction_type
                 if reaction_type == "block":
-                    # Handle block reactions
-                    blocker = chosen_reaction.from_player
-                    query_challenge_players = [p for p in self._state.get_alive_players() 
-                                               if p != blocker]
-                    challenges = self.query_challenges(query_challenge_players)
-                    if len(challenges) > 0:
-                        # Someone challenged the block, so resolve the challenge 
-                        chosen_challenge = self.choose_among_reactions(challenges)
-                        challenger = chosen_challenge.from_player
-                        claimed_character = chosen_reaction.as_character
-                        losing_player = self._state.get_challenge_loser(claimed_character, 
-                                                                        blocker, challenger)
-                        card = self.query_player_card(losing_player)
-                        self._state.kill_player_card(losing_player, card)
-                        if losing_player == blocker:
-                            self.execute_action(action, current_player, target, 
-                                                ignore_if_dead=True)
-                        else:
-                            # Enforce any costs to original action executor
-                            self.exchange_player_card(blocker, chosen_reaction)
-                            self.execute_action(action, current_player, only_pay_cost=True)
-                        self.shout("Player {} loses the challenge".format(losing_player))
-                    else:
-                        # Nobody challenged, so the block is successful
-                        # Enforce any costs to original action executor
-                        self.execute_action(action, current_player, only_pay_cost=True)
-                        self.shout("Action blocked with {}".format(chosen_reaction.as_character))    
+                    handle_block(chosen_reaction)
                 elif reaction_type == "challenge":
                     challenger = chosen_reaction.from_player
                     claimed_character = action.as_character
@@ -111,10 +114,22 @@ class Engine:
                                                                     current_player, challenger)
                     card = self.query_player_card(losing_player)
                     self._state.kill_player_card(losing_player, card)
+                    self.shout("Player {} loses the challenge".format(losing_player))
                     if losing_player == challenger:
                         self.exchange_player_card(current_player, action)
-                        self.execute_action(action, current_player, target, ignore_if_dead=True)
-                    self.shout("Player {} loses the challenge".format(losing_player))
+                        self.broadcast_state()
+                        # Handle original action as usual, once the challenge has been settled
+                        if action.is_blockable():
+                            # Since any action that can be blocked and challenges can only be blocked 
+                            # by the target, we only ask the target if they want to block
+                            if target is None:
+                                raise Exception(("Tried to query for a block for an Action after an "
+                                                "unsuccessful challenge that doesn't have a target "
+                                                "(only Steal and Assassinate can be blocked after "
+                                                "an unsuccessful challenge.)"))
+                            block = self.query_player_block(target, action)
+                            if block:
+                                handle_block(block)
                 else:           
                     raise ValueError("Invalid reaction type encountered")
             else:
@@ -287,6 +302,23 @@ class Engine:
                 time.sleep(0.5) 
         return [r for r in reactions if r is not None]
 
+    def query_player_block(self, player_id : int, action : Action) -> Reaction:
+        """Query player for a block after an unsuccessful challenge."""
+        query_msg = "Player {}, do you want to block?\n".format(player_id)
+        if not self.local:
+            self.whisper(query_msg, player_id, "prompt")
+        while True:
+            response = input(query_msg) if self.local else self.get_response(player_id)
+            try:
+                reaction = self.translate_reaction_choice(response, player_id, action)
+            except ValueError:
+                self.whisper("Invalid block, please try again.", player_id)
+            else:
+                valid = self.validate_reaction(reaction, action, allow_challenges=False)
+                if valid:
+                    return reaction
+                self.whisper("Invalid block, please try again.", player_id)
+        
     def query_challenges(self, players : List[int]) -> List[Challenge]:
         """Given a list of players to query, ask them if they want to challenge."""
         if self.local:
@@ -456,7 +488,7 @@ class Engine:
         """Given an action, return whether it can be done given the current state."""
         return self._state.validate_action(action, player_id) 
 
-    def validate_reaction(self, reaction : Reaction, action : Action) -> bool:
+    def validate_reaction(self, reaction : Reaction, action : Action, allow_challenges : bool = True) -> bool:
         """Given a reaction, return whether it can be done given the turn state."""
         reaction_type = reaction.reaction_type
         reactor = reaction.from_player
@@ -476,7 +508,7 @@ class Engine:
                 return False
             return True
         elif reaction_type == "challenge":
-            if not action.is_challengeable():
+            if not action.is_challengeable() or not allow_challenges:
                 self.whisper("Action cannot be challenged", reactor, "error")
                 return False
             return True
