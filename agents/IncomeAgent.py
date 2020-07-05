@@ -1,56 +1,30 @@
 """An Agent that always takes Income unless forced to Coup, and that never Blocks or Challenges."""
 
-import socketio
-import json
+if __name__ == "__main__":
+    from utils.game import *
+    from utils.responses import *
+    from utils.network import *
+else:
+    from .utils.game import *
+    from .utils.responses import *
+    from .utils.network import *
 
-sio = socketio.Client()
-
-@sio.on('ai')
-def on_prompt(message):
-    response = react(json.loads(message))
-    sio.emit("action", response)
-
-@sio.event
-def connect():
-    print("I'm connected!")
-    sio.emit("ai_connect")
-
-@sio.event
-def connect_error():
-    print("The connection failed!")
-
-@sio.event
-def disconnect():
-    print("I'm disconnected!")
-
-def react(message : dict):
-    print("Reacting to:", message)
-    options = json.loads(message["options"]) if isinstance(message["options"], str) \
-                                             else message["options"]
-    if message["type"] == "action":
-        return decide_action(options) 
-    elif message["type"] == "reaction":
-        return decide_reaction(options) 
-    elif message["type"] == "card_selection":
-        return decide_card(options) 
-    elif message["type"] == "exchange":
-        raise Exception("Income Agent shouldn't ever exchange")
+def decide_action(options):
+    if can_income(options):
+        return income()
     else:
+        targets = coup_targets(options)
+        if targets:
+            return coup(targets[0])
+        # Should always be able to Income unless we are forced to Coup
         assert False
 
-def decide_action(actions : dict):
-    if actions["Income"]:
-        return "Income"
-    else:
-        if actions["Coup"]:
-            return str(actions["Coup"][0])
-        assert False
+def decide_reaction(options):
+    return decline()
 
-def decide_reaction(reactions):
-    return "n"
-
-def decide_card(cards):
-    return str(cards[0])
+def decide_card(options):
+    return options[0]
 
 
-sio.connect('http://localhost:5000')
+if __name__ == "__main__":
+    start(on_action=decide_action, on_reaction=decide_reaction, on_card=decide_card)
