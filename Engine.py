@@ -54,6 +54,7 @@ class Engine:
             self.next_turn()
         winner = self._state.get_alive_players()[0]
         self.shout("Game is over!\n\nPlayer {} wins!".format(winner))
+        self.shout("", "game_over")
         return winner
 
     def play_turn(self) -> None:
@@ -585,12 +586,12 @@ class Engine:
     def get_config_err_msg(self) -> str:
         return self._config_err_msg
 
-    def shout(self, msg : str) -> None:
+    def shout(self, msg : str, shout_type : str = None) -> None:
         """Send a message to all players."""
         if self.local:
             print(msg)
         else:       
-            self.shout_f(msg)
+            self.shout_f(msg, shout_type)
             pass
     
     def whisper(self, msg : str = None, player : int = None, whisper_type : str = None, 

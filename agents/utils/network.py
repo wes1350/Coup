@@ -44,6 +44,10 @@ def start(on_action=unimplemented("actions"),
                              "Make sure to return a value (e.g. return income()) when choosing a response."))
         return response
 
+    @sio.on('game_over')
+    def cleanup(game_over_msg=None):
+        sio.disconnect()
+
     @sio.event
     def connect():
         print("I'm connected!")
