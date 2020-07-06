@@ -98,9 +98,8 @@ class Engine:
             else:
                 # Nobody challenged, so the block is successful
                 self.add_to_history("block_resolution", {"success": True})
-                if self._config.pay_on_successful_challenges:
-                    # Enforce any costs to original action executor
-                    self.execute_action(action, current_player, only_pay_cost=True)
+                # Enforce any costs to original action executor
+                self.execute_action(action, current_player, only_pay_cost=True)
                 self.shout("Action blocked with {}".format(chosen_reaction.as_character))    
         
         if not action.is_blockable() and not action.is_challengeable():
