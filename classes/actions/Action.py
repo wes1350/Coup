@@ -1,4 +1,3 @@
-
 class Action:
     aliases = None
 

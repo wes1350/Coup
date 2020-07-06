@@ -83,6 +83,8 @@ class Engine:
                                                                 blocker, challenger)
                 card = self.query_player_card(losing_player)
                 self._state.kill_player_card(losing_player, card)
+                self.add_to_history("challenge_resolution", {"success": losing_player == blocker})
+                self.add_to_history("block_resolution", {"success": losing_player != blocker})
                 if losing_player == blocker:
                     self.execute_action(action, current_player, target, 
                                         ignore_if_dead=True)
@@ -90,14 +92,12 @@ class Engine:
                     # Enforce any costs to original action executor
                     self.exchange_player_card(blocker, chosen_reaction)
                     self.execute_action(action, current_player, only_pay_cost=True)
-                self.add_to_history("challenge_resolution", {"success": losing_player == blocker})
-                self.add_to_history("block_resolution", {"success": losing_player != blocker})
                 self.shout("Player {} loses the challenge".format(losing_player))
             else:
                 # Nobody challenged, so the block is successful
                 # Enforce any costs to original action executor
-                self.execute_action(action, current_player, only_pay_cost=True)
                 self.add_to_history("block_resolution", {"success": True})
+                self.execute_action(action, current_player, only_pay_cost=True)
                 self.shout("Action blocked with {}".format(chosen_reaction.as_character))    
         
         if not action.is_blockable() and not action.is_challengeable():
@@ -121,6 +121,7 @@ class Engine:
                     card = self.query_player_card(losing_player)
                     self._state.kill_player_card(losing_player, card)
                     self.shout("Player {} loses the challenge".format(losing_player))
+                    self.add_to_history("challenge resolution", {"success": losing_player != challenger})
                     if losing_player == challenger:
                         self.exchange_player_card(current_player, action)
                         self.broadcast_state()
@@ -137,7 +138,6 @@ class Engine:
                                 block = self.query_player_block(target, action)
                                 if block:
                                     handle_block(block)
-                    self.add_to_history("challenge resolution", {"success": losing_player != challenger})
                 else:           
                     raise ValueError("Invalid reaction type encountered")
             else:
@@ -599,15 +599,18 @@ class Engine:
             pass
     
     def whisper(self, msg : str = None, player : int = None, whisper_type : str = None, 
-                ai_query_type : str = None, ai_options : dict = None) -> None:
+                ai_query_type : str = None, ai_options : dict = None, ai_info : dict = None) -> None:
         """Send a message only to a specific player."""
         if player is None:
             raise ValueError("Must specify a player to whisper to")
         if self.is_ai_player(player):
             if whisper_type is None:
-                if ai_query_type is None or ai_options is None:
+                if (ai_query_type is None or ai_options is None) and ai_info is None:
                     assert False
-                self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player, "ai")
+                if ai_info:
+                    self.whisper_f(json.dumps(ai_info), player, "ai_info")
+                else:
+                    self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player, "ai_query")
         else:
             if msg is None:
                 raise ValueError("Must specify a message for human players")

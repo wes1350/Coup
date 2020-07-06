@@ -13,9 +13,9 @@ else:
 
 def decide_action(options):
     possible_actions = possible_responses(options)
-    if "Assassinate" in possible_actions:
+    if assassinate_targets(options):
         return assassinate(random.choice(options["Assassinate"]))
-    elif "Steal" in possible_actions:
+    elif steal_targets(options):
         return steal(random.choice(options["Steal"]))
     else:
         # Sometimes we can't assassinate because we don't have the coins for it,

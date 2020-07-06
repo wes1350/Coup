@@ -3,19 +3,26 @@
 import socketio
 import json
 
-def unimplemented(event_type : str):
+def unimplemented_response(event_type : str):
     def raiser(options):
         raise NotImplementedError("Responding to " + event_type + " not implemented")
     return raiser
 
-def start(on_action=unimplemented("actions"), 
-          on_reaction=unimplemented("reactions"), 
-          on_card=unimplemented("card selection"), 
-          on_exchange=unimplemented("exchanges")):
+def unimplemented_update():
+    def do_nothing(state):
+        pass
+    return do_nothing
+
+def start(on_action=unimplemented_response("actions"), 
+          on_reaction=unimplemented_response("reactions"), 
+          on_card=unimplemented_response("card selection"), 
+          on_exchange=unimplemented_response("exchanges"),
+          state=None, 
+          update_f=unimplemented_update()):
 
     sio = socketio.Client()
 
-    @sio.on('ai')
+    @sio.on('ai_query')
     def on_prompt(message):
         print("Reacting to:", message)
         loaded_msg = json.loads(message)
@@ -43,6 +50,14 @@ def start(on_action=unimplemented("actions"),
             raise Exception(("Agent did not return a value for its response. "
                              "Make sure to return a value (e.g. return income()) when choosing a response."))
         return response
+
+    @sio.on('ai_info')
+    def update(event):
+        event_info = json.loads(event)
+        print("Updating with event: ", event_info)
+        if isinstance(event_info, str):
+            event_info = json.loads(event_info)
+        update_f(event_info)
 
     @sio.on('game_over')
     def cleanup(game_over_msg=None):

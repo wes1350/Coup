@@ -327,3 +327,5 @@ class State:
 
     def add_to_history(self, event_type : str, event_info : dict) -> None:
         self._history.append((event_type, event_info))
+        for p in self.ai_players:
+            self.whisper(player=p, ai_info=json.dumps({"event": event_type, "info": event_info}))
