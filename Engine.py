@@ -322,10 +322,11 @@ class Engine:
             else:
                 self.whisper(message, player_id, "prompt")
         reactions = [False for _ in players]
+        print_wait_msg = True
         while False in reactions:
             for i, player_id in enumerate(players):
                 if not reactions[i] and reactions[i] is not None:
-                    response = self.get_response(player_id, sleep=False)
+                    response = self.get_response(player_id, sleep=False, print_wait=print_wait_msg)
                     if response is None:
                         continue
                     try: 
@@ -344,6 +345,7 @@ class Engine:
             # Sleep in order to not poll too often, but only after we check each player's response
             if False in reactions:
                 time.sleep(self.sleep_duration) 
+                print_wait_msg = False
         return [r for r in reactions if r is not None]
 
     def query_player_block(self, player_id : int, action : Action) -> Reaction:
@@ -396,11 +398,12 @@ class Engine:
                              ai_options={"Challenge": True, "Block": [], "Pass": True})
             else:
                 self.whisper(query_msg, player_id, "prompt")
+        print_wait_msg = True
         challenges = [False for _ in players]        
         while False in challenges:
             for i, player_id in enumerate(players):
                 if not challenges[i] and challenges[i] is not None:
-                    response = self.get_response(player_id, sleep=False)
+                    response = self.get_response(player_id, sleep=False, print_wait=print_wait_msg)
                     if response is None:
                         continue
                     try: 
@@ -409,7 +412,8 @@ class Engine:
                         self.whisper("Invalid response, please try again.", player_id, "error")
             # Sleep in order to not poll too often, but only after we check each player's response
             if False in challenges:
-                time.sleep(self.sleep_duration) 
+                time.sleep(self.sleep_duration)
+                print_wait_msg = False
         return [c for c in challenges if c is not None]
 
     def query_player_coup_target(self, player_id : int) -> int:
@@ -621,9 +625,10 @@ class Engine:
             else:
                 self.whisper_f(msg, player, whisper_type)
 
-    def get_response(self, player : int, sleep : bool = True) -> str:
+    def get_response(self, player : int, sleep : bool = True, print_wait : bool = True) -> str:
         """Query server for a response."""
-        print("Waiting for a response from player {}...".format(player))
+        if print_wait:
+            print("Waiting for a response from player {}...".format(player))
         while True:
             response = self.query_f(player)
             if response == "No response":
