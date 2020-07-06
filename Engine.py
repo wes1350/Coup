@@ -52,6 +52,7 @@ class Engine:
             self.broadcast_state()
             self.play_turn()
             self.next_turn()
+        self.broadcast_state()
         winner = self._state.get_alive_players()[0]
         self.shout("Game is over!\n\nPlayer {} wins!".format(winner))
         self.shout("", "game_over")
