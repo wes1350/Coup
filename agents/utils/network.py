@@ -9,7 +9,7 @@ def unimplemented_response(event_type : str):
     return raiser
 
 def unimplemented_update():
-    def do_nothing(state):
+    def do_nothing(event):
         pass
     return do_nothing
 
@@ -17,7 +17,6 @@ def start(on_action=unimplemented_response("actions"),
           on_reaction=unimplemented_response("reactions"), 
           on_card=unimplemented_response("card selection"), 
           on_exchange=unimplemented_response("exchanges"),
-          state=None, 
           update_f=unimplemented_update()):
 
     sio = socketio.Client()

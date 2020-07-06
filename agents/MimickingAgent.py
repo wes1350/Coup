@@ -58,5 +58,4 @@ def decide_exchange(options):
 
 if __name__ == "__main__":
     start(on_action=decide_action, on_reaction=decide_reaction, 
-          on_card=decide_card, on_exchange=decide_exchange, 
-          state=state, update_f=update)
+          on_card=decide_card, on_exchange=decide_exchange, update_f=update)
