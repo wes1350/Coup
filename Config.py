@@ -18,6 +18,8 @@ class Config:
 
         self.n_cards_for_exchange = 2
 
+        self.pay_on_successful_challenges = False
+
         # Set initial hands for each player
         self.starting_hands = None
         # self.starting_hands = {0: ["Duke", "Captain"],

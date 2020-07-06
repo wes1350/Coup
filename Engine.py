@@ -90,15 +90,17 @@ class Engine:
                     self.execute_action(action, current_player, target, 
                                         ignore_if_dead=True)
                 else:
-                    # Enforce any costs to original action executor
                     self.exchange_player_card(blocker, chosen_reaction)
-                    self.execute_action(action, current_player, only_pay_cost=True)
+                    if self._config.pay_on_successful_challenges:
+                        # Enforce any costs to original action executor
+                        self.execute_action(action, current_player, only_pay_cost=True)
                 self.shout("Player {} loses the challenge".format(losing_player))
             else:
                 # Nobody challenged, so the block is successful
-                # Enforce any costs to original action executor
                 self.add_to_history("block_resolution", {"success": True})
-                self.execute_action(action, current_player, only_pay_cost=True)
+                if self._config.pay_on_successful_challenges:
+                    # Enforce any costs to original action executor
+                    self.execute_action(action, current_player, only_pay_cost=True)
                 self.shout("Action blocked with {}".format(chosen_reaction.as_character))    
         
         if not action.is_blockable() and not action.is_challengeable():
@@ -146,7 +148,9 @@ class Engine:
                         else:
                             self.execute_action(action, current_player, target)   
                     else:
-                        self.execute_action(action, current_player, only_pay_cost=True)
+                        if self._config.pay_on_successful_challenges:
+                            # Enforce any costs to original action executor
+                            self.execute_action(action, current_player, only_pay_cost=True)
                 else:           
                     raise ValueError("Invalid reaction type encountered")
             else:
