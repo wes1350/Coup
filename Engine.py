@@ -117,6 +117,7 @@ class Engine:
                     handle_block(chosen_reaction)
                 elif reaction_type == "challenge":
                     challenger = chosen_reaction.from_player
+                    self.add_to_history("challenge", chosen_reaction.history_rep())
                     claimed_character = action.as_character
                     losing_player = self._state.get_challenge_loser(claimed_character, 
                                                                     current_player, challenger)
