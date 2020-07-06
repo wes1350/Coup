@@ -18,7 +18,8 @@ from classes.actions.Coup import Coup
 
 class State:
 
-    def __init__(self, config : Config, whisper=None, shout=None, get_response=None, local=True, ai_players=[]) -> None:
+    def __init__(self, config : Config, whisper=None, shout=None, get_response=None, 
+                 local=True, ai_players=[]) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
         self.whisper = whisper
@@ -30,12 +31,18 @@ class State:
         # Initialize the deck
         self._deck = Deck(self._n_players, config.cards_per_character)
         # Initialize the players and assign them cards from the deck
-        unassigned_cards = self._deck.draw(config.cards_per_player * self._n_players)
         self._players = []
-        for i in range(self._n_players):
-            self._players.append(Player(id_=i, coins=config.starting_coins, 
-                                        cards=[unassigned_cards[config.cards_per_player*i+j]
-                                               for j in range(config.cards_per_player)]))
+        if config.starting_hands:
+            for i in range(self._n_players):
+                self._players.append(Player(id_=i, coins=config.starting_coins, 
+                                            cards=self._deck.draw_character_set(config.starting_hands[i])))
+        else:
+            unassigned_cards = self._deck.draw(config.cards_per_player * self._n_players)
+            for i in range(self._n_players):
+                self._players.append(Player(id_=i, coins=config.starting_coins, 
+                                            cards=[unassigned_cards[config.cards_per_player*i+j]
+                                                   for j in range(config.cards_per_player)]))
+
         # Penalize the first player in a 2 person game
         if config.penalize_first_player_in_2p_game and self._n_players == 2:
             self._players[0].change_coins(-1 * config.first_player_coin_penalty)

@@ -11,7 +11,7 @@ else:
 from typing import List
 
 class Deck:
-    """Class for managing the Coup deck. The deck only contains information about the cards it contains, and whether a card has been dealt (assigned) or not. It does not know about player assignments.To interact with the deck, we call methods such as draw."""
+    """Class for managing the Coup deck. The deck only contains information about the cards it contains, and whether a card has been dealt (assigned) or not. It does not know about player assignments. To interact with the deck, we call methods such as draw."""
     ALL_CHARACTERS = [Ambassador.Ambassador, Assassin.Assassin, Captain.Captain, Contessa.Contessa, Duke.Duke]
 
     def __init__(self, n_players : int, n_cards_per_character : int) -> None:
@@ -25,7 +25,7 @@ class Deck:
 
     def draw(self, n : int) -> List[Card]:
         """Return n random cards from the deck that are currently unassigned to players."""
-        unassigned = [card for card in self._deck if not self._deck[card].is_assigned()]
+        unassigned = [id_ for id_ in self._deck if not self._deck[id_].is_assigned()]
         if n <= 0:
             raise ValueError("Must draw more than 0 cards")
         if n > len(unassigned):
@@ -35,6 +35,19 @@ class Deck:
             self._deck[id_].set_assign(True)
 
         return [self._deck[i] for i in selected_cards]
+
+    def draw_character(self, character_type : str) -> Card:
+        """Return an unassigned card corresponding to the specified character."""
+        unassigned = [id_ for id_ in self._deck if not self._deck[id_].is_assigned()]
+        for id_ in unassigned:
+            if self._deck[id_].get_character_type() == character_type:
+                self._deck[id_].set_assign(True) 
+                return self._deck[id_]
+        raise Exception("No available cards of type {} in deck".format(character_type))
+
+    def draw_character_set(self, character_list : list) -> List[Card]:
+        """Draw a specified set of cards from the deck."""
+        return [self.draw_character(char) for char in character_list]
 
     def return_card(self, id_ : int) -> None:
         """Mark a card as unassigned, so that it can be redistributed later."""

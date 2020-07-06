@@ -18,6 +18,12 @@ class Config:
 
         self.n_cards_for_exchange = 2
 
+        # Set initial hands for each player
+        self.starting_hands = None
+        # self.starting_hands = {0: ["Duke", "Captain"],
+        #                        1: ["Assassin", "Contessa"],
+        #                        2: ["Captain", "Captain"]}
+
         # initialize other parameters
         for key, value in kwargs.items():
             self.__setattr__(key, value)
@@ -41,6 +47,12 @@ class Config:
         # Ensure reaction choice mode is valid
         if self.reaction_choice_mode not in ["first", "random", "first_block", "first_challenge", "random_block", "random_challenge"]:
             raise ValueError("Invalid reaction choice mode: {}".format(self.reaction_choice_mode))
+
+        # Ensure starting hand configuration is valid
+        # Ensure all hands have the same length
+        if self.starting_hands:
+            assert len(set([len(self.starting_hands[i]) for i in self.starting_hands])) == 1
+            assert self.n_players == len(self.starting_hands)
 
     def __str__(self) -> str:
         """Nicely print all the game settings."""
