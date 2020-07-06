@@ -5,17 +5,22 @@ from typing import List
 
 
 class Player:
-    def __init__(self, id_ : int, coins : int, cards : List[Card]) -> None:
+    def __init__(self, id_ : int, name : str, coins : int, cards : List[Card]) -> None:
         self._id = id_
+        self._name = name
         self._coins = coins
         self._cards = cards
 
     def get_json(self, mask) -> dict:
         player_json = {} 
         player_json['id'] = self._id
+        player_json['name'] = self._name
         player_json['coins'] = self._coins
         player_json['cards'] = [card.get_json(mask) for card in self._cards]
         return player_json
+
+    def get_name(self) -> str:
+        return self._name
     
     def get_id(self) -> int:
         return self._id

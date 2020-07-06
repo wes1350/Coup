@@ -1,7 +1,7 @@
 """Maintains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
 import time 
 import json
-from typing import List
+from typing import List, Dict
 from Config import Config
 from classes.Player import Player
 from classes.Deck import Deck
@@ -18,7 +18,7 @@ from classes.actions.Coup import Coup
 
 class State:
 
-    def __init__(self, config : Config, whisper=None, shout=None, get_response=None, local=True) -> None:
+    def __init__(self, config : Config, players_dict : Dict[str, str], whisper=None, shout=None, get_response=None, local=True) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
         self.whisper = whisper
@@ -31,8 +31,9 @@ class State:
         # Initialize the players and assign them cards from the deck
         unassigned_cards = self._deck.draw(config.cards_per_player * self._n_players)
         self._players = []
-        for i in range(self._n_players):
-            self._players.append(Player(id_=i, coins=config.starting_coins, 
+        print('player-dict', players_dict)
+        for i, (player_id, player_name) in enumerate(players_dict.items()):
+            self._players.append(Player(id_=player_id, name=player_name, coins=config.starting_coins, 
                                         cards=[unassigned_cards[config.cards_per_player*i+j]
                                                for j in range(config.cards_per_player)]))
         # Penalize the first player in a 2 person game
@@ -288,6 +289,7 @@ class State:
     def build_state_json(self, player: Player) -> str:
         state_json = {}
         state_json['currentPlayer'] = self._current_player_id
+        state_json['playerName'] = player.get_name()
         state_json['playerId'] = player.get_id()
         state_json['players'] = [p.get_json(mask = p.get_id() != player.get_id()) for p in self._players]
         return json.dumps(state_json)
