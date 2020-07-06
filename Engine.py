@@ -35,6 +35,7 @@ class Engine:
         except ValueError as e:
             self._config_status = False
             self._config_err_msg = getattr(e, 'message', repr(e))
+            raise ValueError("Invalid Configuration! Terminating.", self._config_err_msg)
         else:
             self.local = None in [self.whisper_f, self.shout_f, self.query_f]
             self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local, game_info.ai_players)
@@ -127,7 +128,7 @@ class Engine:
                         self.broadcast_state()
                         # Handle original action as usual, once the challenge has been settled
                         if action.is_blockable():
-                            # Since any action that can be blocked and challenges can only be blocked 
+                            # Since any action that can be blocked and challenged can only be blocked 
                             # by the target, we only ask the target if they want to block
                             if target is None:
                                 raise Exception(("Tried to query for a block for an Action after an "
@@ -138,6 +139,14 @@ class Engine:
                                 block = self.query_player_block(target, action)
                                 if block:
                                     handle_block(block)
+                                else:
+                                    self.execute_action(action, current_player, target)   
+                            else:
+                                self.execute_action(action, current_player, target, ignore_if_dead=True)   
+                        else:
+                            self.execute_action(action, current_player, target)   
+                    else:
+                        self.execute_action(action, current_player, only_pay_cost=True)
                 else:           
                     raise ValueError("Invalid reaction type encountered")
             else:
@@ -188,7 +197,8 @@ class Engine:
         self.shout("Player {} does a {}{}".format(player, reaction_type, " as {}".format(character) if is_block else ""))
         return chosen_reaction
 
-    def execute_action(self, action: Action = None, source : int = None, target : int = None, ignore_if_dead : bool = False, only_pay_cost : bool = False) -> None:
+    def execute_action(self, action: Action = None, source : int = None, target : int = None, 
+                       ignore_if_dead : bool = False, only_pay_cost : bool = False) -> None:
         """Given an action, execute it based on the parameters provided."""
 
         # Add the action resolution to the history
