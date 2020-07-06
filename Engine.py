@@ -40,6 +40,7 @@ class Engine:
             self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local, game_info.ai_players)
             self.game_info = game_info
             self.game_info.config_settings = str(self._config)
+            self.sleep_duration = 0.5
 
     def game_is_over(self) -> bool:
         """Determine if the win condition is satisfied."""
@@ -342,7 +343,7 @@ class Engine:
                         self.whisper("Impossible reaction, please try again.", player_id, "error")
             # Sleep in order to not poll too often, but only after we check each player's response
             if False in reactions:
-                time.sleep(0.5) 
+                time.sleep(self.sleep_duration) 
         return [r for r in reactions if r is not None]
 
     def query_player_block(self, player_id : int, action : Action) -> Reaction:
@@ -361,6 +362,8 @@ class Engine:
             except ValueError:
                 self.whisper("Invalid block, please try again.", player_id)
             else:
+                if reaction is None:
+                    return None
                 valid = self.validate_reaction(reaction, action, allow_challenges=False)
                 if valid:
                     return reaction
@@ -406,7 +409,7 @@ class Engine:
                         self.whisper("Invalid response, please try again.", player_id, "error")
             # Sleep in order to not poll too often, but only after we check each player's response
             if False in challenges:
-                time.sleep(0.5) 
+                time.sleep(self.sleep_duration) 
         return [c for c in challenges if c is not None]
 
     def query_player_coup_target(self, player_id : int) -> int:
@@ -620,7 +623,7 @@ class Engine:
             response = self.query_f(player)
             if response == "No response":
                 if sleep:
-                    time.sleep(0.5)
+                    time.sleep(self.sleep_duration)
                     continue
                 else:
                     return None
