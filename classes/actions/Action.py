@@ -2,6 +2,7 @@ class Action:
     aliases = None
 
     def __init__(self, **kwargs):
+        self.from_player = None
         self.target = None
         self.steal = False
         self.kill = False 
@@ -26,7 +27,10 @@ class Action:
         return True
 
     def history_rep(self) -> dict:
-        return {"type": str(self), "as_character": self.as_character, "target": self.target}
+        return {"type": str(self), "as_character": self.as_character, "from_player": self.from_player, "target": self.target}
 
     def output_rep(self) -> str:
         return None
+
+    def set_source(self, source_id : int) -> None:
+        self.__setattr__("from_player", source_id)

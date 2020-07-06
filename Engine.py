@@ -230,7 +230,7 @@ class Engine:
             while True:
                 response = input(query_msg + "\n") if self.local else self.get_response(player_id)
                 try: 
-                    action = self.translate_action_choice(response)
+                    action = self.translate_action_choice(response, source_id=player_id)
                 except ValueError:
                     self.whisper("ERROR: invalid action name, please try again", player_id, "error")
                 else:
@@ -462,8 +462,8 @@ class Engine:
                 except ValueError:
                     self.whisper("ERROR: invalid card number, please try again.", player_id, "error")
 
-    def translate_action_choice(self, response : str) -> Action:
-        """Given an action response, translate it appropriately"""
+    def translate_action_choice(self, response : str, source_id : int) -> Action:
+        """Given an action response, translate it appropriately."""
         response = response.strip().lower()
         if response == "foreign aid":
             action_name = response
@@ -477,21 +477,24 @@ class Engine:
                 raise ValueError("Need to specify target for assassinate/steal")
      
         if action_name in Income.aliases:
-            return Income()
+            action = Income()
         elif action_name in ForeignAid.aliases:
-            return ForeignAid()
+            action = ForeignAid()
         elif action_name in Tax.aliases:
-            return Tax()
+            action = Tax()
         elif action_name in Exchange.aliases:
-            return Exchange()
+            action = Exchange()
         elif action_name in Steal.aliases:
-            return Steal(target=target)
+            action = Steal(target=target)
         elif action_name in Assassinate.aliases:
-            return Assassinate(target=target)
+            action = Assassinate(target=target)
         elif action_name in Coup.aliases:
-            return Coup(target=target)
+            action = Coup(target=target)
         else:
             raise ValueError("Invalid action name: {}".format(action_name))
+
+        action.set_source(source_id)
+        return action
 
     def translate_reaction_choice(self, response : str, source_id : int, 
                                   action : Action) -> Reaction:
