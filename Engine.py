@@ -57,8 +57,8 @@ class Engine:
         self.broadcast_state()
         winner = self._state.get_alive_players()[0]
         self.shout("Game is over!\n\nPlayer {} wins!".format(winner))
-        self.shout("", "game_over")
         self.add_to_history("winner", {"winner": winner})
+        self.shout("", "game_over")
         return winner
 
     def play_turn(self) -> None:
