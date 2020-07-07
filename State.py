@@ -18,7 +18,8 @@ from classes.actions.Coup import Coup
 
 class State:
 
-    def __init__(self, config : Config, whisper=None, shout=None, get_response=None, local=True) -> None:
+    def __init__(self, config : Config, whisper=None, shout=None, get_response=None, 
+                 local=True, ai_players=[]) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
         self.whisper = whisper
@@ -26,23 +27,31 @@ class State:
         self.get_response = get_response
         self.local = local
         self._n_players = config.n_players
+        self.ai_players = ai_players
         # Initialize the deck
         self._deck = Deck(self._n_players, config.cards_per_character)
         # Initialize the players and assign them cards from the deck
-        unassigned_cards = self._deck.draw(config.cards_per_player * self._n_players)
         self._players = []
-        for i in range(self._n_players):
-            self._players.append(Player(id_=i, coins=config.starting_coins, 
-                                        cards=[unassigned_cards[config.cards_per_player*i+j]
-                                               for j in range(config.cards_per_player)]))
+        if config.starting_hands:
+            for i in range(self._n_players):
+                self._players.append(Player(id_=i, coins=config.starting_coins, 
+                                            cards=self._deck.draw_character_set(config.starting_hands[i])))
+        else:
+            unassigned_cards = self._deck.draw(config.cards_per_player * self._n_players)
+            for i in range(self._n_players):
+                self._players.append(Player(id_=i, coins=config.starting_coins, 
+                                            cards=[unassigned_cards[config.cards_per_player*i+j]
+                                                   for j in range(config.cards_per_player)]))
+
         # Penalize the first player in a 2 person game
         if config.penalize_first_player_in_2p_game and self._n_players == 2:
             self._players[0].change_coins(-1 * config.first_player_coin_penalty)
 
         self._current_player_id = 0
-        # Initialize the current turn
-        self._current_turn = []
-    
+
+        # Initialize the history
+        self._history = []
+
     def get_n_players(self) -> int:
         return self._n_players
 
@@ -75,7 +84,8 @@ class State:
         """Return the indicated card in the player's hand to the deck, and draw a new one at random."""
         new_card = self._deck.exchange_card(self.get_player_card(player_id, card_idx))
         self._players[player_id].set_card(card_idx, new_card)
-        self.whisper("Player {}, your new card {} is {}".format(player_id, card_idx, str(new_card.get_character())), player_id, "info")
+        self.whisper("Player {}, your new card {} is {}".format(player_id, card_idx, 
+                                                                str(new_card.get_character())), player_id, "info")
 
     def kill_player_card(self, player_id : int, card_idx : int) -> None:
         self.get_player_card(player_id, card_idx).die()
@@ -118,8 +128,11 @@ class State:
                 return challenger
         return actor
 
-    def execute_action(self, player : int, action : Action, ignore_killing : bool = False, only_pay_cost : bool = False) -> None:
-        """Execute a given action and update the game state accordingly. Can involve querying players, e.g. for Exchange. """
+    def execute_action(self, player : int, action : Action, ignore_killing : bool = False, 
+                       only_pay_cost : bool = False) -> None:
+        """Execute a given action and update the game state accordingly. Can involve 
+           querying players, e.g. for Exchange. """
+
         cost = action.cost
         # Sometimes an action was blocked, but the original actor still needs to pay. 
         # In this case, charge them accordingly but don't do anything else.
@@ -153,13 +166,16 @@ class State:
             drawn_cards = self._deck.draw(n_to_draw)
             alive_cards = self.get_player_living_card_ids(player)
             message = "For your exchange, you may choose {} of the following cards:\n    ".format(len(alive_cards))
+            options = {"n": len(alive_cards), "cards": {}}
             for i in alive_cards:
                 message += " [{}] {} ".format(i, str(self.get_player_card(player, i).get_character()))
+                options["cards"][i] = str(self.get_player_card(player, i).get_character())
             in_hand = self._config.cards_per_player 
             for i in range(n_to_draw):
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
+                options["cards"][i + in_hand] = str(drawn_cards[i].get_character())
 
-            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n")
+            cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n", options)
             
             # Return all cards from our hand we decided not to keep
             returned = []
@@ -213,14 +229,24 @@ class State:
                 if whisper:
                     self.whisper("ERROR: cannot target self with action", player_id, "error")
                 return False
-        
+            # If we are stealing, target must have coins to steal
+            if self._players[target_id].get_coins() <= 0:
+                if "steal" in action.aliases:
+                    if whisper:
+                        self.whisper("ERROR: cannot steal from player with no coins", player_id, "error")
+                    return False
+                        
         return True
 
-    def query_exchange(self, player : int, draw_start : int, draw_end : int, prompt_message) -> List[int]:
+    def query_exchange(self, player : int, draw_start : int, draw_end : int, prompt_message : str, 
+                       options : dict = None) -> List[int]:
         """For an Exchange, prompt the player for which cards they'd like to keep."""
         query_msg = "Pick the cards you wish to keep:\n"
         if not self.local:
-            self.whisper(query_msg + prompt_message, player, "prompt")
+            if player in self.ai_players:
+                self.whisper(player=player, ai_query_type="exchange", ai_options=options)
+            else:
+                self.whisper(query_msg + prompt_message, player, "prompt")
         while True:
             response = input(query_msg) if self.local else self.get_response(player)
             try: 
@@ -251,7 +277,8 @@ class State:
         return True
 
     def exchange_player_card(self, player : int, character : str) -> None:
-        """Given a player and character, find the character in the player's hand and swap it with a new card from the Deck."""
+        """Given a player and character, find the character in the player's 
+           hand and swap it with a new card from the Deck."""
         for id_ in self.get_player_living_card_ids(player):
             if self.get_player_card(player, id_).get_character_type() == character:
                 self.switch_player_card(player, id_)
@@ -265,31 +292,44 @@ class State:
 
     def masked_rep(self, player : Player):
         rep = "-"*40
-        rep += "{}\n".format("".join([str(p) if p.get_id() == player.get_id() else p.masked_rep() for p in self._players]))
+        rep += "{}\n".format("".join([str(p) if p.get_id() == player.get_id() 
+                                             else p.masked_rep() for p in self._players]))
         return rep
 
     def broadcast_state(self) -> None:
         """Broadcast the masked state representation to all players."""
         for p in self._players:
             self.whisper(self.masked_rep(p), p.get_id(), "state")
-            self.whisper(self.build_state_json(p), p.get_id(), "state_json")
-            self.whisper(self.build_action_space(p), p.get_id(), "action_space")
+            self.whisper(self.build_state_json(p.get_id()), p.get_id(), "state_json")
+            self.whisper(self.build_action_space(p.get_id()), p.get_id(), "action_space")
 
-    def build_action_space(self, player: Player) -> str:
+    def build_action_space(self, player_id : int) -> str:
         actions = {}
 
         for action in [Income, ForeignAid, Tax, Exchange]:
-            actions[str(action())] = self.validate_action(action(), player.get_id())
+            actions[str(action())] = self.validate_action(action(), player_id)
 
         for action in [Steal, Assassinate, Coup]:
-            targets = [p.get_id() for p in self._players if (p != player and self.validate_action(action(p.get_id()), player.get_id(), whisper=False))]
-            actions[str(action(0))] = targets
+            targets = [p.get_id() for p in self._players 
+                       if (p.get_id() != player_id and 
+                           self.validate_action(action(target=p.get_id()), 
+                                                player_id, whisper=False))]
+            actions[str(action(target=0))] = targets
 
         return json.dumps(actions)
 
-    def build_state_json(self, player: Player) -> str:
+    def build_state_json(self, player_id : int = None, unmask : bool = False) -> str:
+        """Build a json representation of the current state for a given player. Set unmask=True
+            to return a representation with all characters revealed."""
+        assert not (player_id is None and not unmask)
         state_json = {}
         state_json['currentPlayer'] = self._current_player_id
-        state_json['playerId'] = player.get_id()
-        state_json['players'] = [p.get_json(mask = p.get_id() != player.get_id()) for p in self._players]
+        state_json['playerId'] = player_id
+        state_json['players'] = [p.get_json(mask = (p.get_id() != player_id) and not unmask) for p in self._players]
         return json.dumps(state_json)
+
+    def add_to_history(self, event_type : str, event_info : dict) -> None:
+        self._history.append((event_type, event_info))
+        if event_type not in ["start"]:
+            for p in self.ai_players:
+                self.whisper(player=p, ai_info=json.dumps({"event": event_type, "info": event_info}))

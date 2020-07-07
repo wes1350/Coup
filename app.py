@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, g
 from flask_socketio import SocketIO, send, emit
 from Engine import Engine
 from GameInfo import GameInfo
+import random
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -24,34 +25,51 @@ def index():
 
 @socketio.on('connect')
 def on_connect():
-    print(clients)
     print(started)
-
-    clients[len(clients)] = {"sid": request.sid, "response": "No response"}
+    new_index = max(clients.keys()) + 1 if len(clients) > 0 else 0  
+    clients[new_index] = {"sid": request.sid, "response": "No response", "ai": False}
     print("Client connected")
     print(clients)
+
+@socketio.on('ai_connect')
+def mark_as_ai():
+    for c in clients:
+        if clients[c]["sid"] == request.sid:
+            clients[c]["ai"] = True
+            print("Marked {} as AI".format(c))
+            break
 
 @socketio.on('disconnect')
 def on_disconnect():
     del clients[get_id_from_sid(request.sid)]
     print("Client disconnected")
-    print(clients)
 
 @socketio.on('start game')
 def on_start():
     global started
-#     global clients
+    global clients
     print(clients)
     if not started:  # Don't allow multiple starts
         print("Starting")
         broadcast("",  "start game")
         started = True
-        g.started = True
+        # shuffle clients randomly 
+        print(clients)
+        clients_keys = list(clients.keys())
+        random_keys = [i for i in range(len(clients))]
+        random.shuffle(random_keys)
+        shuffled_clients = {}
+        for i, k in enumerate(random_keys):
+            shuffled_clients[k] = clients[clients_keys[i]]
+        clients = shuffled_clients
+        print(clients)
+
         game_info = GameInfo()
-        g.game_info = game_info
+        game_info.ai_players = [c for c in clients if clients[c]["ai"]]
         engine = Engine(emit_to_client, broadcast, retrieve_response, game_info=game_info, n_players=len(clients))
         broadcast(game_info.config_settings, "settings")
         winner = engine.run_game()
+        socketio.stop()
 
 def broadcast(msg, tag=None):
     """Send a message to all clients."""
@@ -60,11 +78,12 @@ def broadcast(msg, tag=None):
         send(msg, broadcast=True)
     else:
         for client in clients:
-            emit_to_client(msg, client, tag)
+            emit_to_client(msg, client, tag, clear=False)
 
-def emit_to_client(msg, client_id, tag=None):
+def emit_to_client(msg, client_id, tag=None, clear=True):
     # Clear response before whispering, to ensure we don't keep a stale one
-    clients[client_id]["response"] = "No response"
+    if clear:
+        clients[client_id]["response"] = "No response"
     if tag is None:
         socketio.send(msg, room=clients[client_id]["sid"])
     else:
@@ -76,7 +95,7 @@ def retrieve_response(client_id):
 
 def clear_old_info(specific_client=None):
     # Erase outdated info
-    for client in ([specific_client] if specific_client else clients):
+    for client in ([specific_client] if specific_client is not None else clients):
         emit_to_client("", client, "error")
         emit_to_client("", client, "prompt")
 

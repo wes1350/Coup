@@ -2,8 +2,12 @@
 
 class Reaction:
     def __init__(self, **kwargs):
-        reaction_type = None
-        from_player = None
+        self.reaction_type = None
+        self.from_player = None
+        self.as_character = None
 
         for arg in kwargs:
             self.__setattr__(arg, kwargs[arg])
+
+    def history_rep(self) -> dict:
+        return {"type": self.reaction_type, "from": self.from_player, "as_character": self.as_character}
