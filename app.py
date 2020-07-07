@@ -6,6 +6,7 @@ from flask import Flask, render_template, request, g
 from flask_socketio import SocketIO, send, emit
 from Engine import Engine
 from GameInfo import GameInfo
+import random
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -25,8 +26,8 @@ def index():
 @socketio.on('connect')
 def on_connect():
     print(started)
-
-    clients[len(clients)] = {"sid": request.sid, "response": "No response", "ai": False}
+    new_index = max(clients.keys()) + 1 if len(clients) > 0 else 0  
+    clients[new_index] = {"sid": request.sid, "response": "No response", "ai": False}
     print("Client connected")
     print(clients)
 
@@ -46,16 +47,25 @@ def on_disconnect():
 @socketio.on('start game')
 def on_start():
     global started
-#     global clients
+    global clients
     print(clients)
     if not started:  # Don't allow multiple starts
         print("Starting")
         broadcast("",  "start game")
         started = True
-        g.started = True
+        # shuffle clients randomly 
+        print(clients)
+        clients_keys = list(clients.keys())
+        random_keys = [i for i in range(len(clients))]
+        random.shuffle(random_keys)
+        shuffled_clients = {}
+        for i, k in enumerate(random_keys):
+            shuffled_clients[k] = clients[clients_keys[i]]
+        clients = shuffled_clients
+        print(clients)
+
         game_info = GameInfo()
         game_info.ai_players = [c for c in clients if clients[c]["ai"]]
-        g.game_info = game_info
         engine = Engine(emit_to_client, broadcast, retrieve_response, game_info=game_info, n_players=len(clients))
         broadcast(game_info.config_settings, "settings")
         winner = engine.run_game()
