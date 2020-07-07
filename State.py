@@ -318,14 +318,18 @@ class State:
 
         return json.dumps(actions)
 
-    def build_state_json(self, player_id : int) -> str:
+    def build_state_json(self, player_id : int = None, unmask : bool = False) -> str:
+        """Build a json representation of the current state for a given player. Set unmask=True
+            to return a representation with all characters revealed."""
+        assert not (player_id is None and not unmask)
         state_json = {}
         state_json['currentPlayer'] = self._current_player_id
         state_json['playerId'] = player_id
-        state_json['players'] = [p.get_json(mask = p.get_id() != player_id) for p in self._players]
+        state_json['players'] = [p.get_json(mask = (p.get_id() != player_id) and not unmask) for p in self._players]
         return json.dumps(state_json)
 
     def add_to_history(self, event_type : str, event_info : dict) -> None:
         self._history.append((event_type, event_info))
-        for p in self.ai_players:
-            self.whisper(player=p, ai_info=json.dumps({"event": event_type, "info": event_info}))
+        if event_type not in ["start"]:
+            for p in self.ai_players:
+                self.whisper(player=p, ai_info=json.dumps({"event": event_type, "info": event_info}))

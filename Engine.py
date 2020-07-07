@@ -49,7 +49,7 @@ class Engine:
 
     def run_game(self) -> int:
         """Start and run a game until completion, handling game logic as necessary."""
-        self.broadcast_state()
+        self.add_to_history("start", json.loads(self._state.build_state_json(unmask=True)))
         while not self.game_is_over():
             self.broadcast_state()
             self.play_turn()
@@ -58,6 +58,7 @@ class Engine:
         winner = self._state.get_alive_players()[0]
         self.shout("Game is over!\n\nPlayer {} wins!".format(winner))
         self.shout("", "game_over")
+        self.add_to_history("winner", {"winner": winner})
         return winner
 
     def play_turn(self) -> None:
