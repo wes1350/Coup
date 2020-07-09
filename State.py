@@ -284,6 +284,14 @@ class State:
         for id_ in self.get_player_living_card_ids(player):
             if self.get_player_card(player, id_).get_character_type() == character:
                 self.switch_player_card(player, id_)
+                new_character = self.get_player_card(player, id_).get_character_type()
+                self.add_to_history("card_swap", {"from": character, "to": new_character, "player": player}, 
+                                    hide_from_ai=True)
+                for p in self.ai_players:
+                    self.whisper(player=p, ai_info=json.dumps({"event": "card_swap", 
+                                                               "info": {"from": character if player == p else None, 
+                                                                        "to": new_character if player == p else None, 
+                                                                        "player": player}}))
                 return
         raise ValueError("Could not find character time among player's living cards") 
 

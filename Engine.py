@@ -602,9 +602,9 @@ class Engine:
             return False
 
     def exchange_player_card(self, player : int, move : Reaction) -> None:
-        """Given a player and an action or reaction they did, exchange one of their cards appropriately. This is called when a player wins a challenge and needs to replace the challenged character."""
-        character = move.as_character
-        self._state.exchange_player_card(player, character)
+        """Given a player and an action or reaction they did, exchange one of their cards appropriately. 
+           This is called when a player wins a challenge and needs to replace the challenged character."""
+        self._state.exchange_player_card(player, move.as_character)
 
     def get_config_status(self) -> str:
         return self._config_status
