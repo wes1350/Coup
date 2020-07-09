@@ -101,8 +101,8 @@ def clear_old_info(specific_client=None):
 
 @socketio.on('action')
 def store_action(message):
-    print("Got an action: " + message)
     sender_id = get_id_from_sid(request.sid)
+    print("Got an action from player {}: ".format(sender_id) + message)
     clear_old_info(sender_id)
     clients[sender_id]["response"] = message
 
