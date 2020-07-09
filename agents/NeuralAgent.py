@@ -62,9 +62,6 @@ def convert_option_to_vector(option):
 def extract_options(options):
     pass
 
-def extract_win_prob(probs, player_id):
-    pass
-
 def update(hidden, cell):
     def update_NN_params(event):
         _, hidden, cell = model(convert_event_to_vector(event))
@@ -84,7 +81,7 @@ def decide_reaction(options):
     return decline()
     ###########
     option_list = extract_options(options)
-    win_probs = [extract_win_prob(model.forward_no_update(convert_option_to_vector(option))) for option in option_list]
+    win_probs = [model.forward_no_update(convert_option_to_vector(option))[player_id] for option in option_list]
     best_option = win_probs.index(max(win_probs))
     return convert(best_option)
     

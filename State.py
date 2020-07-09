@@ -298,6 +298,8 @@ class State:
 
     def broadcast_state(self) -> None:
         """Broadcast the masked state representation to all players."""
+        for p in self.ai_players:
+            self.whisper(player=p, ai_info={"event": "state", "info": self.build_state_json(p)})
         for p in self._players:
             self.whisper(self.masked_rep(p), p.get_id(), "state")
             self.whisper(self.build_state_json(p.get_id()), p.get_id(), "state_json")
@@ -328,8 +330,10 @@ class State:
         state_json['players'] = [p.get_json(mask = (p.get_id() != player_id) and not unmask) for p in self._players]
         return json.dumps(state_json)
 
-    def add_to_history(self, event_type : str, event_info : dict) -> None:
+    def add_to_history(self, event_type : str, event_info : dict, 
+                       hide_from_ai : bool = False) -> None:
+        print(event_type, event_info)
         self._history.append((event_type, event_info))
-        if event_type not in ["start"]:
+        if not hide_from_ai:
             for p in self.ai_players:
                 self.whisper(player=p, ai_info=json.dumps({"event": event_type, "info": event_info}))

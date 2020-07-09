@@ -49,7 +49,7 @@ class Engine:
 
     def run_game(self) -> int:
         """Start and run a game until completion, handling game logic as necessary."""
-        self.add_to_history("start", json.loads(self._state.build_state_json(unmask=True)))
+        self.add_to_history("start", json.loads(self._state.build_state_json(unmask=True)), hide_from_ai=True)
         while not self.game_is_over():
             self.broadcast_state()
             self.play_turn()
@@ -663,10 +663,10 @@ class Engine:
     def broadcast_state(self) -> None:
         self._state.broadcast_state()
     
-    def add_to_history(self, event_type : str, event_info : dict) -> None:
+    def add_to_history(self, event_type : str, event_info : dict, 
+                       hide_from_ai : bool = False) -> None:
         # Add the action resolution to the history
-        self._state.add_to_history(event_type, event_info)
-        print(event_type, event_info)
+        self._state.add_to_history(event_type, event_info, hide_from_ai)
 
     def is_ai_player(self, i : int) -> bool:
         return i in self.game_info.ai_players
