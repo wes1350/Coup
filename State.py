@@ -88,9 +88,12 @@ class State:
                                                                 str(new_card.get_character())), player_id, "info")
 
     def kill_player_card(self, player_id : int, card_idx : int) -> None:
-        self.get_player_card(player_id, card_idx).die()
+        card = self.get_player_card(player_id, card_idx)
+        card.die()
+        self.add_to_history("card_loss", {"character": card.get_character_type(), "player": player_id})
         if not self.player_is_alive(player_id):
             self.shout("Player {} has been eliminated!".format(player_id))
+            self.add_to_history("loser", {"loser": player_id})
 
     def get_player_balance(self, player_id : int) -> int:
         return self._players[player_id].get_coins() 
@@ -157,8 +160,7 @@ class State:
         if not ignore_killing:
             # Handle assassinations, coups
             if action.kill:
-                card_id = action.kill_card_id
-                self._players[target].kill_card(card_id)
+                self.kill_player_card(target, action.kill_card_id)
 
         # Handle exchanging 
         if action.exchange_with_deck:
