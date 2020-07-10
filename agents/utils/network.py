@@ -56,6 +56,16 @@ def start(on_action=unimplemented_response("actions"),
         print("Updating with event: ", event_info)
         if isinstance(event_info, str):
             event_info = json.loads(event_info)
+            if "info" in event_info:
+                if isinstance(event_info["info"], str):
+                    event_info["info"] = json.loads(event_info["info"])
+                    print("JSON BUG????????", event_info)
+        else:
+            if "info" in event_info:
+                if isinstance(event_info["info"], str):
+                    event_info["info"] = json.loads(event_info["info"])
+                    print("JSON BUG????????", event_info)
+        print(event_info)
         update_f(event_info)
 
     @sio.on('game_over')
