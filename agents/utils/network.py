@@ -1,7 +1,7 @@
 """Utilities for interacting with the Game Engine over the network."""
 
 import socketio
-import json
+import json, time
 
 def unimplemented_response(event_type : str):
     def raiser(options):
@@ -68,6 +68,7 @@ def start(on_action=unimplemented_response("actions"),
 
     @sio.on('game_over')
     def cleanup(game_over_msg=None):
+        time.sleep(1)
         sio.disconnect()
 
     @sio.event

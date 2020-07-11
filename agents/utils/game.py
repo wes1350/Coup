@@ -55,16 +55,17 @@ def extract_options(options, option_type):
                     extracted_options.append((r, options[r][i]))
         return extracted_options 
     elif option_type == "card_selection":
-        return [(c, ) for c in options]
+        return [c for c in options]
     elif option_type == "exchange":
         n = options["n"]
         if n == 1:
-            return [(c, ) for c in options["cards"]]
+            return [(c, options["cards"][c]) for c in options["cards"]]
         elif n == 2:
-            options = []
-            for a in options["cards"]:
-                for b in options["cards"]:
+            extracted_options = []
+            cards = options["cards"]
+            for a in cards:
+                for b in cards:
                     if b > a:
-                        options.append((a, b))
-            return options
+                        extracted_options.append([(a, cards[a]), (b, cards[b])])
+            return extracted_options
             

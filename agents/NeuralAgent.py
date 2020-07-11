@@ -175,7 +175,7 @@ def convert_option_to_events(option, option_type):
     elif option_type == "reaction":
         return [{"event": "reaction", "info": {"type": option[0], "from": player_id, "as_character": option[1]}}]
     elif option_type == "card_selection":
-        return [{"event": "card_loss", "info": {"character": player_cards[option[0]]["character"], "player": player_id}}]
+        return [{"event": "card_loss", "info": {"character": player_cards[option]["character"], "player": player_id}}]
     elif option_type == "exchange":
         events = []
         alive_cards = [c for c in player_cards if c["alive"]]
@@ -240,11 +240,34 @@ def decide_reaction(options):
     
 def decide_card(options):
  #    ask neural net for best card to choose
-    return random.choice(options)
+    option_list = extract_options(options, "card_selection")
+    win_probs = []
+    for option in option_list:
+        vectors = convert_option_to_vectors(option, "card_selection")
+        win_p = model.forward_no_update(vectors[0], vectors[1:])
+        my_win_p = win_p[player_id]
+        win_probs.append(my_win_p)
+    return option_list[win_probs.index(max(win_probs))]
+
 
 def decide_exchange(options):
   #   ask neural net for best exchange choices
-    return choose_exchange_cards(random.sample(options["cards"].keys(), options["n"]))
+    option_list = extract_options(options, "exchange")
+    win_probs = []
+    for option in option_list:
+        if isinstance(option, list):
+            exchange_characters = [t[1] for t in option]
+        else:
+            exchange_characters = [option[1]]
+        vectors = convert_option_to_vectors(exchange_characters, "exchange")
+        win_p = model.forward_no_update(vectors[0], vectors[1:])
+        my_win_p = win_p[player_id]
+        win_probs.append(my_win_p)
+    best_option = option_list[win_probs.index(max(win_probs))]
+    if isinstance(best_option, list):
+        return choose_exchange_cards([o[0] for o in best_option])
+    else:
+        return choose_exchange_cards([best_option[0]])
 
 
 if __name__ == "__main__":
