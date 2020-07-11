@@ -443,6 +443,7 @@ class Engine:
             response = input(query_msg) if self.local else self.get_response(player_id)
             try:
                 action = self.translate_coup_target(response)
+                action.set_source(player_id)
             except ValueError:
                 self.whisper("Invalid coup target, please try again.", player_id, "error")
             else:
