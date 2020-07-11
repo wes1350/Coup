@@ -74,5 +74,6 @@ def start(on_action=unimplemented_response("actions"),
     @sio.event
     def disconnect():
         print("I'm disconnected!")
+        sio.disconnect()
 
     sio.connect('http://localhost:5000')
