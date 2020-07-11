@@ -68,16 +68,15 @@ def on_start():
         print("Starting")
         broadcast("",  "start game")
         started = True
-        # shuffle clients randomly
-        print(clients)
+        # shuffle clients randomly 
         clients_keys = list(clients.keys())
         random_keys = [i for i in range(len(clients))]
-        random.shuffle(random_keys)
+        if not keep_client_order:
+            random.shuffle(random_keys)
         shuffled_clients = {}
         for i, k in enumerate(random_keys):
             shuffled_clients[k] = clients[clients_keys[i]]
         clients = shuffled_clients
-        print(clients)
 
         game_info = GameInfo()
         game_info.ai_players = [c for c in clients if clients[c]["ai"]]
@@ -122,6 +121,9 @@ def store_action(message):
     clients[sender_id]["response"] = message
 
 if __name__ == '__main__':
+    from utils.argument_parsing import parse_args_app
+    parsed_args = parse_args_app()
+    keep_client_order = parsed_args["keep_client_order"]
     started = False
     clients = {} 
     observers = {}

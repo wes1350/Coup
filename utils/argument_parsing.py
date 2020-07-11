@@ -15,3 +15,9 @@ def parse_args():
     specified_args = {k: v for k, v in vars(args).items() if v is not None}
     return specified_args
 
+def parse_args_app():
+    parser = argparse.ArgumentParser(description="Customize game settings in app.py.")
+    parser.add_argument("-k", "--keep_client_order", action="store_true", help="Randomize client order")
+    args = parser.parse_args()
+    specified_args = {k: v for k, v in vars(args).items() if v is not None}
+    return specified_args
