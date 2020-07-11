@@ -49,7 +49,7 @@ class Engine:
 
     def run_game(self) -> int:
         """Start and run a game until completion, handling game logic as necessary."""
-        self.add_to_history("start", json.loads(self._state.build_state_json(unmask=True)))
+        self.add_to_history("start", json.loads(self._state.build_state_json(unmask=True)), hide_from_ai=True)
         while not self.game_is_over():
             self.broadcast_state()
             self.play_turn()
@@ -602,9 +602,9 @@ class Engine:
             return False
 
     def exchange_player_card(self, player : int, move : Reaction) -> None:
-        """Given a player and an action or reaction they did, exchange one of their cards appropriately. This is called when a player wins a challenge and needs to replace the challenged character."""
-        character = move.as_character
-        self._state.exchange_player_card(player, character)
+        """Given a player and an action or reaction they did, exchange one of their cards appropriately. 
+           This is called when a player wins a challenge and needs to replace the challenged character."""
+        self._state.exchange_player_card(player, move.as_character)
 
     def get_config_status(self) -> str:
         return self._config_status
@@ -663,10 +663,10 @@ class Engine:
     def broadcast_state(self) -> None:
         self._state.broadcast_state()
     
-    def add_to_history(self, event_type : str, event_info : dict) -> None:
+    def add_to_history(self, event_type : str, event_info : dict, 
+                       hide_from_ai : bool = False) -> None:
         # Add the action resolution to the history
-        self._state.add_to_history(event_type, event_info)
-        print(event_type, event_info)
+        self._state.add_to_history(event_type, event_info, hide_from_ai)
 
     def is_ai_player(self, i : int) -> bool:
         return i in self.game_info.ai_players

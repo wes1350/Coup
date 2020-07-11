@@ -13,7 +13,7 @@ class Card:
         self._id = id_
 
     def get_json(self, mask : bool) -> dict:
-        return {'character': None if self._alive and mask else self.get_character_type()}
+        return {'character': None if self._alive and mask else self.get_character_type(), "alive": self._alive}
         
     def get_character(self) -> Character:
         return self._character

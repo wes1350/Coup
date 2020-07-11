@@ -88,9 +88,12 @@ class State:
                                                                 str(new_card.get_character())), player_id, "info")
 
     def kill_player_card(self, player_id : int, card_idx : int) -> None:
-        self.get_player_card(player_id, card_idx).die()
+        card = self.get_player_card(player_id, card_idx)
+        card.die()
+        self.add_to_history("card_loss", {"character": card.get_character_type(), "player": player_id})
         if not self.player_is_alive(player_id):
             self.shout("Player {} has been eliminated!".format(player_id))
+            self.add_to_history("loser", {"loser": player_id})
 
     def get_player_balance(self, player_id : int) -> int:
         return self._players[player_id].get_coins() 
@@ -157,13 +160,16 @@ class State:
         if not ignore_killing:
             # Handle assassinations, coups
             if action.kill:
-                card_id = action.kill_card_id
-                self._players[target].kill_card(card_id)
+                self.kill_player_card(target, action.kill_card_id)
 
         # Handle exchanging 
         if action.exchange_with_deck:
             n_to_draw = self._config.n_cards_for_exchange
             drawn_cards = self._deck.draw(n_to_draw)
+            drawn_chars = [c.get_character_type() for c in drawn_cards]
+            self.add_to_history("draw", {"cards": drawn_chars}, hide_from_ai=True)
+            if player in self.ai_players:
+                self.whisper(player=player, ai_info=json.dumps({"event": "draw", "info": drawn_chars}))
             alive_cards = self.get_player_living_card_ids(player)
             message = "For your exchange, you may choose {} of the following cards:\n    ".format(len(alive_cards))
             options = {"n": len(alive_cards), "cards": {}}
@@ -175,6 +181,7 @@ class State:
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
                 options["cards"][i + in_hand] = str(drawn_cards[i].get_character())
 
+            old_chars = sorted([self.get_player_card(player, c).get_character_type() for c in alive_cards])
             cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n", options)
             
             # Return all cards from our hand we decided not to keep
@@ -195,6 +202,16 @@ class State:
             for i, card in enumerate(drawn_cards):
                 if i + in_hand not in cards_to_keep:
                     self._deck.return_card(card.get_id())
+
+            new_chars = sorted([self.get_player_card(player, c).get_character_type() for c in self.get_player_living_card_ids(player)])
+
+            for i in range(len(new_chars)):
+                self.add_to_history("card_swap", {"from": old_chars[i], "to": new_chars[i], "player": player}, hide_from_ai=True)
+                for p in self.ai_players:
+                    self.whisper(player=p, ai_info=json.dumps({"event": "card_swap", 
+                                                               "info": {"from": old_chars[i] if player == p else None, 
+                                                                        "to": new_chars[i] if player == p else None, 
+                                                                        "player": player}}))
 
     def validate_action(self, action : Action, player_id : int, whisper: bool = True) -> bool:
         """Given an action, ensure it can be applied given the game state."""
@@ -282,6 +299,14 @@ class State:
         for id_ in self.get_player_living_card_ids(player):
             if self.get_player_card(player, id_).get_character_type() == character:
                 self.switch_player_card(player, id_)
+                new_character = self.get_player_card(player, id_).get_character_type()
+                self.add_to_history("card_swap", {"from": character, "to": new_character, "player": player}, 
+                                    hide_from_ai=True)
+                for p in self.ai_players:
+                    self.whisper(player=p, ai_info=json.dumps({"event": "card_swap", 
+                                                               "info": {"from": character if player == p else None, 
+                                                                        "to": new_character if player == p else None, 
+                                                                        "player": player}}))
                 return
         raise ValueError("Could not find character time among player's living cards") 
 
@@ -298,6 +323,8 @@ class State:
 
     def broadcast_state(self) -> None:
         """Broadcast the masked state representation to all players."""
+        for p in self.ai_players:
+            self.whisper(player=p, ai_info={"event": "state", "info": self.build_state_json(p)})
         for p in self._players:
             self.whisper(self.masked_rep(p), p.get_id(), "state")
             self.whisper(self.build_state_json(p.get_id()), p.get_id(), "state_json")
@@ -328,8 +355,10 @@ class State:
         state_json['players'] = [p.get_json(mask = (p.get_id() != player_id) and not unmask) for p in self._players]
         return json.dumps(state_json)
 
-    def add_to_history(self, event_type : str, event_info : dict) -> None:
+    def add_to_history(self, event_type : str, event_info : dict, 
+                       hide_from_ai : bool = False) -> None:
+        print(event_type, event_info)
         self._history.append((event_type, event_info))
-        if event_type not in ["start"]:
+        if not hide_from_ai:
             for p in self.ai_players:
                 self.whisper(player=p, ai_info=json.dumps({"event": event_type, "info": event_info}))
