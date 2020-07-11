@@ -28,7 +28,7 @@ def start(on_action=unimplemented_response("actions"),
         options = json.loads(loaded_msg["options"]) if isinstance(loaded_msg["options"], str) \
                                                     else loaded_msg["options"]
         response = react(loaded_msg["type"], options)
-        print("sending response", response, type(response))
+        print("Sending response", response, type(response))
         sio.emit("action", response)
 
     def react(event_type : str, options : dict):
@@ -59,12 +59,10 @@ def start(on_action=unimplemented_response("actions"),
             if "info" in event_info:
                 if isinstance(event_info["info"], str):
                     event_info["info"] = json.loads(event_info["info"])
-                    print("JSON BUG????????", event_info)
         else:
             if "info" in event_info:
                 if isinstance(event_info["info"], str):
                     event_info["info"] = json.loads(event_info["info"])
-                    print("JSON BUG????????", event_info)
         print(event_info)
         update_f(event_info)
 

@@ -21,6 +21,8 @@ n_players = 2
 hidden_state = torch.randn(1, hidden_size).view(1, 1, -1)
 cell_state = torch.randn(1, hidden_size).view(1, 1, -1)
 
+player_id = None
+player_cards = None
 
 class NeuralAgent(nn.Module):
     
@@ -34,21 +36,22 @@ class NeuralAgent(nn.Module):
         # Might need to use view on layer inputs
         out, (hidden, cell) = self.lstm(input_vector)
         probs = self.value_map(hidden)
-        print(nn.Softmax(dim=2)(probs), flush=True)
-        print(out)
-        print(hidden, flush=True)
-        print(cell, flush=True)
-        print("---"*20, flush=True)
+#         print(out)
+#         print(hidden, flush=True)
+#         print(cell, flush=True)
+#         print("---"*20, flush=True)
         return probs, hidden, cell
 
     def forward_no_update(self, input_vector, additional_input_vectors : list = []):
         hidden = hidden_state.clone().detach()
         _, (hidden, _) = self.lstm(input_vector)
         for iv in additional_input_vectors:
-            _, (hidden, _) = self.lstm(input_vector)
+            _, (hidden, _) = self.lstm(iv)
 
         values = self.value_map(hidden)
-        return nn.Softmax(dim=2)(values)
+        probs = nn.Softmax(dim=2)(values).view(-1).tolist()
+        print("Forward no update results:", probs)
+        return probs
 
 model = NeuralAgent(input_size, hidden_size, 2)
 loss_function = nn.CrossEntropyLoss()
@@ -56,8 +59,6 @@ optimizer = optim.SGD(model.parameters(), lr=0.1)
 
 def convert_event_to_vector(e):
     # return torch.randn(input_size).view(1, 1, -1)
-    print(e)    
-    print(type(e))
     #############
     rep = [0]*input_size
 
@@ -108,8 +109,8 @@ def convert_event_to_vector(e):
         rep[18 + info["player"]] = 1
         rep[29 + chars.index(info["character"])] = 1
     elif event == "draw":
-        rep[29 + chars.index(info["cards"][0])] = 1
-        rep[34 + chars.index(info["cards"][1])] = 1
+        rep[29 + chars.index(info[0])] = 1
+        rep[34 + chars.index(info[1])] = 1
     elif event == "card_swap":
         rep[18 + info["player"]] = 1
         if info["from"] is not None:
@@ -117,16 +118,19 @@ def convert_event_to_vector(e):
         if info["to"] is not None:
             rep[34 + chars.index(info["to"])] = 1
     elif event == "state":
-        print(event, info)
-        print(info.keys())
-        print(info["playerId"])
         rep[39 + info["playerId"]] = 1
+        # update_player_id(player_id, info["playerId"])
+        global player_id
+        player_id = info["playerId"]
         rep[41 + info["currentPlayer"]] = 1
         player_info = info["players"]
         n_cards = len(player_info[0]["cards"])
         for i, p in enumerate(player_info):
             rep[43 + i] = p["coins"]
         my_cards = [player_info[info["playerId"]]["cards"][i] for i in range(n_cards)]
+        # update_hand(player_cards, my_cards)
+        global player_cards
+        player_cards = my_cards
         my_chars = [chars.index(c["character"]) for c in my_cards]
         rep[45 + my_chars[0]] = 1
         rep[50 + my_chars[1]] = 1
@@ -134,25 +138,61 @@ def convert_event_to_vector(e):
         rep[55] = 1 if my_life_statuses[0] else 0
         rep[56] = 1 if my_life_statuses[1] else 0
         
-        opponent_idx = -1 # Order opponents from 0 to n-2 
+        opponent_idx = -1  # Order opponents from 0 to n-2 
         for i in range(n_players):  
             if i != info["playerId"]:
                 opponent_idx += 1
                 opponent_cards = [player_info[info["playerId"]]["cards"][i] for i in range(n_cards)]
                 opp_chars = [c["character"] for c in opponent_cards]
                 if opp_chars[0] is not None:
-                    rep[57 + opponent_idx * 10 + chars.index(opp_chars[0])] = 1
+ #                    rep[57 + opponent_idx * 10 + chars.index(opp_chars[0])] = 1
+                     rep[57 + chars.index(opp_chars[0])] = 1
+                
                 if opp_chars[1] is not None:
-                    rep[62 + opponent_idx * 10 + chars.index(opp_chars[1])] = 1
-    print("\n" + str(rep) + "\n") 
+#                     rep[62 + opponent_idx * 10 + chars.index(opp_chars[1])] = 1
+                     rep[62 + chars.index(opp_chars[1])] = 1
     return torch.FloatTensor(rep).view(1, 1, -1)
 
-def convert_option_to_event(option):
-    """Converts an option tuple (e.g. ("Tax",) or ("Steal", 2)) into the corresponding event."""
-    pass
+def convert_option_to_events(option, option_type):
+    """Converts an option list into the corresponding event(s).
+       For actions and reactions, options are length-2 tuples.
+       For card selection, options are numbers.
+       For exchanges, options are either numbers or length-2 tuples."""
+    if option_type == "action":
+        name = option[0] if isinstance(option, tuple) else option
+        if name == "tax":
+            claimed = "Duke"
+        elif name == "steal":
+            claimed = "Captain"
+        elif name == "exchange":
+            claimed = "Ambassador"
+        elif name == "assassinate":
+            claimed = "Assassin"
+        else:
+            claimed = None
+        return [{"event": "action", "info": {"type": name, "as_character": claimed, "from_player": player_id, 
+                                             "target": None if isinstance(option, str) else option[1]}}]
+    elif option_type == "reaction":
+        return [{"event": "reaction", "info": {"type": option[0], "from": player_id, "as_character": option[1]}}]
+    elif option_type == "card_selection":
+        return [{"event": "card_loss", "info": {"character": player_cards[option[0]]["character"], "player": player_id}}]
+    elif option_type == "exchange":
+        events = []
+        alive_cards = [c for c in player_cards if c["alive"]]
+        for i in range(len(alive_cards)):
+            events.append({"event": "card_swap", 
+                           "info": {"from": alive_cards[i]["character"], 
+                                    "to": option[i], "player": player_id}})
+        return events
 
-def convert_option_to_vector(option):
-    return convert_event_to_vector(convert_option_to_event(option))
+def update_hand(old_cards, new_cards):
+    old_cards = new_cards
+
+def update_player_id(old_id, new_id):
+    old_id = new_id
+
+def convert_option_to_vectors(option, option_type):
+    return [convert_event_to_vector(e) for e in convert_option_to_events(option, option_type)]
 
 def update(hidden, cell):
     def update_NN_params(event):
@@ -161,27 +201,42 @@ def update(hidden, cell):
 
 def decide_action(options):
     #ask neural net for best action
-    possible_actions = possible_responses(options)
-    action = random.choice(possible_actions)
-    if isinstance(options[action], list):
-        target = random.choice(options[action])
-        return convert(action, target)
-    return convert(action)
+#     possible_actions = possible_responses(options)
+#     action = random.choice(possible_actions)
+#     if isinstance(options[action], list):
+#         target = random.choice(options[action])
+#         return convert(action, target)
+#     return convert(action)
 
     ###########
-    option_list = extract_options(options)
-    win_probs = [model.forward_no_update(convert_option_to_vector(option))[player_id] for option in option_list]
-    best_option = win_probs[win_probs.index(max(win_probs))]
+    option_list = extract_options(options, "action")
+    win_probs = []
+    for option in option_list:
+        vectors = convert_option_to_vectors(option, "action")
+        win_p = model.forward_no_update(vectors[0], vectors[1:])
+        my_win_p = win_p[player_id]
+        win_probs.append(my_win_p)
+    best_option = option_list[win_probs.index(max(win_probs))]
     return convert(*best_option)
 
 def decide_reaction(options):
 #     ask neural net for best reaction
-    return decline()
+#     return decline()
     ###########
-    option_list = extract_options(options)
-    win_probs = [model.forward_no_update(convert_option_to_vector(option))[player_id] for option in option_list]
-    best_option = win_probs[win_probs.index(max(win_probs))]
+#     option_list = extract_options(options)
+#     win_probs = [model.forward_no_update(convert_option_to_vector(option, "reaction"))[player_id] for option in option_list]
+#     best_option = win_probs[win_probs.index(max(win_probs))]
+#     return convert(*best_option)
+    option_list = extract_options(options, "reaction")
+    win_probs = []
+    for option in option_list:
+        vectors = convert_option_to_vectors(option, "reaction")
+        win_p = model.forward_no_update(vectors[0], vectors[1:])
+        my_win_p = win_p[player_id]
+        win_probs.append(my_win_p)
+    best_option = option_list[win_probs.index(max(win_probs))]
     return convert(*best_option)
+
     
 def decide_card(options):
  #    ask neural net for best card to choose

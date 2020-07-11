@@ -3,39 +3,39 @@
 """Actions"""
 
 def income():
-    return "I"
+    return "Income"
 
 def foreign_aid():
-    return "f"
+    return "ForeignAid"
 
 def tax():
-    return "t"
+    return "Tax"
 
 def exchange():
-    return "e"
+    return "Exchange"
 
 def steal(target):
     assert target is not None
-    return "s " + str(target)
+    return "Steal " + str(target)
 
 def assassinate(target):
     assert target is not None
-    return "a " + str(target)
+    return "Assassinate " + str(target)
 
 def coup(target):
     assert target is not None
-    return "c " + str(target)
+    return "Coup " + str(target)
 
 """Reactions"""
 
 def decline():
-    return "n"
+    return "No"
 
 def block(as_character):
-    return "b " + as_character
+    return "Block " + as_character
 
 def challenge():
-    return "c"
+    return "Challenge"
 
 """Card Selection"""
 

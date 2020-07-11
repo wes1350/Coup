@@ -181,7 +181,7 @@ class State:
                 message += " [{}] {} ".format(i + in_hand, str(drawn_cards[i].get_character()))
                 options["cards"][i + in_hand] = str(drawn_cards[i].get_character())
 
-            old_chars = sorted([self.get_player_card(player, c).get_character_type() for c in alive_cards])
+            old_chars = [self.get_player_card(player, c).get_character_type() for c in alive_cards]
             cards_to_keep = self.query_exchange(player, in_hand, in_hand + n_to_draw, message + "\n", options)
             
             # Return all cards from our hand we decided not to keep
@@ -342,7 +342,6 @@ class State:
                            self.validate_action(action(target=p.get_id()), 
                                                 player_id, whisper=False))]
             actions[str(action(target=0))] = targets
-
         return json.dumps(actions)
 
     def build_state_json(self, player_id : int = None, unmask : bool = False) -> str:
