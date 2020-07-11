@@ -39,10 +39,25 @@ def mark_as_ai():
             print("Marked {} as AI".format(c))
             break
 
+@socketio.on('start_observer')
+def start_as_observer():
+    # joins the game as an observer and starts the game
+	for c in clients:
+		if clients[c]["sid"] == request.sid:
+			print("Removing observer from clients")
+			del clients[c]
+			observers[request.sid] = {}
+			break
+	on_start()
+
 @socketio.on('disconnect')
 def on_disconnect():
-    del clients[get_id_from_sid(request.sid)]
-    print("Client disconnected")
+    try:
+        del clients[get_id_from_sid(request.sid)]
+        print("Client disconnected")
+    except ValueError:
+        del observers[request.sid]
+        print("Observers disconnected")
 
 @socketio.on('start game')
 def on_start():
@@ -53,7 +68,7 @@ def on_start():
         print("Starting")
         broadcast("",  "start game")
         started = True
-        # shuffle clients randomly 
+        # shuffle clients randomly
         print(clients)
         clients_keys = list(clients.keys())
         random_keys = [i for i in range(len(clients))]
@@ -70,6 +85,8 @@ def on_start():
         broadcast(game_info.config_settings, "settings")
         winner = engine.run_game()
         socketio.stop()
+        return
+        print('ending server...')
 
 def broadcast(msg, tag=None):
     """Send a message to all clients."""
@@ -109,4 +126,5 @@ def store_action(message):
 if __name__ == '__main__':
     started = False
     clients = {} 
+    observers = {}
     socketio.run(app, host='0.0.0.0')

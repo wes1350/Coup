@@ -58,10 +58,6 @@ def start(on_action=unimplemented_response("actions"),
             event_info = json.loads(event_info)
         update_f(event_info)
 
-    @sio.on('game_over')
-    def cleanup(game_over_msg=None):
-        sio.disconnect()
-
     @sio.event
     def connect():
         print("I'm connected!")
@@ -74,5 +70,6 @@ def start(on_action=unimplemented_response("actions"),
     @sio.event
     def disconnect():
         print("I'm disconnected!")
+        sio.disconnect()
 
     sio.connect('http://localhost:5000')
