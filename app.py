@@ -85,8 +85,6 @@ def on_start():
         broadcast(game_info.config_settings, "settings")
         winner = engine.run_game()
         socketio.stop()
-        return
-        print('ending server...')
 
 def broadcast(msg, tag=None):
     """Send a message to all clients."""
