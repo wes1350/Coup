@@ -6,13 +6,16 @@ import subprocess
 from agents import AdversarialAgent
 
 if __name__ == '__main__':
-    '''
+    """
         read from agent.conf to spin up agents 
-    '''
+    """
     config = configparser.ConfigParser()
-    config.read('agents.conf')
+    config.read('agents/agents.conf')
     agents = [agent_type for agent_type in config['AGENTS']]
     paths = [path for path in config['PATHS']]
+
+    sio = socketio.Client()
+    sio.connect('http://localhost:5000')
 
     def run_agent(path):
         try:
@@ -21,21 +24,6 @@ if __name__ == '__main__':
         except BaseException:
             pass
 
-    thread_pool = []
-    for agent in agents:
-        num_agents = int(config['AGENTS'][agent])
-        for i in range(num_agents):
-            # get path for agent file
-            path = config['PATHS'][agent]
-            print(f"Spinning up {agent}") 
-            thread = threading.Thread(target=run_agent, args=(path,))
-            thread_pool.append(thread)
-            thread.start()
-
-    sio = socketio.Client()
-    sio.connect('http://localhost:5000')
-
-    @sio.event
     def connect():
         print("Observer connected!")
 
@@ -50,6 +38,17 @@ if __name__ == '__main__':
     def disconnect():
         print('observer disconnecting...')
         sio.disconnect()
+
+    thread_pool = []
+    for agent in agents:
+        num_agents = int(config['AGENTS'][agent])
+        for _ in range(num_agents):
+            # get path for agent file
+            path = config['PATHS'][agent]
+            print(f"Spinning up {agent}") 
+            thread = threading.Thread(target=run_agent, args=(path,))
+            thread_pool.append(thread)
+            thread.start()
 
     # send start signal
     connect()
