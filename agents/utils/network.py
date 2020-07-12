@@ -73,7 +73,7 @@ def start(on_action=unimplemented_response("actions"),
 
     @sio.event
     def connect():
-        print("I'm connected!")
+        print("Connected as player")
         sio.emit("ai_connect")
 
     @sio.event
@@ -82,7 +82,7 @@ def start(on_action=unimplemented_response("actions"),
 
     @sio.event
     def disconnect():
-        print("I'm disconnected!")
+        print("Disconnected as player")
         sio.disconnect()
 
     sio.connect('http://localhost:5000')

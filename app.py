@@ -8,6 +8,7 @@ from Engine import Engine
 from GameInfo import GameInfo
 import random
 from utils.argument_parsing import parse_args
+import time
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -26,7 +27,6 @@ def index():
 
 @socketio.on('connect')
 def on_connect():
-    print(started)
     new_index = max(clients.keys()) + 1 if len(clients) > 0 else 0  
     clients[new_index] = {"sid": request.sid, "response": "No response", "ai": False}
     print("Client connected")
@@ -40,16 +40,25 @@ def mark_as_ai():
             print("Marked {} as AI".format(c))
             break
 
+@socketio.on('observer_connect')
+def mark_as_observer():
+    observers[request.sid] = {}
+    if get_id_from_sid(request.sid) in clients:
+        del clients[get_id_from_sid(request.sid)]
+
 @socketio.on('start_observer')
-def start_as_observer():
-    # joins the game as an observer and starts the game
-	for c in clients:
-		if clients[c]["sid"] == request.sid:
-			print("Removing observer from clients")
-			del clients[c]
-			observers[request.sid] = {}
-			break
-	on_start()
+def start_as_observer(n_agents):
+    print(f"Waiting for {n_agents} agents to connect before starting...")
+    # Need to check here not for the number of clients, but for the number of AI, so that we give enough time 
+    # to mark AIs as AI, so that we send them AI-compatible messages. Setting sleep to something low (e.g. 0.0001) 
+    # and not waiting for us to mark them as AI will result in us treating them like humans,
+    # And so the agents never respond since we don't send them the correct messages.
+    # Will need to change this a bit if we want to allow human players to mix with Scheduler,
+    # Since this assumes all players from Scheduler are AIs
+    while len([c for c in clients if clients[c]["ai"]]) < n_agents:
+        time.sleep(0.001)
+        pass
+    on_start()
 
 @socketio.on('disconnect')
 def on_disconnect():

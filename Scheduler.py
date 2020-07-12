@@ -13,9 +13,9 @@ if __name__ == '__main__':
     config.read('agents/agents.conf')
     agents = [agent_type for agent_type in config['AGENTS']]
     paths = [path for path in config['PATHS']]
-
+    total_agents = sum([int(config['AGENTS'][agent]) for agent in agents])
+    
     sio = socketio.Client()
-    sio.connect('http://localhost:5000')
 
     def run_agent(path):
         try:
@@ -24,19 +24,14 @@ if __name__ == '__main__':
         except BaseException:
             pass
 
+    @sio.event
     def connect():
-        print("Observer connected!")
-
-        # takes time for agents to connect
-        wait = 4
-        for i in range(wait - 1, 0, -1):
-            time.sleep(1)
-            print(f"Game starts in {i}...")
-        sio.emit("start_observer")
+        print("Connected as observer")
+        sio.emit("observer_connect")
 
     @sio.event
     def disconnect():
-        print('observer disconnecting...')
+        print('Disconnected as observer')
         sio.disconnect()
 
     thread_pool = []
@@ -50,8 +45,10 @@ if __name__ == '__main__':
             thread_pool.append(thread)
             thread.start()
 
+    sio.connect('http://localhost:5000')
+
     # send start signal
-    connect()
+    sio.emit("start_observer", total_agents)
     
     # wait for threads to finish
     for thread in thread_pool:
