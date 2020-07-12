@@ -41,7 +41,6 @@ class Engine:
             self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local, game_info.ai_players)
             self.game_info = game_info
             self.game_info.config_settings = str(self._config)
-            self.sleep_duration = 0.5
 
     def game_is_over(self) -> bool:
         """Determine if the win condition is satisfied."""
@@ -359,7 +358,7 @@ class Engine:
                         self.whisper("Impossible reaction, please try again.", player_id, "error")
             # Sleep in order to not poll too often, but only after we check each player's response
             if False in reactions:
-                time.sleep(self.sleep_duration) 
+                time.sleep(self._config.engine_sleep_duration) 
                 print_wait_msg = False
         return [r for r in reactions if r is not None]
 
@@ -427,7 +426,7 @@ class Engine:
                         self.whisper("Invalid response, please try again.", player_id, "error")
             # Sleep in order to not poll too often, but only after we check each player's response
             if False in challenges:
-                time.sleep(self.sleep_duration)
+                time.sleep(self._config.engine_sleep_duration)
                 print_wait_msg = False
         return [c for c in challenges if c is not None]
 
@@ -652,7 +651,7 @@ class Engine:
             response = self.query_f(player)
             if response == "No response":
                 if sleep:
-                    time.sleep(self.sleep_duration)
+                    time.sleep(self._config.engine_sleep_duration)
                     continue
                 else:
                     return None

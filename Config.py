@@ -20,6 +20,8 @@ class Config:
 
         self.pay_on_successful_challenges = False
 
+        self.engine_sleep_duration = 0.5 
+
         # Set initial hands for each player
         self.starting_hands = None
         # self.starting_hands = {0: ["Duke", "Captain"],

@@ -7,6 +7,7 @@ from flask_socketio import SocketIO, send, emit
 from Engine import Engine
 from GameInfo import GameInfo
 import random
+from utils.argument_parsing import parse_args
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'secret!'
@@ -80,7 +81,7 @@ def on_start():
 
         game_info = GameInfo()
         game_info.ai_players = [c for c in clients if clients[c]["ai"]]
-        engine = Engine(emit_to_client, broadcast, retrieve_response, game_info=game_info, n_players=len(clients))
+        engine = Engine(emit_to_client, broadcast, retrieve_response, game_info=game_info, n_players=len(clients), **parsed_args)
         broadcast(game_info.config_settings, "settings")
         winner = engine.run_game()
         socketio.stop()
@@ -121,8 +122,7 @@ def store_action(message):
     clients[sender_id]["response"] = message
 
 if __name__ == '__main__':
-    from utils.argument_parsing import parse_args_app
-    parsed_args = parse_args_app()
+    parsed_args = parse_args()
     keep_client_order = parsed_args["keep_client_order"]
     started = False
     clients = {} 
