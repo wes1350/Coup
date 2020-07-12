@@ -29,7 +29,7 @@ def coup(target):
 """Reactions"""
 
 def decline():
-    return "No"
+    return "N"
 
 def block(as_character):
     return "Block " + as_character
