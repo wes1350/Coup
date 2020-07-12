@@ -29,7 +29,7 @@ class State:
         self._n_players = config.n_players
         self.ai_players = ai_players
         # Initialize the deck
-        self._deck = Deck(self._n_players, config.cards_per_character)
+        self._deck = Deck(config.cards_per_character, config.deck_configuration)
         # Initialize the players and assign them cards from the deck
         self._players = []
         if config.starting_hands:

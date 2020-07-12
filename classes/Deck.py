@@ -14,14 +14,30 @@ class Deck:
     """Class for managing the Coup deck. The deck only contains information about the cards it contains, and whether a card has been dealt (assigned) or not. It does not know about player assignments. To interact with the deck, we call methods such as draw."""
     ALL_CHARACTERS = [Ambassador.Ambassador, Assassin.Assassin, Captain.Captain, Contessa.Contessa, Duke.Duke]
 
-    def __init__(self, n_players : int, n_cards_per_character : int) -> None:
-        ids = [i for i in range(n_cards_per_character * len(Deck.ALL_CHARACTERS))]
-        self._deck = {}
-        for char in Deck.ALL_CHARACTERS:
-            for _ in range(n_cards_per_character):
-                # random id
-                id_ = ids.pop(random.randint(1, len(ids)) - 1)
-                self._deck[id_] = Card(character=char(), id_=id_)
+    def __init__(self, n_cards_per_character : int = None, deck_configuration : dict = None) -> None:
+        """Initalize the deck. Can pass in how many copies of each character to add, or a specific 
+           number of each character through deck_configuration."""
+        if deck_configuration is not None:
+            chars = ["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]
+            char_counts = [deck_configuration[c] for c in chars]
+            total_chars = sum(char_counts)
+
+            self._deck = {}
+            ids = [i for i in range(total_chars)]
+            for i in range(len(chars)):
+                for j in range(char_counts[i]):
+                    id_ = ids.pop(random.randint(1, len(ids)) - 1)
+                    self._deck[id_] = Card(character=Deck.ALL_CHARACTERS[i](), id_=id_)
+            
+        else:
+            assert n_cards_per_character is not None
+            ids = [i for i in range(n_cards_per_character * len(Deck.ALL_CHARACTERS))]
+            self._deck = {}
+            for char in Deck.ALL_CHARACTERS:
+                for _ in range(n_cards_per_character):
+                    # random id
+                    id_ = ids.pop(random.randint(1, len(ids)) - 1)
+                    self._deck[id_] = Card(character=char(), id_=id_)
 
     def draw(self, n : int) -> List[Card]:
         """Return n random cards from the deck that are currently unassigned to players."""

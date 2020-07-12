@@ -28,6 +28,14 @@ class Config:
         #                        1: ["Assassin", "Contessa"],
         #                        2: ["Captain", "Captain"]}
 
+        # Set deck characters
+        self.deck_configuration = None
+#         self.deck_configuration = {"Ambassador": 0,
+#                                    "Assassin": 0,
+#                                    "Captain": 2, 
+#                                    "Contessa": 0, 
+#                                    "Duke": 4}
+
         # initialize other parameters
         for key, value in kwargs.items():
             self.__setattr__(key, value)
