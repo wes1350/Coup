@@ -28,6 +28,7 @@ class State:
         self.local = local
         self._n_players = config.n_players
         self.ai_players = ai_players
+        self.local_ais = self._config.local_ais
         # Initialize the deck
         self._deck = Deck(config.cards_per_character, config.deck_configuration)
         # Initialize the players and assign them cards from the deck

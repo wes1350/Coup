@@ -13,10 +13,27 @@ class Agent:
     def __init__(self):
         pass
 
+    def update_wrapper(self, event):
+        event_info = json.loads(event) if isinstance(event, str) else event
+        print("Updating with event: ", event_info)
+        if isinstance(event_info, str):
+            event_info = json.loads(event_info)
+            if "info" in event_info:
+                if isinstance(event_info["info"], str):
+                    event_info["info"] = json.loads(event_info["info"])
+        else:
+            if "info" in event_info:
+                if isinstance(event_info["info"], str):
+                    event_info["info"] = json.loads(event_info["info"])
+        print(event_info)
+        self.update(event_info)
+
     def update(self, event):
         pass
 
     def react(self, event_type : str, options : dict):
+        print("Reacting to:", options)
+        options = json.loads(options) if isinstance(options, str) else options
         if event_type == "action":
             response = self.decide_action(options) 
         elif event_type == "reaction":
@@ -33,6 +50,7 @@ class Agent:
         if response is None:
             raise Exception(("Agent did not return a value for its response. "
                              "Make sure to return a value (e.g. return income()) when choosing a response."))
+        print("Sending response", response, type(response))
         return response
 
     def unimplemented_response(self, event_type : str):

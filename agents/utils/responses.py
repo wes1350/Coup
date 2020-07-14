@@ -44,7 +44,7 @@ def choose_card(card):
 
 def choose_exchange_cards(cards):
     """cards is a list of card choices"""
-    return " ".join(cards)
+    return " ".join([str(i) for i in cards])
 
 """Misc"""
 

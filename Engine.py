@@ -5,6 +5,7 @@ import random, time, sys, os, json
 from typing import List, Optional, Dict, Any
 from State import State
 from Config import Config
+from GameInfo import GameInfo
 from utils.argument_parsing import parse_args
 from classes.Card import Card
 from classes.actions.Action import Action
@@ -30,6 +31,7 @@ class Engine:
         self.whisper_f = whisper_f
         self.shout_f = shout_f
         self.query_f = query_f
+
         try:
             self._config = Config(**kwargs)
         except ValueError as e:
@@ -37,10 +39,22 @@ class Engine:
             self._config_err_msg = getattr(e, 'message', repr(e))
             raise ValueError("Invalid Configuration! Terminating.", self._config_err_msg)
         else:
-            self.local = None in [self.whisper_f, self.shout_f, self.query_f]
-            self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local, game_info.ai_players)
-            self.game_info = game_info
+            if game_info and self._config.local_ais:
+#                 print(self._config.local_ais)
+                raise Exception("Playing with local AIs over the browser is currently unsupported!")
+            self.game_info = game_info if game_info else GameInfo()
             self.game_info.config_settings = str(self._config)
+            for local_ai in self._config.local_ais:
+                self.game_info.ai_players.append(local_ai)
+            self.local = (None in [self.whisper_f, self.shout_f, self.query_f]) and not self._config.local_ais
+            
+            self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local, 
+                                self.game_info.ai_players)
+
+            self.local_ais = self._config.local_ais
+            self.local_ai_responses = {}
+            for ai in self.local_ais:
+                self.local_ai_responses[ai] = None
 
     def game_is_over(self) -> bool:
         """Determine if the win condition is satisfied."""
@@ -616,6 +630,8 @@ class Engine:
         """Send a message to all players."""
         if self.local:
             print(msg)
+        elif self._config.local_ais:
+            pass
         else:       
             self.shout_f(msg, shout_type)
             pass
@@ -630,9 +646,15 @@ class Engine:
                 if (ai_query_type is None or ai_options is None) and ai_info is None:
                     assert False
                 if ai_info:
-                    self.whisper_f(json.dumps(ai_info), player, "ai_info")
+                    if self.is_local_ai(player):
+                        self.local_ais[player].update_wrapper(ai_info)
+                    else:
+                        self.whisper_f(json.dumps(ai_info), player, "ai_info")
                 else:
-                    self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player, "ai_query")
+                    if self.is_local_ai(player):
+                        self.local_ai_responses[player] = self.local_ais[player].react(ai_query_type, ai_options)
+                    else:
+                        self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player, "ai_query")
             elif whisper_type == "error":
                 raise Exception("Got invalid response from AI Agent")
         else:
@@ -648,7 +670,10 @@ class Engine:
         if print_wait:
             print("Waiting for a response from player {}...".format(player))
         while True:
-            response = self.query_f(player)
+            if self.is_local_ai(player):
+                response = self.local_ai_responses[player]
+            else:
+                response = self.query_f(player)
             if response == "No response":
                 if sleep:
                     time.sleep(self._config.engine_sleep_duration)
@@ -670,6 +695,9 @@ class Engine:
 
     def is_ai_player(self, i : int) -> bool:
         return i in self.game_info.ai_players
+
+    def is_local_ai(self, i : int) -> bool:
+        return i in self.local_ais
 
 if __name__ == "__main__":
     engine = Engine(parse_args())

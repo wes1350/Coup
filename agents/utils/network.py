@@ -19,7 +19,7 @@ def start(agent):
         sio.emit("action", response)
 
     @sio.on('ai_info')
-    def update(event):
+    def update_wrapper(event):
         event_info = json.loads(event)
         print("Updating with event: ", event_info)
         if isinstance(event_info, str):
