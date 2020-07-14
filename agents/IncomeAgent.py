@@ -9,22 +9,27 @@ else:
     from .utils.responses import *
     from .utils.network import *
 
-def decide_action(options):
-    if can_income(options):
-        return income()
-    else:
-        targets = coup_targets(options)
-        if targets:
-            return coup(targets[0])
-        # Should always be able to Income unless we are forced to Coup
-        assert False
+class IncomeAgent:
+    def __init__(self):
+        pass
 
-def decide_reaction(options):
-    return decline()
+    def decide_action(self, options):
+        if can_income(options):
+            return income()
+        else:
+            targets = coup_targets(options)
+            if targets:
+                return coup(targets[0])
+            # Should always be able to Income unless we are forced to Coup
+            assert False
 
-def decide_card(options):
-    return options[0]
+    def decide_reaction(self, options):
+        return decline()
+
+    def decide_card(self, options):
+        return options[0]
 
 
 if __name__ == "__main__":
-    start(on_action=decide_action, on_reaction=decide_reaction, on_card=decide_card)
+    agent = IncomeAgent()
+    start(on_action=agent.decide_action, on_reaction=agent.decide_reaction, on_card=agent.decide_card)
