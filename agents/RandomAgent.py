@@ -6,12 +6,14 @@ if __name__ == "__main__":
     from utils.game import *
     from utils.responses import *
     from utils.network import *
+    from Agent import Agent
 else:
     from .utils.game import *
     from .utils.responses import *
     from .utils.network import *
+    from .Agent import Agent
 
-class RandomAgent:
+class RandomAgent(Agent):
     def __init__(self):
         pass
 
@@ -34,6 +36,4 @@ class RandomAgent:
 
 
 if __name__ == "__main__":
-    agent = RandomAgent()
-    start(on_action=agent.decide_action, on_reaction=agent.decide_reaction, 
-          on_card=agent.decide_card, on_exchange=agent.decide_exchange)
+    start(RandomAgent())

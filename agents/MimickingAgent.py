@@ -6,12 +6,14 @@ if __name__ == "__main__":
     from utils.game import *
     from utils.responses import *
     from utils.network import *
+    from Agent import Agent
 else:
     from .utils.game import *
     from .utils.responses import *
     from .utils.network import *
+    from .Agent import Agent
 
-class MimickingAgent:
+class MimickingAgent(Agent):
     def __init__(self):
         self.action_queue = []
 
@@ -58,6 +60,4 @@ class MimickingAgent:
 
 
 if __name__ == "__main__":
-    agent = MimickingAgent()
-    start(on_action=agent.decide_action, on_reaction=agent.decide_reaction, 
-          on_card=agent.decide_card, on_exchange=agent.decide_exchange, update_f=agent.update)
+    start(MimickingAgent())

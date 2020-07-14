@@ -9,10 +9,12 @@ if __name__ == "__main__":
     from utils.game import *
     from utils.responses import *
     from utils.network import *
+    from Agent import Agent
 else:
     from .utils.game import *
     from .utils.responses import *
     from .utils.network import *
+    from .Agent import Agent
 
 
 class CoupNN(nn.Module):
@@ -46,7 +48,7 @@ class CoupNN(nn.Module):
         print("Forward no update results:", probs)
         return probs
 
-class PytorchAgent:
+class PytorchAgent(Agent):
     def __init__(self, input_size, hidden_size, n_players):
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -188,10 +190,8 @@ class PytorchAgent:
     def convert_option_to_vectors(self, option, option_type):
         return [self.convert_event_to_vector(e) for e in self.convert_option_to_events(option, option_type)]
 
-    def update(self):
-        def update_NN_params(event):
-            _, self.hidden_state, self.cell_state = self.model(self.convert_event_to_vector(event))
-        return update_NN_params
+    def update(self, event):
+        _, self.hidden_state, self.cell_state = self.model(self.convert_event_to_vector(event))
 
     def decide_action(self, options):
         #ask neural net for best action
@@ -265,7 +265,4 @@ class PytorchAgent:
 
 
 if __name__ == "__main__":
-    agent = PytorchAgent(input_size=67, hidden_size=10, n_players=2)
-    start(on_action=agent.decide_action, on_reaction=agent.decide_reaction, 
-          on_card=agent.decide_card, on_exchange=agent.decide_exchange, 
-          update_f=agent.update())
+    start(PytorchAgent(input_size=67, hidden_size=10, n_players=2))
