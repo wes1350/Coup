@@ -28,6 +28,8 @@ class Config:
 
         self.engine_sleep_duration = 0.5 
 
+        self.verbose = 0
+
         # Set initial hands for each player
         self.starting_hands = None
         #self.starting_hands = {0: ["Contessa", "Contessa"],
@@ -35,11 +37,12 @@ class Config:
 
         # Set deck characters
         self.deck_configuration = None
-#         self.deck_configuration = {"Ambassador": 0,
-#                                    "Assassin": 0,
-#                                    "Captain": 2, 
-#                                    "Contessa": 0, 
-#                                    "Duke": 4}
+        self.deck_configuration = {"Ambassador": 0,
+                                   "Assassin": 0,
+                                   "Captain": 0, 
+                                   "Contessa": 0, 
+                                   "Duke": 9}
+
 
         # initialize other parameters
         for key, value in kwargs.items():

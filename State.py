@@ -357,7 +357,8 @@ class State:
 
     def add_to_history(self, event_type : str, event_info : dict, 
                        hide_from_ai : bool = False) -> None:
-        print(event_type, event_info)
+        if self._config.verbose:
+            print(event_type, event_info)
         self._history.append((event_type, event_info))
         if not hide_from_ai:
             for p in self.ai_players:

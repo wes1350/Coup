@@ -667,8 +667,9 @@ class Engine:
 
     def get_response(self, player : int, sleep : bool = True, print_wait : bool = False) -> str:
         """Query server for a response."""
-        if print_wait:
-            print("Waiting for a response from player {}...".format(player))
+        if self._config.verbose:
+            if print_wait:
+                print("Waiting for a response from player {}...".format(player))
         while True:
             if self.is_local_ai(player):
                 response = self.local_ai_responses[player]
