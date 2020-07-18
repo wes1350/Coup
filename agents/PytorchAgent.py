@@ -21,6 +21,10 @@ else:
 def softmax(x):
     return np.exp(x)/sum(np.exp(x))
 
+def strong_softmax(x):
+    y = [z**2 for z in x]
+    return softmax(y)
+
 
 class CoupNN(nn.Module):
     
@@ -37,20 +41,18 @@ class CoupNN(nn.Module):
 
     def forward(self, input_vector):
         out, (self.hidden_state, self.cell_state) = self.lstm(input_vector, (self.hidden_state, self.cell_state))
-        probs = self.value_map(out)
-        # Return hidden and cell state so that we can update them when receiving an event
-        return probs, self.hidden_state, self.cell_state
+        return self.value_map(out)
 
     def forward_no_update(self, input_vector, additional_input_vectors : list = []):
         hidden = self.hidden_state.clone().detach()
         cell = self.cell_state.clone().detach()
+    
         out, (hidden, cell) = self.lstm(input_vector, (hidden, cell))
         for iv in additional_input_vectors:
             out, (hidden, cell) = self.lstm(iv, (hidden, cell))
 
         values = self.value_map(out)
-        probs = nn.Softmax(dim=2)(values).view(-1).tolist()
-        return probs
+        return nn.Softmax(dim=2)(values).view(-1).tolist()
 
 class PytorchAgent(Agent):
     def __init__(self, input_size, hidden_size, n_players):
@@ -66,6 +68,27 @@ class PytorchAgent(Agent):
         self.cards = None
 
         self.events = []
+
+    def train_model(self, winner):
+        # We only feed in some of the history, length determined at random
+        history_training_cutoff = random.randint(1, len(self.events))
+        self.events = self.events[:history_training_cutoff]
+
+        self.optimizer.zero_grad()
+        inputs = torch.cat(self.events).view(history_training_cutoff, 1, -1)
+        
+        # Reset hidden and cell states to ensure we start with 0 history
+        self.model.hidden_state = torch.zeros(self.hidden_size).view(1, 1, -1)
+        self.model.cell_state = torch.zeros(self.hidden_size).view(1, 1, -1)
+
+        outputs = self.model(inputs).view(history_training_cutoff, -1)
+        targets = torch.LongTensor([winner for i in range(history_training_cutoff)])
+        loss = self.loss_function(outputs, targets)
+        loss.backward()
+        self.optimizer.step()
+
+        if random.random() < 0.1:
+            print("Loss:", round(loss.item(), 2), "Probs:", [round(x, 2) for x in nn.Softmax()(outputs[0]).view(-1).tolist()])
 
     def convert_event_to_vector(self, e, store=False):
         # return torch.randn(input_size).view(1, 1, -1)
@@ -201,7 +224,7 @@ class PytorchAgent(Agent):
         return [self.convert_event_to_vector(e) for e in self.convert_option_to_events(option, option_type)]
 
     def update(self, event):
-        _, self.hidden_state, self.cell_state = self.model(self.convert_event_to_vector(event, store=True))
+        self.model(self.convert_event_to_vector(event, store=True))
 
     def decide_action(self, options):
         #ask neural net for best action
@@ -222,7 +245,7 @@ class PytorchAgent(Agent):
             win_probs.append(my_win_p)
 #         best_option = option_list[win_probs.index(max(win_probs))]
 #         return convert(*best_option)
-        response_probs = softmax(win_probs)
+        response_probs = strong_softmax(win_probs)
         sampled_response = option_list[np.random.choice([i for i in range(len(option_list))], p=response_probs)]
         return convert(*sampled_response)
 
@@ -243,7 +266,7 @@ class PytorchAgent(Agent):
             win_probs.append(my_win_p)
 #         best_option = option_list[win_probs.index(max(win_probs))]
 #         return convert(*best_option)
-        response_probs = softmax(win_probs)
+        response_probs = strong_softmax(win_probs)
         sampled_response = option_list[np.random.choice([i for i in range(len(option_list))], p=response_probs)]
         return convert(*sampled_response)
         
@@ -258,7 +281,7 @@ class PytorchAgent(Agent):
             win_probs.append(my_win_p)
 #         return option_list[win_probs.index(max(win_probs))]
 #         sampled_response = np.random.choice(option_list, p=win_probs)
-        response_probs = softmax(win_probs)
+        response_probs = strong_softmax(win_probs)
         sampled_response = option_list[np.random.choice([i for i in range(len(option_list))], p=response_probs)]
         return sampled_response
 
@@ -276,7 +299,7 @@ class PytorchAgent(Agent):
             win_p = self.model.forward_no_update(vectors[0], vectors[1:])
             my_win_p = win_p[self.id]
             win_probs.append(my_win_p)
-        response_probs = softmax(win_probs)
+        response_probs = strong_softmax(win_probs)
 #         best_option = option_list[win_probs.index(max(win_probs))]
 #         if isinstance(best_option, list):
 #             return choose_exchange_cards([o[0] for o in best_option])
@@ -289,18 +312,6 @@ class PytorchAgent(Agent):
         else:
             return choose_exchange_cards([sampled_response[0]])
 
-    def train_model(self, probs):
-        self.optimizer.zero_grad()
-        inputs = torch.cat(self.events).view(len(self.events), 1, -1)
-        self.model.hidden_state = torch.zeros(self.hidden_size).view(1, 1, -1)
-        self.model.cell_state = torch.zeros(self.hidden_size).view(1, 1, -1)
-        outputs = self.model(inputs)[0].view(len(self.events), -1)
-        targets = torch.LongTensor([0 for i in range(len(self.events))])
-        loss = self.loss_function(outputs, targets)
-        if random.random() < 0.1:
-            print(loss)
-        loss.backward()
-        self.optimizer.step()
 
 if __name__ == "__main__":
     start(PytorchAgent(input_size=67, hidden_size=10, n_players=2), sys.argv[1])
