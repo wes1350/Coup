@@ -137,6 +137,7 @@ def store_action(message):
 @socketio.on('add_bot')
 def add_bot(bot_type):
     room = sids_to_rooms[request.sid]
+    broadcast_to_room(room)(f"Adding {bot_type} to game", "info")
     def run_agent():
         try:
             subprocess.run(f"python3 ./agents/{bot_type}.py {room}", shell=True, check=False)
@@ -151,7 +152,6 @@ def add_bot(bot_type):
 def broadcast_to_room(room):
     def broadcast(msg, tag=None):
         """Send a message to all clients."""
-        room = sids_to_rooms[request.sid]
         clear_old_info(room)
         if tag is None:
             socketio.send(msg, room=room)
