@@ -38,11 +38,16 @@ socket.on('start game', function(msg) {
     document.getElementById("info").innerText = msg
     $("div.action-container").show();
     $("#start-button").hide();
+    $("button.bot-button").hide();
 });
 $(document).ready(function(){ 
     $("button#start-button").click(function() {
         console.log('starting game')
         socket.emit('start game');
+    })
+    $("button.bot-button").click(function() {
+        console.log('adding bot')
+        socket.emit('add_bot');
     })
     $("button#submission").click(function(){ 
         console.log("Got a click!!!");

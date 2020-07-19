@@ -4,7 +4,7 @@ import socketio
 import json, time
 
 
-def start(agent):
+def start(agent, room):
     
     sio = socketio.Client()
 
@@ -41,7 +41,8 @@ def start(agent):
 
     @sio.event
     def connect():
-        print("Connected as player")
+        print("Connected as bot player")
+        sio.emit("join_room", room)
         sio.emit("ai_connect")
 
     @sio.event
@@ -50,7 +51,7 @@ def start(agent):
 
     @sio.event
     def disconnect():
-        print("Disconnected as player")
+        print("Disconnected as bot player")
         sio.disconnect()
 
     sio.connect('http://localhost:5000')

@@ -6,7 +6,8 @@ from flask import Flask, render_template, request, g, redirect, url_for
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from Engine import Engine
 from GameInfo import GameInfo
-import random, time
+import random, time, subprocess
+import threading, subprocess
 from utils.argument_parsing import parse_args
 
 app = Flask(__name__)
@@ -63,6 +64,8 @@ def mark_as_ai():
             game_rooms[room]["clients"][c]["ai"] = True
             print("Marked {} as AI".format(c))
             break
+    else:
+        raise Exception("Didn't mark as AI, probably executed AI connect before joining room was completed")
 
 @socketio.on('observer_connect')
 def mark_as_observer():
@@ -130,6 +133,20 @@ def store_action(message):
     print("Got an action from player {}: ".format(sender_id) + message)
     clear_old_info(room, sender_id)
     game_rooms[room]["clients"][sender_id]["response"] = message
+
+@socketio.on('add_bot')
+def add_bot():
+    room = sids_to_rooms[request.sid]
+    def run_agent():
+        try:
+            subprocess.run(f"python3 ./agents/IncomeAgent.py {room}", shell=True, check=False)
+            print('done')
+        except BaseException:
+            assert False
+            pass 
+    thread = threading.Thread(target=run_agent)
+    thread.start()
+    thread.join()
 
 def broadcast_to_room(room):
     def broadcast(msg, tag=None):
