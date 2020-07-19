@@ -18,14 +18,20 @@ class RandomAgent(Agent):
         pass
 
     def decide_action(self, options):
+        print('action', options)
+        print(possible_responses(options))
+        return exchange()
+        '''
         possible_actions = possible_responses(options)
         action = random.choice(possible_actions)
         if isinstance(options[action], list):
             target = random.choice(options[action])
             return convert(action, target)
         return convert(action)
+        '''
 
     def decide_reaction(self, options):
+        print('reactions:', options)
         return self.decide_action(options)
 
     def decide_card(self, options):

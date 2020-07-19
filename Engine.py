@@ -550,7 +550,7 @@ class Engine:
                     character = args[1]
                     if character not in [c.lower() for c in character_options]:  
                         raise ValueError("Invalid character choice for block")
-                return Block(source_id, character.capitalize())
+                return Block(source_id, action.target, character.capitalize())
             elif reaction_type in Challenge.aliases:
                 return Challenge(source_id)
             else:
