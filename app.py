@@ -135,11 +135,11 @@ def store_action(message):
     game_rooms[room]["clients"][sender_id]["response"] = message
 
 @socketio.on('add_bot')
-def add_bot():
+def add_bot(bot_type):
     room = sids_to_rooms[request.sid]
     def run_agent():
         try:
-            subprocess.run(f"python3 ./agents/IncomeAgent.py {room}", shell=True, check=False)
+            subprocess.run(f"python3 ./agents/{bot_type}.py {room}", shell=True, check=False)
             print('done')
         except BaseException:
             assert False

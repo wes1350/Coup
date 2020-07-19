@@ -1,6 +1,6 @@
 """An Agent that mimics the most recent possible action done by a player."""
 
-import random
+import sys, random
 
 if __name__ == "__main__":
     from utils.game import *
@@ -60,4 +60,4 @@ class MimickingAgent(Agent):
 
 
 if __name__ == "__main__":
-    start(MimickingAgent())
+    start(MimickingAgent(), sys.argv[1])

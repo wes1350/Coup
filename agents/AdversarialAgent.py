@@ -1,6 +1,6 @@
 """An Agent that always assassinates, steals, blocks, or challenges given the opportunity."""
 
-import random
+import sys, random
 
 if __name__ == "__main__":
     from utils.game import *
@@ -40,4 +40,4 @@ class AdversarialAgent(Agent):
 
 
 if __name__ == "__main__":
-    start(AdversarialAgent())
+    start(AdversarialAgent(), sys.argv[1])

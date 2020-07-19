@@ -45,9 +45,25 @@ $(document).ready(function(){
         console.log('starting game')
         socket.emit('start game');
     })
-    $("button.bot-button").click(function() {
-        console.log('adding bot')
-        socket.emit('add_bot');
+    $("button#adversarial-agent-button").click(function() {
+        console.log('adding AdversarialAgent')
+        socket.emit('add_bot', "AdversarialAgent");
+    })
+    $("button#income-agent-button").click(function() {
+        console.log('adding IncomeAgent')
+        socket.emit('add_bot', "IncomeAgent");
+    })
+    $("button#mimicking-agent-button").click(function() {
+        console.log('adding MimickingAgent')
+        socket.emit('add_bot', "MimickingAgent");
+    })
+    $("button#pytorch-agent-button").click(function() {
+        console.log('adding PytorchAgent')
+        socket.emit('add_bot', "PytorchAgent");
+    })
+    $("button#random-agent-button").click(function() {
+        console.log('adding RandomAgent')
+        socket.emit('add_bot', "RandomAgent");
     })
     $("button#submission").click(function(){ 
         console.log("Got a click!!!");
