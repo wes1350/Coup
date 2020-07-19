@@ -7,7 +7,6 @@ from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from Engine import Engine
 from GameInfo import GameInfo
 import random, time, subprocess
-import threading, subprocess
 from utils.argument_parsing import parse_args
 
 app = Flask(__name__)
@@ -145,8 +144,9 @@ def add_bot(bot_type):
         except BaseException:
             assert False
             pass 
-    thread = threading.Thread(target=run_agent)
-    thread.start()
+#     thread = threading.Thread(target=run_agent)
+    thread = socketio.start_background_task(target=run_agent)
+#     thread.start()
     thread.join()
 
 def broadcast_to_room(room):
