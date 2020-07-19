@@ -1,5 +1,12 @@
 var socket = io();
 // var socket = io('http://localhost:5000');
+
+// Upon redirection to the room.html page, join the room specified in the URL
+
+function joinRoom(room){
+  socket.emit('join_room', room)
+}
+
 socket.on('message', function(msg) {
     console.log(msg)
     document.getElementById("info").innerText = msg
