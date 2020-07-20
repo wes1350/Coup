@@ -30,3 +30,6 @@ test_loss, test_acc = network.evaluate(test_images, test_labels)
 network.save('./keras_model')
 print('test_acc: ', test_acc, 'test_loss', test_loss)
 model = keras.models.load_model('./keras_model')
+
+model = models.Sequential()
+model.add(layers.Dense(units=200, input_dim=70, activation='relu', kernel_initializer='glorot_uniform'))

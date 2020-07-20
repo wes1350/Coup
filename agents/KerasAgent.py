@@ -19,8 +19,13 @@ else:
     from .Agent import Agent
 
 class KerasAgent(Agent):
-    def __init__(self, model):
+    def __init__(self, model, debug=False):
+        self.debug = debug 
         self._id = None
+        if model == None:
+            model = models.Sequential()
+            model.add(layers.Dense(units=200, input_dim=70, activation='relu', kernel_initializer='glorot_uniform'))
+            model.add(layers.Dense(1, activation='sigmoid'))
         self.model = model
         self.state_bit = None
         self.state = None
@@ -34,18 +39,23 @@ class KerasAgent(Agent):
             'duke': 4,
             'unknown': 5 }
         self.actions = {
-            income: 0, 
-            foreign_aid: 1, 
-            tax: 2, 
-            steal: 3, 
-            exchange: 4, 
-            assassinate: 4, 
-            coup: 6,
-            decline: 7}
-        self.blocked = None
+            'income': 0, 
+            'foreign_aid': 1, 
+            'foreignaid': 1, 
+            'tax': 2, 
+            'steal': 3, 
+            'exchange': 4, 
+            'assassinate': 4, 
+            'coup': 6}
+        self.block = None
 
     def decide_action(self, options):
-        possible_actions = possible_responses(options)
+        possible_inputs = self.get_input_vector(options, reactions=None, cards=None, exchanges=None)
+        input = possible_inputs[('Income', True)]
+        print(type(input))
+        print(input)
+        test = self.model.predict(input)
+        print(test)
         if assassinate_targets(options):
             return assassinate(random.choice(options["Assassinate"]))
         elif steal_targets(options):
@@ -57,30 +67,36 @@ class KerasAgent(Agent):
             return tax()
 
     def decide_reaction(self, options):
+        possible_inputs = self.get_input_vector(actions=None, reactions=options, cards=None, exchanges=None)
+        print(possible_inputs.keys())
         if can_challenge(options):
             return challenge()
         else:
             return block(random.choice(options["Block"]))
 
     def decide_card(self, options):
-        # check each option with the model for the highest prob of winning
-        raise NotImplementedError
+        possible_inputs = self.get_input_vector(actions=None, reactions=None, cards=options, exchanges=None)
+        print(possible_inputs.keys())
+        return random.choice(options)
 
     def decide_exchange(self, options):
-        # decide which 2 to return to deck
-        raise NotImplementedError
+        # this picks the 2 cards to return
+        # TODO: logic to send the complement
+        possible_inputs = self.get_input_vector(actions=None, reactions=None, cards=None, exchanges=options)
+        return choose_exchange_cards(random.sample(options["cards"].keys(), options["n"]))
 
-    def update_state(self, event):
+    def update(self, event):
         # this updates the state with new information
         if event["event"] == "state":
-            self.state = json.loads(event["info"])
+            self.state = event["info"]
             if self.num_of_cards == None:
                 self.num_of_cards = len(self.state['players'][0]['cards'])
-                print(self.num_of_cards)
             if self.num_of_players == None:
                 self.num_of_players = len(self.state['players'])
-                print('Number of players: ', self.num_of_players)
             self.state_bit = self.encode_state()
+            if self.debug:
+                print('Number of cards: ', self.num_of_cards)
+                print('Number of players: ', self.num_of_players)
 
         if event["event"] == "block" and event["info"]["to"] == self._id:
             self.block = {
@@ -96,113 +112,135 @@ class KerasAgent(Agent):
     '''
     def get_input_vector(self, actions=None, reactions=None, cards=None, exchanges=None):
         # given a set of actions, reactions, cards, exchanges, return a list of model input vectors 
-        retval = []
-        state_vectors = [self.state_bit]
-        empty_action_vectors = [self.encode_action(False, None, None)]
-        empty_reaction_vectors = [self.encode_reaction(False, None, None)]
-        empty_card_vectors = [self.encode_card(False, None)]
-        empty_exchange_vectors = [self.encode_exchange(False, None, None)]
+        retval_dict = {}
+        state_vectors = self.state_bit
+        empty_action_vectors = self.encode_action(False, None, None)
+        empty_reaction_vectors = self.encode_reaction(False, None, None)
+        empty_card_vectors = self.encode_card(False, None)
+        empty_exchange_vectors = self.encode_exchange(False, None, None)
         if actions:
-            actions_vectors = []
             for action, targets in actions.items():
                 if targets == True:
-                    actions_vectors.append(self.encode_action(True, action, None))
+                    retval_dict[(action, targets)] = self.encode_action(True, action, None)
                 else:
                     for target in targets:
-                        actions_vectors.append(self.encode_action(True, action, target)) 
-            retval = [np.concatenate(vector) for vector in list(itertools.product(state_vectors, 
-            actions_vectors, 
-            empty_reaction_vectors, 
-            empty_card_vectors, 
-            empty_exchange_vectors))]
+                        retval_dict[(action, target)] = self.encode_action(True, action, target)
+            retval_dict = { key: np.concatenate((state_vectors, value, empty_reaction_vectors, empty_card_vectors, empty_exchange_vectors), axis=0) for key, value in retval_dict.items() }
         elif reactions:
-            reaction_vectors = []
             for reaction, as_chars in reactions.items():
-                if as_char == True:
-                    reaction_vectors.append(self.encode_reaction(True, reaction, None))
+                if type(as_chars) == type(True):
+                    retval_dict[(reaction, as_chars)] = self.encode_reaction(True, reaction, None)
                 else:
                     for as_char in as_chars:
-                        reaction_vectors.append(self.encode_reaction(True, reaction, as_char))
-            retval = [np.concatenate(vector) for vector in list(itertools.product(state_vectors, 
-            empty_action_vectors, 
-            reaction_vectors, 
-            empty_card_vectors, 
-            empty_exchange_vectors))]
+                        retval_dict[(reaction, as_char)] = self.encode_reaction(True, reaction, as_char)
+            retval_dict = { key: np.concatenate([state_vectors, empty_action_vectors, value, empty_card_vectors, empty_exchange_vectors]) for key, value in retval_dict.items()}
         elif cards:
-            card_vectors = [self.encode_card(False, card) for card in cards]
-            retval = [np.concatenate(vector) for vector in list(itertools.product(state_vectors, 
-            empty_action_vectors, 
-            empty_reaction_vectors, 
-            card_vectors, 
-            empty_exchange_vectors))]
+            print(cards)
+            retval_dict = { card: self.encode_card(True, card) for card in cards }
+            retval_dict = { key: np.concatenate([state_vectors, empty_action_vectors, empty_reaction_vectors, value, empty_exchange_vectors]) for key, value in retval_dict.items()}
         elif exchanges:
-            exchange_vectors = [self.encode_exchange(False, exchanges[card1], exchanges[card2]) for card1, card2 in list(itertools.combinations(exchanges.keys(), 2))]
-            retval = [np.concatenate(vector) for vector in list(itertools.product(state_vectors, 
-            empty_action_vectors, 
-            empty_reaction_vectors, 
-            empty_card_vectors, 
-            exchange_vectors))]
+            retval_dict = { (card1, card2): self.encode_exchange(True, exchanges["cards"][card1], exchanges["cards"][card2]) for card1, card2 in list(itertools.combinations(exchanges["cards"].keys(), 2)) }
+            retval_dict = { key: np.concatenate([state_vectors, empty_action_vectors, empty_reaction_vectors, empty_card_vectors, value]) for key, value in retval_dict.items()}
         else:
             raise NotImplementedError 
-        return retval
+        return retval_dict
 
     def get_char_encoding(self, character) -> int:
         encoding  = self.char_encoding[character.lower()]
         return to_categorical(encoding, len(self.char_encoding))
 
     def encode_action(self, encoding: bool, action, target):
+        bit_length = len(self.actions) + self.num_of_players + 1
+        retval = None
         if encoding:
-            action_vector = to_categorical(self.actions[action], len(self.actions))
-            target_vector = to_categorical(target, len(self.num_of_players))
-            return np.concatenate([action_vector, target_vector], axis=0)
+            action_vector = to_categorical(self.actions[action.lower()], len(self.actions))
+            if target == None:
+                # since players are 0 indexed, and to_categorical starts at 1
+                target = self.num_of_players 
+            target_vector = to_categorical(target, self.num_of_players + 1)
+            retval = np.concatenate([action_vector, target_vector], axis=0)
         else:
-            return np.zeros(len(self.actions) + len(self.num_of_players))
+            # + 1 to encode no player
+            retval = np.zeros(len(self.actions) + self.num_of_players + 1)
+        if self.debug:
+            print(f"Action encoding({action} {target}): ", retval)
+            assert(len(retval) == bit_length)
+        return retval
 
     def encode_reaction(self, encoding: bool, reaction, as_char):
+        retval = None
+        reactions = {'challenge': 0, 'block': 1, 'pass': 2}
+        bit_length = len(reactions) + len(self.char_encoding)
         if encoding:
-            reactions = {challenge: 0, block: 1}
-            reaction_vector = to_categorical(reactions[reaction], len(reactions))
-            as_char_vector = to_categorical(self.get_char_encoding(as_char))
-            return np.concatenate([reaction_vector, as_char_vector], axis=0)
+            reaction_vector = to_categorical(reactions[reaction.lower()], len(reactions))
+            as_char = 'unknown' if as_char == None else as_char
+            as_char_vector = self.get_char_encoding(as_char)
+            retval = np.concatenate([reaction_vector, as_char_vector])
         else:
-            return np.zeros(len(reactions) + len(self.char_encoding))
+            retval = np.zeros(len(reactions) + len(self.char_encoding))
+        if self.debug:
+            print('reaction encoding: ', retval)
+            assert(len(retval) == bit_length)
+        return retval
 
     def encode_card(self, encoding: bool, card: int):
+        bit_length = self.num_of_cards
+        retval = None
         assert(self.num_of_cards != None)
         if encoding:
-            return to_categorical(card, self.num_of_cards)
+            print('CARD------> ', card)
+            retval = to_categorical(card, self.num_of_cards)
         else:
-            return np.zeros(self.num_of_cards)
+            retval = np.zeros(self.num_of_cards)
+        if self.debug:
+            print('Card encoding: ', retval)
+            assert(len(retval) == bit_length)
+        return retval
 
     def encode_exchange(self, encoding: bool, card1, card2):
+        retval = None
+        bit_length = len(self.char_encoding) * 2
         if encoding:
-            exchange_vector = [] 
-            exchange_vector.extend(self.get_char_encoding(card1))
-            exchange_vector.extend(self.get_char_encoding(card2))
-            return exchange_vector 
+            retval = [] 
+            retval.extend(self.get_char_encoding(card1))
+            retval.extend(self.get_char_encoding(card2))
         else:
-            return np.zeros(len(self.char_encoding) * 2)
-    
+            retval = np.zeros(len(self.char_encoding) * 2)
+        if self.debug:
+            print('Exchange encoding: ', retval)
+            assert(len(retval) == bit_length)
+        return retval
+
     def encode_player(self, player):
+        bit_length = 1 + (len(self.char_encoding) + 1) * self.num_of_cards
         vector = []
-        vector.append(player['coins'])
+        vector.append([player['coins']])
+        print(player)
         for card in player['cards']:
-            vector.append(self.get_char_encoding(card['character'].lower()))
-            vector.append(1 if card['character']['alive'] else 0)
-        print('player vector:', vector)
-        return vector
+            char = card['character']
+            if char == None:
+                char = 'unknown'
+            vector.append(self.get_char_encoding(char))
+            vector.append([1 if card['alive'] else 0])
+        retval = np.concatenate(vector)
+        if self.debug:
+            print('player vector:', retval)
+            assert(len(retval) == bit_length)
+        return retval
     
     def encode_block(self):
         # TODO: only encode blockable characters only
         # this is set up for only 1:1
+        bit_length = len(self.char_encoding)
         vector = []
         if self.block != None:
             vector.append(self.get_char_encoding(self.block['as_character'].lower()))
         else:
             vector = [0] * len(self.char_encoding)
-            assert(vector == [0, 0, 0, 0, 0])
-        print('block vector:', vector)
-        return vector
+        if self.debug:
+            print('block vector:', vector)
+            assert(len(vector) == bit_length)
+        return np.array(vector)
     
     def encode_state(self):
         """
@@ -214,29 +252,16 @@ class KerasAgent(Agent):
         block (1 bit):
             - by (c bits , c for # of characters)
             - by player (n bits)
-        
-        [not implemented]
-        challenge(1 bit)
-            - by player (n bits)
-
-        our action:
-        need to encode action space
-            - income
-            - foreign aid
-            - tax
-            - steal (n bits where n players can steal)
-            - assassinate (n bits in to include target)
-            - exchange (2* c bits for the 2 cards returned)
-            - pass
-            - block (c bits)
-            - challenge (1 bit)
         """
         vector = [] 
         # first player is always self 
         self._id = self.state['playerId']
-        agent = self.state['players'].filter(lambda x: x['id'] == self._id )
+        agent = list(filter(lambda x: x['id'] == self._id, self.state['players']))[0]
         opponents = sorted([player for player in self.state['players'] if player['id'] != self._id],
             key=lambda x: x['id'])
+        
+        print(agent)
+        print(opponents)
 
         vector.append(self.encode_player(agent))
         vector.extend([self.encode_player(opponent) for opponent in opponents])
@@ -244,9 +269,9 @@ class KerasAgent(Agent):
 
         # block vector
         vector.append(self.encode_block())
-        return np.ndaray.flatten(np.array(vector))
+        return np.concatenate(vector) 
 
 if __name__ == "__main__":
+    # load the saved model
     keras_agent = KerasAgent(None)
     start(keras_agent)
-    
