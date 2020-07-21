@@ -8,7 +8,7 @@ class Config:
     def __init__(self, **kwargs) -> None:
 #         self.local_ais = {}
 #         self.local_ais = {0: IncomeAgent(), 1: RandomAgent(), 2: AdversarialAgent(), 3: MimickingAgent()}
-        self.local_ais = {0: KerasAgent(None, debug=True), 
+        self.local_ais = {0: KerasAgent(None, debug=False), 
                            1: AdversarialAgent()}
 
         self.n_players = 2 if not self.local_ais else len(self.local_ais)

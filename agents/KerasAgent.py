@@ -1,7 +1,6 @@
 import random
 import itertools
 import numpy as np
-from keras.datasets import mnist
 from keras import models
 from keras import layers
 from keras.utils import to_categorical
@@ -27,6 +26,7 @@ class KerasAgent(Agent):
             model.add(layers.Dense(units=200, input_dim=70, activation='relu', kernel_initializer='glorot_uniform'))
             model.add(layers.Dense(1, activation='sigmoid'))
         self.model = model
+        self.model_input_size = self.model.layers[0].get_config()["batch_input_shape"][1]
         self.state_bit = None
         self.state = None
         self.num_of_players = None
@@ -50,12 +50,12 @@ class KerasAgent(Agent):
         self.block = None
 
     def decide_action(self, options):
-        possible_inputs = self.get_input_vector(options, reactions=None, cards=None, exchanges=None)
-        input = possible_inputs[('Income', True)]
-        print(type(input))
-        print(input)
-        test = self.model.predict(input)
-        print(test)
+        if steal_targets(options):
+            return steal(random.choice(options["Steal"]))
+        possible_moves = self.get_input_vector(options, reactions=None, cards=None, exchanges=None)
+        optimal_move = self.get_optimal_move(possible_moves)
+        return convert(optimal_move[0], optimal_move[1] if type(optimal_move) != type(True) else None)
+        '''
         if assassinate_targets(options):
             return assassinate(random.choice(options["Assassinate"]))
         elif steal_targets(options):
@@ -65,29 +65,49 @@ class KerasAgent(Agent):
             # and we can't steal because nobody else has coins to steal. 
             # In this case we tax.
             return tax()
+            '''
 
     def decide_reaction(self, options):
+        '''
         possible_inputs = self.get_input_vector(actions=None, reactions=options, cards=None, exchanges=None)
         print(possible_inputs.keys())
         if can_challenge(options):
             return challenge()
         else:
             return block(random.choice(options["Block"]))
+        '''
+        possible_moves = self.get_input_vector(actions=None, reactions=options, cards=None, exchanges=None)
+        optimal_move = self.get_optimal_move(possible_moves)
+        return convert(optimal_move[0], optimal_move[1] if optimal_move != True else None)
 
     def decide_card(self, options):
+        '''
         possible_inputs = self.get_input_vector(actions=None, reactions=None, cards=options, exchanges=None)
         print(possible_inputs.keys())
         return random.choice(options)
+        '''
+        possible_moves = self.get_input_vector(actions=None, reactions=None, cards=options, exchanges=None)
+        optimal_move = self.get_optimal_move(possible_moves)
+        return optimal_move[0]
+
 
     def decide_exchange(self, options):
-        # this picks the 2 cards to return
         # TODO: logic to send the complement
+        '''
         possible_inputs = self.get_input_vector(actions=None, reactions=None, cards=None, exchanges=options)
         return choose_exchange_cards(random.sample(options["cards"].keys(), options["n"]))
+        '''
+        possible_moves = self.get_input_vector(actions=None, reactions=None, cards=None, exchanges=options)
+        optimal_move = self.get_optimal_move(possible_moves)
+        response =  [card for card in options['cards'].keys() if card not in optimal_move] 
+        print(optimal_move)
+        print(response)
+        return choose_exchange_cards(response)
 
     def update(self, event):
         # this updates the state with new information
         if event["event"] == "state":
+            print("KerasAgent ID->: ", self._id)
             self.state = event["info"]
             if self.num_of_cards == None:
                 self.num_of_cards = len(self.state['players'][0]['cards'])
@@ -107,6 +127,11 @@ class KerasAgent(Agent):
             # reset block
             self.block = None
 
+    def get_optimal_move(self, possible_moves):
+        inputs = [np.array(vector) for vector in possible_moves.values()]
+        probs = self.model.predict(np.reshape(inputs, (-1, self.model_input_size)))
+        return list(possible_moves.keys())[np.argmax(probs)]
+
     '''
     ---------------------------------------------  ENCODING ------------------------------------------------
     '''
@@ -120,8 +145,10 @@ class KerasAgent(Agent):
         empty_exchange_vectors = self.encode_exchange(False, None, None)
         if actions:
             for action, targets in actions.items():
-                if targets == True:
+                if targets ==  True:
                     retval_dict[(action, targets)] = self.encode_action(True, action, None)
+                elif targets == False:
+                    continue
                 else:
                     for target in targets:
                         retval_dict[(action, target)] = self.encode_action(True, action, target)
@@ -136,7 +163,7 @@ class KerasAgent(Agent):
             retval_dict = { key: np.concatenate([state_vectors, empty_action_vectors, value, empty_card_vectors, empty_exchange_vectors]) for key, value in retval_dict.items()}
         elif cards:
             print(cards)
-            retval_dict = { card: self.encode_card(True, card) for card in cards }
+            retval_dict = { (card, True): self.encode_card(True, card) for card in cards }
             retval_dict = { key: np.concatenate([state_vectors, empty_action_vectors, empty_reaction_vectors, value, empty_exchange_vectors]) for key, value in retval_dict.items()}
         elif exchanges:
             retval_dict = { (card1, card2): self.encode_exchange(True, exchanges["cards"][card1], exchanges["cards"][card2]) for card1, card2 in list(itertools.combinations(exchanges["cards"].keys(), 2)) }
@@ -259,9 +286,6 @@ class KerasAgent(Agent):
         agent = list(filter(lambda x: x['id'] == self._id, self.state['players']))[0]
         opponents = sorted([player for player in self.state['players'] if player['id'] != self._id],
             key=lambda x: x['id'])
-        
-        print(agent)
-        print(opponents)
 
         vector.append(self.encode_player(agent))
         vector.extend([self.encode_player(opponent) for opponent in opponents])
