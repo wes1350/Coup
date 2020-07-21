@@ -50,8 +50,6 @@ class KerasAgent(Agent):
         self.block = None
 
     def decide_action(self, options):
-        if steal_targets(options):
-            return steal(random.choice(options["Steal"]))
         possible_moves = self.get_input_vector(options, reactions=None, cards=None, exchanges=None)
         optimal_move = self.get_optimal_move(possible_moves)
         return convert(optimal_move[0], optimal_move[1] if type(optimal_move) != type(True) else None)
@@ -87,9 +85,7 @@ class KerasAgent(Agent):
         return random.choice(options)
         '''
         possible_moves = self.get_input_vector(actions=None, reactions=None, cards=options, exchanges=None)
-        optimal_move = self.get_optimal_move(possible_moves)
-        return optimal_move[0]
-
+        return self.get_optimal_move(possible_moves)[0]
 
     def decide_exchange(self, options):
         # TODO: logic to send the complement
@@ -99,10 +95,7 @@ class KerasAgent(Agent):
         '''
         possible_moves = self.get_input_vector(actions=None, reactions=None, cards=None, exchanges=options)
         optimal_move = self.get_optimal_move(possible_moves)
-        response =  [card for card in options['cards'].keys() if card not in optimal_move] 
-        print(optimal_move)
-        print(response)
-        return choose_exchange_cards(response)
+        return  [card for card in options['cards'].keys() if card not in optimal_move] 
 
     def update(self, event):
         # this updates the state with new information
