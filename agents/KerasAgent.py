@@ -95,7 +95,7 @@ class KerasAgent(Agent):
         '''
         possible_moves = self.get_input_vector(actions=None, reactions=None, cards=None, exchanges=options)
         optimal_move = self.get_optimal_move(possible_moves)
-        return  [card for card in options['cards'].keys() if card not in optimal_move] 
+        return choose_exchange_cards([card for card in options['cards'].keys() if card not in optimal_move])
 
     def update(self, event):
         # this updates the state with new information
@@ -235,7 +235,6 @@ class KerasAgent(Agent):
         bit_length = 1 + (len(self.char_encoding) + 1) * self.num_of_cards
         vector = []
         vector.append([player['coins']])
-        print(player)
         for card in player['cards']:
             char = card['character']
             if char == None:
