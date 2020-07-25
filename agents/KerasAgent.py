@@ -1,4 +1,5 @@
 import random
+import pickle
 import itertools
 import numpy as np
 from keras import models
@@ -18,15 +19,27 @@ else:
     from .Agent import Agent
 
 class KerasAgent(Agent):
-    def __init__(self, model, debug=False):
+    def __init__(self, load=False, training=True, debug=False):
         self.debug = debug 
         self._id = None
-        if model == None:
-            model = models.Sequential()
-            model.add(layers.Dense(units=200, input_dim=70, activation='relu', kernel_initializer='glorot_uniform'))
-            model.add(layers.Dense(1, activation='sigmoid'))
-        self.model = model
+        if load:
+            self.model_location = "./KerasModel/training"
+        else:
+            self.model_location = "./KerasModel/untrained"
+        self.load()
+        self.training = training
         self.model_input_size = self.model.layers[0].get_config()["batch_input_shape"][1]
+
+        # hyperparameters
+        self.gamma = 0.99
+
+        self.x_train = []
+        self.y_train = []
+        self.rewards = []
+        self.discouted = []
+        # chance of exploration
+        self.epsilon = 0.1
+
         self.state_bit = None
         self.state = None
         self.num_of_players = None
@@ -49,9 +62,62 @@ class KerasAgent(Agent):
             'coup': 6}
         self.block = None
 
+    def log_training(self, input_vector, q):
+        self.x_train.append(input_vector)
+        self.y_train.append(q)
+        self.append_reward(0)
+    
+    def append_reward(self, reward):
+        self.rewards.append(reward)
+    
+    def train(self):
+        self.x_train = np.vstack(self.x_train)
+        self.rewards = np.vstack(self.rewards)
+        self.discounted = self.discount_rewards(self.rewards)
+        history = self.model.fit(self.x_train, self.discounted)
+        print('Train------------------> ', history.history)
+        self.save(history)
+    
+    def record_game(self):
+        record = {}
+        record['win'] = self.win
+        with open(f"{self.model_location}/stats", "wb") as fd:
+            pickle.dump(record, fd)
+
+    def save(self, history):
+        self.record_game()
+        with open(f"{self.model_location}/history", "wb") as fd:
+            pickle.dump(history.history, fd)
+        self.model.save(self.model_location)
+
+    def load(self):
+        try:
+            print("Loading model from ", self.model_location)
+            self.model = keras.models.load_model(self.model_location)
+            print('Loaded model')
+        except Exception as e:
+            print(e)
+            print('Unable to load model')
+            model = models.Sequential()
+            model.add(layers.Dense(units=200, input_dim=70, activation='relu', kernel_initializer='glorot_uniform'))
+            model.add(layers.Dense(1))
+            model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+            self.model = model
+    
+    def discount_rewards(self, r):
+        # reward is added after, so taking off one timestep
+        r = r[1:]
+        discounted_r = [0] * len(r) 
+        running_add = 0
+        for t in reversed(range(0, len(r))):
+            running_add = running_add * self.gamma + r[t]
+            discounted_r[t] = running_add
+        return np.vstack(discounted_r)
+        
     def decide_action(self, options):
         possible_moves = self.get_input_vector(options, reactions=None, cards=None, exchanges=None)
-        optimal_move = self.get_optimal_move(possible_moves)
+        optimal_move, optimal_input, q = self.get_optimal_move(possible_moves)
+        self.log_training(optimal_input, q)
         return convert(optimal_move[0], optimal_move[1] if type(optimal_move) != type(True) else None)
         '''
         if assassinate_targets(options):
@@ -63,7 +129,7 @@ class KerasAgent(Agent):
             # and we can't steal because nobody else has coins to steal. 
             # In this case we tax.
             return tax()
-            '''
+        '''
 
     def decide_reaction(self, options):
         '''
@@ -75,7 +141,8 @@ class KerasAgent(Agent):
             return block(random.choice(options["Block"]))
         '''
         possible_moves = self.get_input_vector(actions=None, reactions=options, cards=None, exchanges=None)
-        optimal_move = self.get_optimal_move(possible_moves)
+        optimal_move, optimal_input, q = self.get_optimal_move(possible_moves)
+        self.log_training(optimal_input, q)
         return convert(optimal_move[0], optimal_move[1] if optimal_move != True else None)
 
     def decide_card(self, options):
@@ -85,7 +152,9 @@ class KerasAgent(Agent):
         return random.choice(options)
         '''
         possible_moves = self.get_input_vector(actions=None, reactions=None, cards=options, exchanges=None)
-        return self.get_optimal_move(possible_moves)[0]
+        optimal_move, optimal_input, q = self.get_optimal_move(possible_moves)
+        self.log_training(optimal_input, q)
+        return optimal_move[0]
 
     def decide_exchange(self, options):
         # TODO: logic to send the complement
@@ -94,13 +163,13 @@ class KerasAgent(Agent):
         return choose_exchange_cards(random.sample(options["cards"].keys(), options["n"]))
         '''
         possible_moves = self.get_input_vector(actions=None, reactions=None, cards=None, exchanges=options)
-        optimal_move = self.get_optimal_move(possible_moves)
+        optimal_move, optimal_input, q = self.get_optimal_move(possible_moves)
+        self.log_training(optimal_input, q)
         return choose_exchange_cards([card for card in options['cards'].keys() if card not in optimal_move])
 
     def update(self, event):
         # this updates the state with new information
         if event["event"] == "state":
-            print("KerasAgent ID->: ", self._id)
             self.state = event["info"]
             if self.num_of_cards == None:
                 self.num_of_cards = len(self.state['players'][0]['cards'])
@@ -110,6 +179,14 @@ class KerasAgent(Agent):
             if self.debug:
                 print('Number of cards: ', self.num_of_cards)
                 print('Number of players: ', self.num_of_players)
+            
+        if event["event"] == "winner":
+            print("KerasAgent ID->: ", self._id)
+            self.win = event["info"]["winner"] == self._id
+            reward = 1 if self.win else -1 
+            self.append_reward(reward)
+            if self.training:
+                self.train()
 
         if event["event"] == "block" and event["info"]["to"] == self._id:
             self.block = {
@@ -122,8 +199,15 @@ class KerasAgent(Agent):
 
     def get_optimal_move(self, possible_moves):
         inputs = [np.array(vector) for vector in possible_moves.values()]
-        probs = self.model.predict(np.reshape(inputs, (-1, self.model_input_size)))
-        return list(possible_moves.keys())[np.argmax(probs)]
+        qs = self.model.predict(np.reshape(inputs, (-1, self.model_input_size)))
+        retval_ind = None
+        if random.random() < self.epsilon:
+            retval_ind = random.choice(range(len(inputs)))
+        else:
+            retval_ind = np.argmax(qs)
+        if self.debug:
+            print(qs)
+        return (list(possible_moves.keys())[retval_ind], inputs[retval_ind], qs[retval_ind])
 
     '''
     ---------------------------------------------  ENCODING ------------------------------------------------
@@ -148,14 +232,15 @@ class KerasAgent(Agent):
             retval_dict = { key: np.concatenate((state_vectors, value, empty_reaction_vectors, empty_card_vectors, empty_exchange_vectors), axis=0) for key, value in retval_dict.items() }
         elif reactions:
             for reaction, as_chars in reactions.items():
-                if type(as_chars) == type(True):
+                if as_chars == True:
                     retval_dict[(reaction, as_chars)] = self.encode_reaction(True, reaction, None)
+                elif as_chars == False:
+                    continue
                 else:
                     for as_char in as_chars:
                         retval_dict[(reaction, as_char)] = self.encode_reaction(True, reaction, as_char)
             retval_dict = { key: np.concatenate([state_vectors, empty_action_vectors, value, empty_card_vectors, empty_exchange_vectors]) for key, value in retval_dict.items()}
         elif cards:
-            print(cards)
             retval_dict = { (card, True): self.encode_card(True, card) for card in cards }
             retval_dict = { key: np.concatenate([state_vectors, empty_action_vectors, empty_reaction_vectors, value, empty_exchange_vectors]) for key, value in retval_dict.items()}
         elif exchanges:
@@ -281,7 +366,8 @@ class KerasAgent(Agent):
 
         vector.append(self.encode_player(agent))
         vector.extend([self.encode_player(opponent) for opponent in opponents])
-        print('player vector', vector)
+        if self.debug:
+            print('player vector', vector)
 
         # block vector
         vector.append(self.encode_block())

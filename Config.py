@@ -8,8 +8,8 @@ class Config:
     def __init__(self, **kwargs) -> None:
 #         self.local_ais = {}
 #         self.local_ais = {0: IncomeAgent(), 1: RandomAgent(), 2: AdversarialAgent(), 3: MimickingAgent()}
-        self.local_ais = {0: KerasAgent(None, debug=False), 
-                           1: IncomeAgent()}
+        self.local_ais = {0: KerasAgent(load=False, training=False, debug=False), 
+                           1: AdversarialAgent()}
 
         self.n_players = 2 if not self.local_ais else len(self.local_ais)
         self.cards_per_player = 2
@@ -26,13 +26,12 @@ class Config:
 
         self.pay_on_successful_challenges = False
 
-        self.engine_sleep_duration = 0.5 
+        self.engine_sleep_duration = 0.0 
 
         # Set initial hands for each player
         self.starting_hands = None
-        # self.starting_hands = {0: ["Duke", "Captain"],
-        #                        1: ["Assassin", "Contessa"],
-        #                        2: ["Captain", "Captain"]}
+        #self.starting_hands = {0: ["Duke", "Duke"],
+        #                       1: ["Captain", "Ambassador"]}
 
         # Set deck characters
         self.deck_configuration = None
