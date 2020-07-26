@@ -4,14 +4,21 @@ import eventlet
 eventlet.monkey_patch()
 from flask import Flask, render_template, request, g, redirect, url_for
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
+from flask_login import LoginManager, current_user
 from Engine import Engine
 from GameInfo import GameInfo
 import random, time, subprocess
 from utils.argument_parsing import parse_args
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
+# app.config['SECRET_KEY'] = 'secret!'
+app.secret_key = b'\xc92`\x0b\x01\xb1\xfb\x7f\x8e\x94\xef\t\x95\\\xf7\xa6'
 socketio = SocketIO(app, cors_allowed_origins="*")
+login_manager = LoginManager()
+
+@login_manager.user_loader
+def load_user(user_id):
+    return database.get(id)
 
 def get_id_from_sid(sid):
     room = sids_to_rooms[sid]
@@ -20,14 +27,22 @@ def get_id_from_sid(sid):
             return c
     raise ValueError("Invalid sid request")
 
+
 @app.route('/', methods=('GET', 'POST'))
-def startpage():
+def loginpage():
     if request.method == "POST":
         username = request.form["username"]
-        room = request.form["room"]
+        password = request.form["password"]
 
+        return redirect(url_for('homepage'))
+    return render_template('login.html')
+
+@app.route('/home', methods=('GET', 'POST'))
+def homepage():
+    if request.method == "POST":
+        room = request.form["room"]
         return redirect(url_for('room', room=room))
-    return render_template('startpage.html')
+    return render_template('home.html')
 
 @app.route('/room/<room>')
 def room(room):
@@ -102,6 +117,7 @@ def on_start(passed_room=None):
     if passed_room is not None:
         room = passed_room
     else:
+        print(sids_to_rooms)
         room = sids_to_rooms[request.sid]
     if not game_rooms[room]["started"]:  # Don't allow multiple starts
         print("Starting")
@@ -188,4 +204,5 @@ if __name__ == '__main__':
     keep_client_order = parsed_args["keep_client_order"]
     game_rooms = {}
     sids_to_rooms = {}
+    login_manager.init_app(app)
     socketio.run(app, host='0.0.0.0')
