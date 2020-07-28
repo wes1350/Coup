@@ -5,6 +5,7 @@ eventlet.monkey_patch()
 from flask import Flask, render_template, request, g, redirect, url_for
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from flask_login import LoginManager, current_user
+from AppConfig import AppConfig
 from Engine import Engine
 from GameInfo import GameInfo
 import random, time, subprocess
@@ -12,7 +13,8 @@ from utils.argument_parsing import parse_args
 
 app = Flask(__name__)
 # app.config['SECRET_KEY'] = 'secret!'
-app.secret_key = b'\xc92`\x0b\x01\xb1\xfb\x7f\x8e\x94\xef\t\x95\\\xf7\xa6'
+# app.secret_key = b'\xc92`\x0b\x01\xb1\xfb\x7f\x8e\x94\xef\t\x95\\\xf7\xa6'
+app.config.from_object(AppConfig)
 socketio = SocketIO(app, cors_allowed_origins="*")
 login_manager = LoginManager()
 
