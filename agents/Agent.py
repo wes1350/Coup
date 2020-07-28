@@ -1,4 +1,5 @@
 """Base class for Agents."""
+import json
 
 if __name__ == "Agent":
     from utils.game import *
@@ -10,12 +11,14 @@ else:
     from .utils.network import *
 
 class Agent:
-    def __init__(self):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
         pass
 
     def update_wrapper(self, event):
         event_info = json.loads(event) if isinstance(event, str) else event
-        print("Updating with event: ", event_info)
+        if self.verbose:
+            print("Updating with event: ", json.dumps(event_info, indent=4))
         if isinstance(event_info, str):
             event_info = json.loads(event_info)
             if "info" in event_info:
@@ -25,14 +28,12 @@ class Agent:
             if "info" in event_info:
                 if isinstance(event_info["info"], str):
                     event_info["info"] = json.loads(event_info["info"])
-        print(event_info)
         self.update(event_info)
 
     def update(self, event):
         pass
 
     def react(self, event_type : str, options : dict):
-        print("Reacting to:", options)
         options = json.loads(options) if isinstance(options, str) else options
         if event_type == "action":
             response = self.decide_action(options) 
@@ -50,7 +51,9 @@ class Agent:
         if response is None:
             raise Exception(("Agent did not return a value for its response. "
                              "Make sure to return a value (e.g. return income()) when choosing a response."))
-        print("Sending response", response, type(response))
+        if self.verbose:
+            print("Reacting to:", json.dumps(options, indent=4))
+            print("Sending response", response, type(response))
         return response
 
     def unimplemented_response(self, event_type : str):
@@ -69,4 +72,3 @@ class Agent:
 
     def decide_exchange(self, options):
         return self.unimplemented_response("exchange")(options)
-

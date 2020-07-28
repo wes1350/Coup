@@ -14,7 +14,8 @@ else:
     from .Agent import Agent
 
 class MimickingAgent(Agent):
-    def __init__(self):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
         self.action_queue = []
 
     def decide_action(self, options):

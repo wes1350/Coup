@@ -1,3 +1,4 @@
+import shutil
 import random
 import pickle
 import itertools
@@ -19,13 +20,13 @@ else:
     from .Agent import Agent
 
 class KerasAgent(Agent):
-    def __init__(self, load=False, training=True, debug=False):
+    def __init__(self, model_location=None, training=True, debug=False, verbose=False):
         self.debug = debug 
+        self.verbose = verbose
         self._id = None
-        if load:
-            self.model_location = "./KerasModel/training"
-        else:
-            self.model_location = "./KerasModel/untrained"
+        if model_location == None:
+            raise NotImplementedError
+        self.model_location = model_location
         self.load()
         self.training = training
         self.model_input_size = self.model.layers[0].get_config()["batch_input_shape"][1]
@@ -38,7 +39,7 @@ class KerasAgent(Agent):
         self.rewards = []
         self.discouted = []
         # chance of exploration
-        self.epsilon = 0.1
+        self.epsilon = 0
 
         self.state_bit = None
         self.state = None
@@ -181,7 +182,6 @@ class KerasAgent(Agent):
                 print('Number of players: ', self.num_of_players)
             
         if event["event"] == "winner":
-            print("KerasAgent ID->: ", self._id)
             self.win = event["info"]["winner"] == self._id
             reward = 1 if self.win else -1 
             self.append_reward(reward)
@@ -293,7 +293,6 @@ class KerasAgent(Agent):
         retval = None
         assert(self.num_of_cards != None)
         if encoding:
-            print('CARD------> ', card)
             retval = to_categorical(card, self.num_of_cards)
         else:
             retval = np.zeros(self.num_of_cards)
