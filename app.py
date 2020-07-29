@@ -5,6 +5,8 @@ eventlet.monkey_patch()
 from flask import Flask, render_template, request, g, redirect, url_for
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from flask_login import LoginManager, current_user
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 from AppConfig import AppConfig
 from Engine import Engine
 from GameInfo import GameInfo
@@ -15,8 +17,11 @@ app = Flask(__name__)
 # app.config['SECRET_KEY'] = 'secret!'
 # app.secret_key = b'\xc92`\x0b\x01\xb1\xfb\x7f\x8e\x94\xef\t\x95\\\xf7\xa6'
 app.config.from_object(AppConfig)
+db = SQLAlchemy(app)
+migrate = Migrate(app, db)
+import models  # for importing db models for db migration
 socketio = SocketIO(app, cors_allowed_origins="*")
-login_manager = LoginManager()
+login_manager = LoginManager(app)
 
 @login_manager.user_loader
 def load_user(user_id):
