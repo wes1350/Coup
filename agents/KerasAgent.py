@@ -1,10 +1,7 @@
-import shutil
+import os
 import random
-import pickle
 import itertools
 import numpy as np
-from keras import models
-from keras import layers
 from keras.utils import to_categorical
 from tensorflow import keras
 
@@ -20,31 +17,31 @@ else:
     from .Agent import Agent
 
 class KerasAgent(Agent):
-    def __init__(self, model_location=None, training=True, debug=False, verbose=False):
+    def __init__(self, model=None, gamma=0.99, epsilon=0, debug=False, verbose=True):
         self.debug = debug 
         self.verbose = verbose
         self._id = None
-        if model_location == None:
+        if model is None:
             raise NotImplementedError
-        self.model_location = model_location
-        self.load()
-        self.training = training
+        self.model = model
         self.model_input_size = self.model.layers[0].get_config()["batch_input_shape"][1]
 
         # hyperparameters
-        self.gamma = 0.99
+        self.gamma = gamma 
+        self.epsilon = epsilon 
 
         self.x_train = []
         self.y_train = []
         self.rewards = []
-        self.discouted = []
-        # chance of exploration
-        self.epsilon = 0
+        self.win = False
+        self.game_histories = []
+        self.game_history = [] 
 
         self.state_bit = None
         self.state = None
         self.num_of_players = None
         self.num_of_cards = None
+        self.block = None
         self.char_encoding = { 
             'ambassador': 0,
             'assassin': 1,
@@ -61,64 +58,41 @@ class KerasAgent(Agent):
             'exchange': 4, 
             'assassinate': 4, 
             'coup': 6}
-        self.block = None
 
-    def log_training(self, input_vector, q):
+    def log_step(self, input_vector, q):
         self.x_train.append(input_vector)
         self.y_train.append(q)
+        # TODO: add step to game history
         self.append_reward(0)
+
+    def log_game(self, reward):
+        # utility function for when a game concludes
+        # rewards only appear after game, so need to adjust
+        self.rewards = self.rewards[:-1] + [reward]
+        self.game_histories.append(self.game_history)
+        if self.debug:
+            print(self.game_history)
+        if self.verbose:
+            print("-" * 101 + "\n" + "-" * 45 + " GAME OVER " + "-" * 45 + "\n" + "-" * 101)
+        self.game_history = []
+        self.win = False
     
     def append_reward(self, reward):
         self.rewards.append(reward)
-    
-    def train(self):
-        self.x_train = np.vstack(self.x_train)
-        self.rewards = np.vstack(self.rewards)
-        self.discounted = self.discount_rewards(self.rewards)
-        history = self.model.fit(self.x_train, self.discounted)
-        print('Train------------------> ', history.history)
-        self.save(history)
-    
-    def record_game(self):
-        record = {}
-        record['win'] = self.win
-        with open(f"{self.model_location}/stats", "wb") as fd:
-            pickle.dump(record, fd)
 
-    def save(self, history):
-        self.record_game()
-        with open(f"{self.model_location}/history", "wb") as fd:
-            pickle.dump(history.history, fd)
-        self.model.save(self.model_location)
-
-    def load(self):
-        try:
-            print("Loading model from ", self.model_location)
-            self.model = keras.models.load_model(self.model_location)
-            print('Loaded model')
-        except Exception as e:
-            print(e)
-            print('Unable to load model')
-            model = models.Sequential()
-            model.add(layers.Dense(units=200, input_dim=70, activation='relu', kernel_initializer='glorot_uniform'))
-            model.add(layers.Dense(1))
-            model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
-            self.model = model
+    def get_training_data(self):
+        return (self.x_train, self.y_train, self.rewards, self.game_histories)
     
-    def discount_rewards(self, r):
-        # reward is added after, so taking off one timestep
-        r = r[1:]
-        discounted_r = [0] * len(r) 
-        running_add = 0
-        for t in reversed(range(0, len(r))):
-            running_add = running_add * self.gamma + r[t]
-            discounted_r[t] = running_add
-        return np.vstack(discounted_r)
-        
+    def reset(self):
+        self.x_train = []
+        self.rewards = []
+        self.discounted = []
+        self.win = False
+
     def decide_action(self, options):
         possible_moves = self.get_input_vector(options, reactions=None, cards=None, exchanges=None)
         optimal_move, optimal_input, q = self.get_optimal_move(possible_moves)
-        self.log_training(optimal_input, q)
+        self.log_step(optimal_input, q)
         return convert(optimal_move[0], optimal_move[1] if type(optimal_move) != type(True) else None)
         '''
         if assassinate_targets(options):
@@ -143,7 +117,7 @@ class KerasAgent(Agent):
         '''
         possible_moves = self.get_input_vector(actions=None, reactions=options, cards=None, exchanges=None)
         optimal_move, optimal_input, q = self.get_optimal_move(possible_moves)
-        self.log_training(optimal_input, q)
+        self.log_step(optimal_input, q)
         return convert(optimal_move[0], optimal_move[1] if optimal_move != True else None)
 
     def decide_card(self, options):
@@ -154,7 +128,7 @@ class KerasAgent(Agent):
         '''
         possible_moves = self.get_input_vector(actions=None, reactions=None, cards=options, exchanges=None)
         optimal_move, optimal_input, q = self.get_optimal_move(possible_moves)
-        self.log_training(optimal_input, q)
+        self.log_step(optimal_input, q)
         return optimal_move[0]
 
     def decide_exchange(self, options):
@@ -165,10 +139,11 @@ class KerasAgent(Agent):
         '''
         possible_moves = self.get_input_vector(actions=None, reactions=None, cards=None, exchanges=options)
         optimal_move, optimal_input, q = self.get_optimal_move(possible_moves)
-        self.log_training(optimal_input, q)
+        self.log_step(optimal_input, q)
         return choose_exchange_cards([card for card in options['cards'].keys() if card not in optimal_move])
 
     def update(self, event):
+        self.game_history.append(event)
         # this updates the state with new information
         if event["event"] == "state":
             self.state = event["info"]
@@ -184,9 +159,7 @@ class KerasAgent(Agent):
         if event["event"] == "winner":
             self.win = event["info"]["winner"] == self._id
             reward = 1 if self.win else -1 
-            self.append_reward(reward)
-            if self.training:
-                self.train()
+            self.log_game(reward)
 
         if event["event"] == "block" and event["info"]["to"] == self._id:
             self.block = {
@@ -374,5 +347,6 @@ class KerasAgent(Agent):
 
 if __name__ == "__main__":
     # load the saved model
-    keras_agent = KerasAgent(None)
+    model = keras.models.load_model("./KerasModel/checkpoint")
+    keras_agent = KerasAgent(model)
     start(keras_agent)

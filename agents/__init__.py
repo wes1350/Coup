@@ -5,3 +5,4 @@ from .MimickingAgent import MimickingAgent
 from .PytorchAgent import PytorchAgent
 from .KerasAgent import KerasAgent
 from .TaxAgent import TaxAgent
+from .Agent import Agent

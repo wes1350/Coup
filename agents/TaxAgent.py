@@ -17,6 +17,10 @@ class TaxAgent(Agent):
         pass
 
     def decide_action(self, options):
+        targets = coup_targets(options)
+        if targets:
+            return coup(targets[0])
+
         if can_foreign_aid(options):
             return foreign_aid()
         else:

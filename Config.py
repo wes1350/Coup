@@ -34,8 +34,8 @@ class Config:
 
         # Set initial hands for each player
         self.starting_hands = None
-        #self.starting_hands = {0: ["Duke", "Duke"],
-        #                       1: ["Captain", "Ambassador"]}
+        #self.starting_hands = {0: ["Contessa", "Contessa"],
+        #                     1: ["Captain", "Ambassador"]}
 
         # Set deck characters
         self.deck_configuration = None

@@ -17,8 +17,6 @@ class Agent:
 
     def update_wrapper(self, event):
         event_info = json.loads(event) if isinstance(event, str) else event
-        if self.verbose:
-            print("Updating with event: ", json.dumps(event_info, indent=4))
         if isinstance(event_info, str):
             event_info = json.loads(event_info)
             if "info" in event_info:
@@ -28,6 +26,8 @@ class Agent:
             if "info" in event_info:
                 if isinstance(event_info["info"], str):
                     event_info["info"] = json.loads(event_info["info"])
+        if self.verbose:
+            print("Updating with event: ", json.dumps(event_info, indent=4))
         self.update(event_info)
 
     def update(self, event):
