@@ -2,9 +2,9 @@ import eventlet
 # Eventlet isn't compatible with some python modules (e.g. time) so monkeypatch to resolve 
 # bugs that result from such conflicts
 eventlet.monkey_patch()
-from flask import Flask, render_template, request, g, redirect, url_for
+from flask import Flask, render_template, request, g, redirect, url_for, flash
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
-from flask_login import LoginManager, current_user
+from flask_login import LoginManager, current_user, login_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
 from AppConfig import AppConfig
@@ -23,9 +23,6 @@ import models  # for importing db models for db migration
 socketio = SocketIO(app, cors_allowed_origins="*")
 login_manager = LoginManager(app)
 
-@login_manager.user_loader
-def load_user(user_id):
-    return database.get(id)
 
 def get_id_from_sid(sid):
     room = sids_to_rooms[sid]
@@ -34,18 +31,54 @@ def get_id_from_sid(sid):
             return c
     raise ValueError("Invalid sid request")
 
+@login_manager.user_loader
+def load_user(user_id):
+    return models.User.query.get(int(user_id))
 
 @app.route('/', methods=('GET', 'POST'))
-def loginpage():
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+
+    if request.method == "POST":
+        username = request.form["username"]
+        password = request.form["password"]
+        remember = "rememberme" in request.form and request.form["rememberme"] == "on"
+
+        user = models.User.query.filter_by(username=username).first()
+        if user is None or not user.check_password(password):
+            flash('Invalid username or password')
+            return redirect(url_for('login'))
+        login_user(user, remember=remember)
+        return redirect(url_for('home'))
+
+    return render_template('login.html', title='Sign In')
+
+@app.route('/register', methods=('GET', 'POST'))
+def register():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
+
     if request.method == "POST":
         username = request.form["username"]
         password = request.form["password"]
 
-        return redirect(url_for('homepage'))
-    return render_template('login.html')
+        user = models.User(username=username)
+        user.set_password(password)
+        db.session.add(user)
+        db.session.commit()
+        flash('Registration successful')
+        return redirect(url_for('login'))
+
+    return render_template('register.html', title='Register')
+
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
 
 @app.route('/home', methods=('GET', 'POST'))
-def homepage():
+def home():
     if request.method == "POST":
         room = request.form["room"]
         return redirect(url_for('room', room=room))

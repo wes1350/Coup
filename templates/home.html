@@ -9,6 +9,15 @@
 <body>
 <section class="content">
     <div>
+        {% if current_user.is_anonymous %}
+        <a href="{{ url_for('login') }}">Login</a>
+        {% else %}
+        <a href="{{ url_for('logout') }}">Logout</a>
+        {% endif %}
+    </div>
+    <br />
+    <br />
+    <div>
        <div>Enter room ID:</div>
     </div>
   <form method="post">
@@ -16,7 +25,6 @@
     <input type="room" name="room" id="room" required>
     <input type="submit" value="Submit">
   </form>
-
 </section>
 </body>
 </html>
