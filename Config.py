@@ -1,11 +1,17 @@
 """Maintains various parameters used in the game, such as the number of players and number of coins per player."""
 
 from typing import NoReturn
+from agents import *
 
 class Config:
     """The class storing all the config parameters."""
     def __init__(self, **kwargs) -> None:
-        self.n_players = 2
+        self.local_ais = {}
+#         self.local_ais = {0: IncomeAgent(), 1: RandomAgent(), 2: AdversarialAgent(), 3: MimickingAgent()}
+#         self.local_ais = {0: PytorchAgent(input_size=67, hidden_size=10, n_players=2), 
+#                           1: PytorchAgent(input_size=67, hidden_size=10, n_players=2)}
+
+        self.n_players = 2 if not self.local_ais else len(self.local_ais)
         self.cards_per_player = 2
         self.cards_per_character = 3
         self.starting_coins = 2
@@ -20,11 +26,21 @@ class Config:
 
         self.pay_on_successful_challenges = False
 
+        self.engine_sleep_duration = 0.5 
+
         # Set initial hands for each player
         self.starting_hands = None
         # self.starting_hands = {0: ["Duke", "Captain"],
         #                        1: ["Assassin", "Contessa"],
         #                        2: ["Captain", "Captain"]}
+
+        # Set deck characters
+        self.deck_configuration = None
+#         self.deck_configuration = {"Ambassador": 0,
+#                                    "Assassin": 0,
+#                                    "Captain": 2, 
+#                                    "Contessa": 0, 
+#                                    "Duke": 4}
 
         # initialize other parameters
         for key, value in kwargs.items():

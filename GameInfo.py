@@ -4,3 +4,4 @@ class GameInfo:
     def __init__(self) -> None:
         """Initialize a new GameInfo object."""
         self.config_settings = None
+        self.ai_players = []

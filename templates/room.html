@@ -11,6 +11,10 @@
     <script src="https://unpkg.com/react@16/umd/react.development.js" crossorigin></script>
     <script src="https://unpkg.com/react-dom@16/umd/react-dom.development.js" crossorigin></script>
     <script src="{{ url_for('static', filename="js/script.js") }}"></script>
+    <!-- Run the script to join the room we specified on the start page -->
+    <script>
+      joinRoom("{{ room }}");
+    </script>
 </head>
 <body>
 <section class="content">
@@ -32,6 +36,21 @@
     <br />
     <div>
         <button type="button" id="start-button">Start</button>
+    </div>
+    <div>
+        <button type="button" class="bot-button" id="adversarial-agent-button">Add AdversarialAgent</button>
+    </div>
+    <div>
+        <button type="button" class="bot-button" id="income-agent-button">Add IncomeAgent</button>
+    </div>
+    <div>
+        <button type="button" class="bot-button" id="mimicking-agent-button">Add MimickingAgent</button>
+    </div>
+    <div>
+        <button type="button" class="bot-button" id="pytorch-agent-button">Add PytorchAgent</button>
+    </div>
+    <div>
+        <button type="button" class="bot-button" id="random-agent-button">Add RandomAgent</button>
     </div>
     <div class="action-container neutral-action-container">
       <button id="Income" class="action-button">Income</button>
