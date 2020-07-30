@@ -15,6 +15,9 @@ class Agent:
         self.verbose = verbose
         pass
 
+    def __str__(self):
+        return type(self).__name__
+
     def update_wrapper(self, event):
         event_info = json.loads(event) if isinstance(event, str) else event
         if isinstance(event_info, str):

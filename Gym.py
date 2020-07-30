@@ -1,5 +1,7 @@
 from datetime import datetime
+import os
 import pickle
+import json
 import numpy as np
 import shutil
 from Engine import Engine
@@ -40,6 +42,10 @@ class Gym():
             raise(e)
         return model
 
+    def load_checkpoint(self, checkpoint_name):
+        location = f"{self.checkpoints_location}/{checkpoint_name}"
+        return self.load_model(location)
+
     def discount_rewards(self, r):
         # somehow unable to modify np.zeros_like
         discounted_r = [0] * len(r)
@@ -67,8 +73,11 @@ class Gym():
             all_games.extend(game_histories) 
 
         if save_location:
-            self.log_game_histories(game_histories, save_location, session_name)
-            self.save_model_and_training_history(agent.model, training_history, save_location)
+            location = f"{save_location}/{session_name}"
+            self.log_game_histories(game_histories, location)
+            self.save_model_and_training_history(agent.model, training_history, location)
+        
+        return agent
 
     def train_epoch(self, training_agent: Agent, op_agent: Agent):
         """
@@ -82,20 +91,23 @@ class Gym():
         xs, ys, rewards, game_histories = training_agent.get_training_data()
         xs = np.vstack(xs)
         discounted = np.vstack(self.discount_rewards(rewards))
-        training_history, game_histories = training_agent.model.fit(xs, discounted)
+        training_history = training_agent.model.fit(xs, discounted)
 
         # reset stats
         training_agent.reset()
         return training_history, game_histories
     
-    def log_game_histories(self, game_histories, location, session_name):
+    def log_game_histories(self, game_histories, location):
         """
         Logs the game history in file system
         """
         print("Saving game histories to ", location)
         for i in range(len(game_histories)):
-            with open(f"{location}/games/{session_name}/{i}", "wb"):
-                pickle.dump(game_histories[i])
+            dir = f"{location}/games"
+            if not os.path.exists(dir):
+                os.makedirs(dir)
+            with open(f"{dir}/{i}", "wb") as fd:
+                pickle.dump(game_histories[i], fd)
 
     def save_model_and_training_history(self, model, training_history, location):
         print("Saving model to ", location)
@@ -117,12 +129,16 @@ class Gym():
             wins += 1 if winner == 0 else 0
             print("WIN RATE: ", wins/(i + 1))
         return wins/n
-        
+
+    def self_train_with_blending(self, training_location, hold_location, blending_agents, blending_ratio=0.2):
+        # sample blending_ratio, if true, play a blending agent ar random, else self train 
+        raise NotImplementedError
+
     def evaluate_with_model(self, training_location, eval_model_location, n):
         wins = 0
         for i in range(n):
-            engine = Engine(local_ais = {0: KerasAgent(), 
-                                1: KerasAgent()})
+            engine = Engine(local_ais = {0: IncomeAgent(), 
+                                1: IncomeAgent()})
             winner = engine.run_game()
             wins += 1 if winner == 0 else 0
             print("WIN RATE: ", wins/(i + 1))
@@ -131,12 +147,14 @@ class Gym():
     def benchmark(self, agent: Agent, n=100):
         stats = {}
         # bench marking against other Agents
-        opponents = [TaxAgent(), AdversarialAgent()]
+        checkpoint_agent = KerasAgent(label='checkpoint', model=self.load_checkpoint('checkpoint'), verbose=False)
+        opponents = [TaxAgent(), IncomeAgent(), AdversarialAgent(), MimickingAgent(), checkpoint_agent]
         # remove epsilon for benchmarking
         agent.epsilon = 0
+        agent.verbose = False
         for opponent in opponents: 
             wins = 0
-            opponent_name = type(opponent).__name__
+            opponent_name = str(opponent) 
             print(f"Benchmarking against {opponent_name}...")
             for i in range(n):
                 engine = Engine(local_ais = 
@@ -158,8 +176,19 @@ class Gym():
         shutil.copytree(source, checkpoint_location)
 
 if __name__ == "__main__":
+    print('imported')
     gym = Gym()
-    gym.create_checkpoint(gym.training_location)
-    asdf
-    model = gym.load_model(gym.training_location)
-    gym.benchmark(KerasAgent(model))
+    trained_agent = KerasAgent(label='training', model=gym.load_model(gym.training_location), verbose=False)
+    checkpoint_agent = KerasAgent(label='checkpoint', model=gym.load_checkpoint('checkpoint'), verbose=False)
+    batch_training_agent = KerasAgent(label='bathTraining1', model=gym.load_checkpoint('testBatchTraining'), verbose=False)
+    benchmark_stats = {}
+    benchmark_stats['training'] = gym.benchmark(trained_agent)
+    benchmark_stats['testBatchTraining'] = gym.benchmark(batch_training_agent)
+    
+    # self train with blending against existing AIs
+    session_name = "testBatchTraining1"
+    trained_agent = gym.batch_training(session_name, trained_agent, AdversarialAgent(), 100, gym.checkpoints_location)
+
+    benchmark_stats['checkpoint'] = gym.benchmark(checkpoint_agent)
+    benchmark_stats[session_name] = gym.benchmark(trained_agent)
+    print(json.dumps(benchmark_stats, indent=4))

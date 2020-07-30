@@ -17,7 +17,8 @@ else:
     from .Agent import Agent
 
 class KerasAgent(Agent):
-    def __init__(self, model=None, gamma=0.99, epsilon=0, debug=False, verbose=True):
+    def __init__(self, label, model=None, epsilon=0, debug=False, verbose=True):
+        self.label = label
         self.debug = debug 
         self.verbose = verbose
         self._id = None
@@ -27,7 +28,6 @@ class KerasAgent(Agent):
         self.model_input_size = self.model.layers[0].get_config()["batch_input_shape"][1]
 
         # hyperparameters
-        self.gamma = gamma 
         self.epsilon = epsilon 
 
         self.x_train = []
@@ -58,11 +58,14 @@ class KerasAgent(Agent):
             'exchange': 4, 
             'assassinate': 4, 
             'coup': 6}
+    
+    def __str__(self):
+        return f"KerasAgent_{self.label}"
 
     def log_step(self, input_vector, q):
+        # game history is added at event update
         self.x_train.append(input_vector)
         self.y_train.append(q)
-        # TODO: add step to game history
         self.append_reward(0)
 
     def log_game(self, reward):
@@ -87,6 +90,7 @@ class KerasAgent(Agent):
         self.x_train = []
         self.rewards = []
         self.discounted = []
+        self.game_history = []
         self.win = False
 
     def decide_action(self, options):

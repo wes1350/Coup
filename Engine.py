@@ -665,7 +665,7 @@ class Engine:
             else:
                 self.whisper_f(msg, player, whisper_type)
 
-    def get_response(self, player : int, sleep : bool = True, print_wait : bool = True) -> str:
+    def get_response(self, player : int, sleep : bool = True, print_wait : bool = False) -> str:
         """Query server for a response."""
         if print_wait:
             print("Waiting for a response from player {}...".format(player))
