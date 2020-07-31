@@ -1,6 +1,6 @@
 """An Agent that chooses a valid response at random."""
 
-import random
+import sys, random
 
 if __name__ == "__main__":
     from utils.game import *
@@ -37,4 +37,4 @@ class RandomAgent(Agent):
 
 
 if __name__ == "__main__":
-    start(RandomAgent())
+    start(RandomAgent(), sys.argv[1])

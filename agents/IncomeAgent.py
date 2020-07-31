@@ -1,4 +1,5 @@
 """An Agent that always takes Income unless forced to Coup, and that never Blocks or Challenges."""
+import sys
 
 if __name__ == "__main__":
     from utils.game import *
@@ -34,4 +35,4 @@ class IncomeAgent(Agent):
 
 
 if __name__ == "__main__":
-    start(IncomeAgent())
+    start(IncomeAgent(), sys.argv[1])

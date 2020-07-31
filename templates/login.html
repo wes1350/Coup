@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+    <title>Coup Login Page</title>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/socket.io/2.2.0/socket.io.js" integrity="sha256-yr4fRk/GU1ehYJPAs8P4JlTgu0Hdsp4ZKrx8bDEDC3I=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.5.1.js" integrity="sha256-QWo7LDvxbWT2tbbQ97B53yJnYU3WhH/C8ycbRAkjPDc=" crossorigin="anonymous"></script>
+</head>
+<body>
+<section class="content">
+    <div>
+       <div>Enter username and password:</div>
+    </div>
+  <form method="post">
+    <label for="username">Username</label>
+    <input type="username" name="username" id="username" required>
+    <label for="password">Password</label>
+    <input type="password" name="password" id="password" required>
+    <br />
+    <label for="rememberme">Remember Me</label>
+    <input type="checkbox" id="rememberme" name="rememberme">
+    <input type="submit" value="Submit">
+  </form>
+
+    <p>New User? <a href="{{ url_for('register') }}">Click to Register!</a></p>
+</section>
+</body>
+</html>

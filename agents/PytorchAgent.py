@@ -1,4 +1,5 @@
 """Basic agent using a neural network."""
+import sys
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -265,4 +266,4 @@ class PytorchAgent(Agent):
 
 
 if __name__ == "__main__":
-    start(PytorchAgent(input_size=67, hidden_size=10, n_players=2))
+    start(PytorchAgent(input_size=67, hidden_size=10, n_players=2), sys.argv[1])
