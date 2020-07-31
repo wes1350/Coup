@@ -69,6 +69,10 @@ $(document).ready(function(){
         console.log('adding RandomAgent')
         socket.emit('add_bot', "RandomAgent");
     })
+    $("button#tricky-agent-button").click(function() {
+        console.log('adding TrickyAgent')
+        socket.emit('add_bot', "TrickyAgent");
+    })
     $("button#honest-agent-button").click(function() {
         console.log('adding HonestAgent')
         socket.emit('add_bot', "HonestAgent");

@@ -2,7 +2,7 @@
 
 import sys, random
 
-if __name__ == "__main__":
+if "." not in __name__:
     from utils.game import *
     from utils.responses import *
     from utils.network import *
@@ -50,10 +50,14 @@ class HonestAgent(Agent):
         # Randomly select a character that we have to do an action with, if possible
         for character in random.sample(list(self.alive_cards), len(self.alive_cards)):
             if self.alive_cards[character]:
+                print("----")
                 print(character)
+                print("----")
                 for action in characters_to_moves[character]["action"]:
                     if action in possible_actions:
+                        print("^^^^")
                         print(action)
+                        print("^^^^")
                         if requires_target(action):
                             return convert(action, random.choice(options[action]))
                         else:

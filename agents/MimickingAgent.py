@@ -2,7 +2,7 @@
 
 import sys, random
 
-if __name__ == "__main__":
+if "." not in __name__:
     from utils.game import *
     from utils.responses import *
     from utils.network import *
