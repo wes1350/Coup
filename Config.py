@@ -7,11 +7,7 @@ class Config:
     """The class storing all the config parameters."""
     def __init__(self, **kwargs) -> None: 
         self.local_ais = {}
-        # initialize other parameters
-        for key, value in kwargs.items():
-            self.__setattr__(key, value)
 
-#         self.local_ais = {0: IncomeAgent(), 1: RandomAgent(), 2: AdversarialAgent(), 3: MimickingAgent()}
         # self.local_ais = {0: KerasAgent(load=True, training=True, debug=False), 
         #                    1: KerasAgent(load=True, training=False, debug=False)}
 
@@ -30,7 +26,7 @@ class Config:
 
         self.pay_on_successful_challenges = False
 
-        self.engine_sleep_duration = 0.0 
+        self.engine_sleep_duration = 0.5 
 
         # Set initial hands for each player
         self.starting_hands = None
@@ -44,6 +40,10 @@ class Config:
 #                                    "Captain": 2, 
 #                                    "Contessa": 0, 
 #                                    "Duke": 4}
+
+        # initialize other parameters
+        for key, value in kwargs.items():
+            self.__setattr__(key, value)
 
         self.validate_args()
 
