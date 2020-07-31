@@ -550,7 +550,7 @@ class Engine:
                     character = args[1]
                     if character not in [c.lower() for c in character_options]:  
                         raise ValueError("Invalid character choice for block")
-                return Block(source_id, character.capitalize())
+                return Block(source_id, action.target, character.capitalize())
             elif reaction_type in Challenge.aliases:
                 return Challenge(source_id)
             else:
@@ -665,7 +665,7 @@ class Engine:
             else:
                 self.whisper_f(msg, player, whisper_type)
 
-    def get_response(self, player : int, sleep : bool = True, print_wait : bool = True) -> str:
+    def get_response(self, player : int, sleep : bool = True, print_wait : bool = False) -> str:
         """Query server for a response."""
         if print_wait:
             print("Waiting for a response from player {}...".format(player))

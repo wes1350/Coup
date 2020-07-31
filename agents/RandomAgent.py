@@ -14,7 +14,8 @@ else:
     from .Agent import Agent
 
 class RandomAgent(Agent):
-    def __init__(self):
+    def __init__(self, verbose=False):
+        self.verbose = verbose
         pass
 
     def decide_action(self, options):

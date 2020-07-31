@@ -5,11 +5,11 @@ from agents import *
 
 class Config:
     """The class storing all the config parameters."""
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs) -> None: 
         self.local_ais = {}
-#         self.local_ais = {0: IncomeAgent(), 1: RandomAgent(), 2: AdversarialAgent(), 3: MimickingAgent()}
-#         self.local_ais = {0: PytorchAgent(input_size=67, hidden_size=10, n_players=2), 
-#                           1: PytorchAgent(input_size=67, hidden_size=10, n_players=2)}
+
+        # self.local_ais = {0: KerasAgent(load=True, training=True, debug=False), 
+        #                    1: KerasAgent(load=True, training=False, debug=False)}
 
         self.n_players = 2 if not self.local_ais else len(self.local_ais)
         self.cards_per_player = 2
@@ -30,9 +30,8 @@ class Config:
 
         # Set initial hands for each player
         self.starting_hands = None
-        # self.starting_hands = {0: ["Duke", "Captain"],
-        #                        1: ["Assassin", "Contessa"],
-        #                        2: ["Captain", "Captain"]}
+        #self.starting_hands = {0: ["Contessa", "Contessa"],
+        #                     1: ["Captain", "Ambassador"]}
 
         # Set deck characters
         self.deck_configuration = None
