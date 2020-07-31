@@ -14,6 +14,15 @@ def can_tax(options):
 def can_exchange(options):
     return options["Exchange"]
 
+def can_steal(options):
+    return len(steal_targets(options)) > 0
+
+def can_assassinate(options):
+    return len(assassinate_targets(options)) > 0
+
+def can_coup(options):
+    return len(coup_targets(options)) > 0
+
 def steal_targets(options):
     """Note that we should not be able to steal from targets with 0 coins."""
     return options["Steal"]
@@ -23,6 +32,14 @@ def assassinate_targets(options):
 
 def coup_targets(options):
     return options["Coup"]
+
+def requires_target(action):
+    if action in ["Steal", "Assassinate", "Coup"]:
+        return True
+    elif action in ["Income", "Foreign Aid", "ForeignAid", "Tax", "Exchange"]:
+        return False
+    else:
+        raise ValueError(f"{action} is not a valid action string")
 
 """Reactions"""
 
