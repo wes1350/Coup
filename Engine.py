@@ -40,7 +40,6 @@ class Engine:
             raise ValueError("Invalid Configuration! Terminating.", self._config_err_msg)
         else:
             if game_info and self._config.local_ais:
-#                 print(self._config.local_ais)
                 raise Exception("Playing with local AIs over the browser is currently unsupported!")
             self.game_info = game_info if game_info else GameInfo()
             self.game_info.config_settings = str(self._config)

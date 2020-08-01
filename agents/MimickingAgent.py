@@ -48,7 +48,6 @@ class MimickingAgent(Agent):
     def update(self, event):
         if event["event"] == "action":
             self.action_queue.append(event["info"])
-            print("Updating state with action: " + event["info"]["type"])
 
     def decide_reaction(self, options):
         return decline()
