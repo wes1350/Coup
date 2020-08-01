@@ -5,7 +5,7 @@ import numpy as np
 from keras.utils import to_categorical
 from tensorflow import keras
 
-if __name__ == "__main__":
+if "." not in __name__:
     from utils.game import *
     from utils.responses import *
     from utils.network import *

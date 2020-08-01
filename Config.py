@@ -11,7 +11,6 @@ class Config:
         # self.local_ais = {0: KerasAgent(load=True, training=True, debug=False), 
         #                    1: KerasAgent(load=True, training=False, debug=False)}
 
-        self.n_players = 2 if not self.local_ais else len(self.local_ais)
         self.cards_per_player = 2
         self.cards_per_character = 3
         self.starting_coins = 2
@@ -26,7 +25,9 @@ class Config:
 
         self.pay_on_successful_challenges = False
 
-        self.engine_sleep_duration = 0.5 
+        self.engine_sleep_duration = 0 
+
+        self.verbose = 0
 
         # Set initial hands for each player
         self.starting_hands = None
@@ -37,13 +38,16 @@ class Config:
         self.deck_configuration = None
 #         self.deck_configuration = {"Ambassador": 0,
 #                                    "Assassin": 0,
-#                                    "Captain": 2, 
+#                                    "Captain": 0, 
 #                                    "Contessa": 0, 
-#                                    "Duke": 4}
+#                                    "Duke": 9}
+
 
         # initialize other parameters
         for key, value in kwargs.items():
             self.__setattr__(key, value)
+
+        self.n_players = 2 if not self.local_ais else len(self.local_ais)
 
         self.validate_args()
 

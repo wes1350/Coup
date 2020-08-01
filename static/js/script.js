@@ -61,9 +61,21 @@ $(document).ready(function(){
         console.log('adding PytorchAgent')
         socket.emit('add_bot', "PytorchAgent");
     })
+    $("button#keras-agent-button").click(function() {
+        console.log('adding KerasAgent')
+        socket.emit('add_bot', "KerasAgent");
+    })
     $("button#random-agent-button").click(function() {
         console.log('adding RandomAgent')
         socket.emit('add_bot', "RandomAgent");
+    })
+    $("button#tricky-agent-button").click(function() {
+        console.log('adding TrickyAgent')
+        socket.emit('add_bot', "TrickyAgent");
+    })
+    $("button#honest-agent-button").click(function() {
+        console.log('adding HonestAgent')
+        socket.emit('add_bot', "HonestAgent");
     })
     $("button#submission").click(function(){ 
         console.log("Got a click!!!");

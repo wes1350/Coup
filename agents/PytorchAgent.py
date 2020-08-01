@@ -1,12 +1,13 @@
 """Basic agent using a neural network."""
 import sys
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 import random
 
-if __name__ == "__main__":
+if "." not in __name__:
     from utils.game import *
     from utils.responses import *
     from utils.network import *
@@ -17,6 +18,13 @@ else:
     from .utils.network import *
     from .Agent import Agent
 
+def softmax(x):
+    return np.exp(x)/sum(np.exp(x))
+
+def strong_softmax(x):
+    y = [z**2 for z in x]
+    return softmax(y)
+
 
 class CoupNN(nn.Module):
     
@@ -25,7 +33,7 @@ class CoupNN(nn.Module):
         self.input_size = input_size
         self.hidden_size = hidden_size
 
-        self.hidden_state = torch.randn(hidden_size).view(1, 1, -1)
+        self.hidden_state = torch.zeros(hidden_size).view(1, 1, -1)
         self.cell_state = torch.zeros(hidden_size).view(1, 1, -1)
 
         self.lstm = nn.LSTM(input_size, hidden_size)
@@ -33,21 +41,18 @@ class CoupNN(nn.Module):
 
     def forward(self, input_vector):
         out, (self.hidden_state, self.cell_state) = self.lstm(input_vector, (self.hidden_state, self.cell_state))
-        probs = self.value_map(out)
-        # Return hidden and cell state so that we can update them when receiving an event
-        return probs, self.hidden_state, self.cell_state
+        return self.value_map(out)
 
     def forward_no_update(self, input_vector, additional_input_vectors : list = []):
         hidden = self.hidden_state.clone().detach()
         cell = self.cell_state.clone().detach()
+    
         out, (hidden, cell) = self.lstm(input_vector, (hidden, cell))
         for iv in additional_input_vectors:
             out, (hidden, cell) = self.lstm(iv, (hidden, cell))
 
         values = self.value_map(out)
-        probs = nn.Softmax(dim=2)(values).view(-1).tolist()
-        print("Forward no update results:", probs)
-        return probs
+        return nn.Softmax(dim=2)(values).view(-1).tolist()
 
 class PytorchAgent(Agent):
     def __init__(self, input_size, hidden_size, n_players):
@@ -62,7 +67,30 @@ class PytorchAgent(Agent):
         self.id = None
         self.cards = None
 
-    def convert_event_to_vector(self, e):
+        self.events = []
+
+    def train_model(self, winner):
+        # We only feed in some of the history, length determined at random
+        history_training_cutoff = random.randint(1, len(self.events))
+        self.events = self.events[:history_training_cutoff]
+
+        self.optimizer.zero_grad()
+        inputs = torch.cat(self.events).view(history_training_cutoff, 1, -1)
+        
+        # Reset hidden and cell states to ensure we start with 0 history
+        self.model.hidden_state = torch.zeros(self.hidden_size).view(1, 1, -1)
+        self.model.cell_state = torch.zeros(self.hidden_size).view(1, 1, -1)
+
+        outputs = self.model(inputs).view(history_training_cutoff, -1)
+        targets = torch.LongTensor([winner for i in range(history_training_cutoff)])
+        loss = self.loss_function(outputs, targets)
+        loss.backward()
+        self.optimizer.step()
+
+        if random.random() < 0.1:
+            print("Loss:", round(loss.item(), 2), "Probs:", [round(x, 2) for x in nn.Softmax()(outputs[0]).view(-1).tolist()])
+
+    def convert_event_to_vector(self, e, store=False):
         # return torch.randn(input_size).view(1, 1, -1)
         #############
         rep = [0] * self.input_size
@@ -154,7 +182,11 @@ class PytorchAgent(Agent):
                     if opp_chars[1] is not None:
     #                     rep[62 + opponent_idx * 10 + chars.index(opp_chars[1])] = 1
                          rep[62 + chars.index(opp_chars[1])] = 1
-        return torch.FloatTensor(rep).view(1, 1, -1)
+
+        new_rep = torch.FloatTensor(rep).view(1, 1, -1)
+        if store:
+            self.events.append(new_rep)
+        return new_rep
 
     def convert_option_to_events(self, option, option_type):
         """Converts an option list into the corresponding event(s).
@@ -192,7 +224,7 @@ class PytorchAgent(Agent):
         return [self.convert_event_to_vector(e) for e in self.convert_option_to_events(option, option_type)]
 
     def update(self, event):
-        _, self.hidden_state, self.cell_state = self.model(self.convert_event_to_vector(event))
+        self.model(self.convert_event_to_vector(event, store=True))
 
     def decide_action(self, options):
         #ask neural net for best action
@@ -211,8 +243,11 @@ class PytorchAgent(Agent):
             win_p = self.model.forward_no_update(vectors[0], vectors[1:])
             my_win_p = win_p[self.id]
             win_probs.append(my_win_p)
-        best_option = option_list[win_probs.index(max(win_probs))]
-        return convert(*best_option)
+#         best_option = option_list[win_probs.index(max(win_probs))]
+#         return convert(*best_option)
+        response_probs = strong_softmax(win_probs)
+        sampled_response = option_list[np.random.choice([i for i in range(len(option_list))], p=response_probs)]
+        return convert(*sampled_response)
 
     def decide_reaction(self, options):
     #     ask neural net for best reaction
@@ -229,9 +264,11 @@ class PytorchAgent(Agent):
             win_p = self.model.forward_no_update(vectors[0], vectors[1:])
             my_win_p = win_p[self.id]
             win_probs.append(my_win_p)
-        best_option = option_list[win_probs.index(max(win_probs))]
-        return convert(*best_option)
-
+#         best_option = option_list[win_probs.index(max(win_probs))]
+#         return convert(*best_option)
+        response_probs = strong_softmax(win_probs)
+        sampled_response = option_list[np.random.choice([i for i in range(len(option_list))], p=response_probs)]
+        return convert(*sampled_response)
         
     def decide_card(self, options):
      #    ask neural net for best card to choose
@@ -242,7 +279,11 @@ class PytorchAgent(Agent):
             win_p = self.model.forward_no_update(vectors[0], vectors[1:])
             my_win_p = win_p[self.id]
             win_probs.append(my_win_p)
-        return option_list[win_probs.index(max(win_probs))]
+#         return option_list[win_probs.index(max(win_probs))]
+#         sampled_response = np.random.choice(option_list, p=win_probs)
+        response_probs = strong_softmax(win_probs)
+        sampled_response = option_list[np.random.choice([i for i in range(len(option_list))], p=response_probs)]
+        return sampled_response
 
 
     def decide_exchange(self, options):
@@ -258,11 +299,18 @@ class PytorchAgent(Agent):
             win_p = self.model.forward_no_update(vectors[0], vectors[1:])
             my_win_p = win_p[self.id]
             win_probs.append(my_win_p)
-        best_option = option_list[win_probs.index(max(win_probs))]
-        if isinstance(best_option, list):
-            return choose_exchange_cards([o[0] for o in best_option])
+        response_probs = strong_softmax(win_probs)
+#         best_option = option_list[win_probs.index(max(win_probs))]
+#         if isinstance(best_option, list):
+#             return choose_exchange_cards([o[0] for o in best_option])
+#         else:
+#             return choose_exchange_cards([best_option[0]])
+#         sampled_response = np.random.choice(option_list, p=win_probs)
+        sampled_response = option_list[np.random.choice([i for i in range(len(option_list))], p=response_probs)]
+        if isinstance(sampled_response, list):
+            return choose_exchange_cards([o[0] for o in sampled_response])
         else:
-            return choose_exchange_cards([best_option[0]])
+            return choose_exchange_cards([sampled_response[0]])
 
 
 if __name__ == "__main__":

@@ -19,9 +19,9 @@ app = Flask(__name__)
 app.config.from_object(AppConfig)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-import models  # for importing db models for db migration
 socketio = SocketIO(app, cors_allowed_origins="*")
 login_manager = LoginManager(app)
+import models  # for importing db models for db migration
 
 
 def get_id_from_sid(sid):

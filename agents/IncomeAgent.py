@@ -1,7 +1,7 @@
 """An Agent that always takes Income unless forced to Coup, and that never Blocks or Challenges."""
 import sys
 
-if __name__ == "__main__":
+if "." not in __name__:
     from utils.game import *
     from utils.responses import *
     from utils.network import *

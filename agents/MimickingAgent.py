@@ -2,7 +2,7 @@
 
 import sys, random
 
-if __name__ == "__main__":
+if "." not in __name__:
     from utils.game import *
     from utils.responses import *
     from utils.network import *
@@ -48,7 +48,6 @@ class MimickingAgent(Agent):
     def update(self, event):
         if event["event"] == "action":
             self.action_queue.append(event["info"])
-            print("Updating state with action: " + event["info"]["type"])
 
     def decide_reaction(self, options):
         return decline()
