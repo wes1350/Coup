@@ -2,7 +2,7 @@ import eventlet
 # Eventlet isn't compatible with some python modules (e.g. time) so monkeypatch to resolve 
 # bugs that result from such conflicts
 eventlet.monkey_patch()
-from flask import Flask, render_template, request, g, redirect, url_for, flash
+from flask import Flask, render_template, request, g, redirect, url_for, flash, make_response, jsonify
 from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from flask_login import LoginManager, current_user, login_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
@@ -71,6 +71,40 @@ def register():
         return redirect(url_for('login'))
 
     return render_template('register.html', title='Register')
+
+@app.route('/registerReact', methods=('POST',))
+def registerReact():
+    if current_user.is_authenticated:
+        response_object = {
+            'status': 'fail',
+            'message': 'User already signed in.',
+        }
+        return make_response(jsonify(response_object)), 202 
+
+    if request.method == "POST":
+        try:
+            username = request.form["username"]
+            password = request.form["password"]
+
+            user = models.User(username=username)
+            user.set_password(password)
+            auth_token = user.encode_auth_token()
+            print(auth_token)
+            db.session.add(user)
+            db.session.commit()
+            response_object = {
+                'status': 'success',
+                'message': 'Successfully registered',
+                'auth_token': auth_token.decode()
+            }
+            return make_response(jsonify(response_object)), 201
+        except Exception as e:
+            print(e)
+            response_object = {
+                'status': 'fail',
+                'message': 'Some error occured. Please try again'
+            }
+            return make_response(jsonify(response_object)), 401
 
 @app.route('/logout')
 def logout():
