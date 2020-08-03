@@ -57,7 +57,7 @@ class Gym():
         return np.vstack(discounted_r)
 
     def batch_training(self, session_name: str, agent: Agent, opponent: Agent, num_batch: int, save_location=None):
-        """ 
+        """
         mini batch updates
         """
         if session_name == None:
@@ -70,13 +70,13 @@ class Gym():
             print('Training batch #: ', i)
             training_history, game_histories = self.train_epoch(agent, opponent)
             print('Training history: ', training_history.history)
-            all_games.extend(game_histories) 
+            all_games.extend(game_histories)
 
         if save_location:
             location = f"{save_location}/{session_name}"
             self.log_game_histories(game_histories, location)
             self.save_model_and_training_history(agent.model, training_history, location)
-        
+
         return agent
 
     def train_epoch(self, training_agent: Agent, op_agent: Agent):
@@ -96,7 +96,7 @@ class Gym():
         # reset stats
         training_agent.reset()
         return training_history, game_histories
-    
+
     def log_game_histories(self, game_histories, location):
         """
         Logs the game history in file system
@@ -114,7 +114,7 @@ class Gym():
         model.save(location)
         with open(f"{location}/history", "wb") as fd:
             pickle.dump(training_history.history, fd)
-        
+
     def self_train(self, training_location, hold_location):
         n = 10000
         wins = 0
@@ -123,7 +123,7 @@ class Gym():
             if (i % 1000 == 0):
                 self.update_hold(hold_location, training_location)
 
-            engine = Engine(local_ais = {0: KerasAgent(), 
+            engine = Engine(local_ais = {0: KerasAgent(),
                                 1: KerasAgent()})
             winner =  engine.run_game()
             wins += 1 if winner == 0 else 0
@@ -131,13 +131,13 @@ class Gym():
         return wins/n
 
     def self_train_with_blending(self, training_location, hold_location, blending_agents, blending_ratio=0.2):
-        # sample blending_ratio, if true, play a blending agent ar random, else self train 
+        # sample blending_ratio, if true, play a blending agent ar random, else self train
         raise NotImplementedError
 
     def evaluate_with_model(self, training_location, eval_model_location, n):
         wins = 0
         for i in range(n):
-            engine = Engine(local_ais = {0: IncomeAgent(), 
+            engine = Engine(local_ais = {0: IncomeAgent(),
                                 1: IncomeAgent()})
             winner = engine.run_game()
             wins += 1 if winner == 0 else 0
@@ -152,12 +152,12 @@ class Gym():
         # remove epsilon for benchmarking
         agent.epsilon = 0
         agent.verbose = False
-        for opponent in opponents: 
+        for opponent in opponents:
             wins = 0
-            opponent_name = str(opponent) 
+            opponent_name = str(opponent)
             print(f"Benchmarking against {opponent_name}...")
             for i in range(n):
-                engine = Engine(local_ais = 
+                engine = Engine(local_ais =
                 {0: agent,
                 1: opponent})
                 winner = engine.run_game()
@@ -184,7 +184,7 @@ if __name__ == "__main__":
     benchmark_stats = {}
     benchmark_stats['training'] = gym.benchmark(trained_agent)
     benchmark_stats['testBatchTraining'] = gym.benchmark(batch_training_agent)
-    
+
     # self train with blending against existing AIs
     session_name = "testBatchTraining1"
     trained_agent = gym.batch_training(session_name, trained_agent, AdversarialAgent(), 100, gym.checkpoints_location)

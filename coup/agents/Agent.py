@@ -39,13 +39,13 @@ class Agent:
     def react(self, event_type : str, options : dict):
         options = json.loads(options) if isinstance(options, str) else options
         if event_type == "action":
-            response = self.decide_action(options) 
+            response = self.decide_action(options)
         elif event_type == "reaction":
-            response = self.decide_reaction(options) 
+            response = self.decide_reaction(options)
         elif event_type == "card_selection":
             response = str(self.decide_card(options))
         elif event_type == "exchange":
-            response = self.decide_exchange(options) 
+            response = self.decide_exchange(options)
         else:
             if not isinstance(event_type, str):
                 raise ValueError("event_type must be a string type")

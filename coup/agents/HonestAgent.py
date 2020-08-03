@@ -15,14 +15,14 @@ else:
 
 characters_to_moves = {"Ambassador": {"action": ["Exchange"], "block": ["Steal"]},
                        "Assassin": {"action": ["Assassinate"], "block": []},
-                       "Captain": {"action": ["Steal"], "block": ["Steal"]}, 
+                       "Captain": {"action": ["Steal"], "block": ["Steal"]},
                        "Contessa": {"action": [], "block": ["Foreign Aid", "ForeignAid"]},
                        "Duke": {"action": ["Tax"], "block": ["Tax"]}}
 
 class HonestAgent(Agent):
     def __init__(self):
         super().__init__()
-        self.alive_cards = {"Ambassador": False, "Assassin": False, "Captain": False, 
+        self.alive_cards = {"Ambassador": False, "Assassin": False, "Captain": False,
                             "Contessa": False, "Duke": False}
 
     def update(self, event):
@@ -31,7 +31,7 @@ class HonestAgent(Agent):
             # Reset our hand
             for character in self.alive_cards:
                 self.alive_cards[character] = False
-            
+
             # Update our hand
             for card in event["info"]["players"][me]["cards"]:
                 if card["character"] is None:
@@ -45,7 +45,7 @@ class HonestAgent(Agent):
         # If we can coup, then coup
         if can_coup(options):
             return coup(random.choice(coup_targets(options)))
-        
+
         # Randomly select a character that we have to do an action with, if possible
         for character in random.sample(list(self.alive_cards), len(self.alive_cards)):
             if self.alive_cards[character]:
@@ -65,9 +65,9 @@ class HonestAgent(Agent):
     def decide_reaction(self, options):
         for character in options["Block"]:
             if self.alive_cards[character]:
-                return block(character) 
+                return block(character)
         if options["Challenge"] and random.random() < 0.25:
-            return challenge() 
+            return challenge()
         return decline()
 
     def decide_card(self, options):

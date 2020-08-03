@@ -15,7 +15,7 @@ class Deck:
     ALL_CHARACTERS = [Ambassador.Ambassador, Assassin.Assassin, Captain.Captain, Contessa.Contessa, Duke.Duke]
 
     def __init__(self, n_cards_per_character : int = None, deck_configuration : dict = None) -> None:
-        """Initalize the deck. Can pass in how many copies of each character to add, or a specific 
+        """Initalize the deck. Can pass in how many copies of each character to add, or a specific
            number of each character through deck_configuration."""
         if deck_configuration is not None:
             chars = ["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]
@@ -28,7 +28,7 @@ class Deck:
                 for j in range(char_counts[i]):
                     id_ = ids.pop(random.randint(1, len(ids)) - 1)
                     self._deck[id_] = Card(character=Deck.ALL_CHARACTERS[i](), id_=id_)
-            
+
         else:
             assert n_cards_per_character is not None
             ids = [i for i in range(n_cards_per_character * len(Deck.ALL_CHARACTERS))]
@@ -57,7 +57,7 @@ class Deck:
         unassigned = [id_ for id_ in self._deck if not self._deck[id_].is_assigned()]
         for id_ in unassigned:
             if self._deck[id_].get_character_type() == character_type:
-                self._deck[id_].set_assign(True) 
+                self._deck[id_].set_assign(True)
                 return self._deck[id_]
         raise Exception("No available cards of type {} in deck".format(character_type))
 

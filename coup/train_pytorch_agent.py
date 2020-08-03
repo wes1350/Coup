@@ -9,7 +9,7 @@ b = AdversarialAgent()
 local_ais = {0: a, 1: b}
 # print(a.model.hidden_state)
 # print(b.model.hidden_state)
-# for n, p in a.model.named_parameters():   
+# for n, p in a.model.named_parameters():
 #     print(n, p.data)
 
 print("Starting Training")
@@ -27,16 +27,16 @@ for i in range(n_train_iters):
 #     print(a.model.hidden_state)
 #     print(b.model.hidden_state)
 #     time.sleep(2)
-#     for name, p in a.model.named_parameters():   
-#         print(name) 
+#     for name, p in a.model.named_parameters():
+#         print(name)
 #         print(p.data)
 #         time.sleep(2)
 #         break
 
     a.train_model(winner)
     a.events = []
-#     for name, p in a.model.named_parameters():   
-#         print(name) 
+#     for name, p in a.model.named_parameters():
+#         print(name)
 #         print(p.data)
 #         time.sleep(2)
 #         break

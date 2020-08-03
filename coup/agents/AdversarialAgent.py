@@ -26,7 +26,7 @@ class AdversarialAgent(Agent):
             return steal(random.choice(options["Steal"]))
         else:
             # Sometimes we can't assassinate because we don't have the coins for it,
-            # and we can't steal because nobody else has coins to steal. 
+            # and we can't steal because nobody else has coins to steal.
             # In this case we tax.
             return tax()
 

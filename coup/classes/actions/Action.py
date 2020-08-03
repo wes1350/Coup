@@ -5,7 +5,7 @@ class Action:
         self.from_player = None
         self.target = None
         self.steal = False
-        self.kill = False 
+        self.kill = False
         self.kill_card_id = None
         self.as_character = None  # what card we are claiming e.g. Duke for Tax
         self.cost = 0
@@ -13,7 +13,7 @@ class Action:
         self.blockable_by = None
         self.pay_when_unsuccessful = False
         self.exchange_with_deck = False
-        
+
         for arg in kwargs:
             self.__setattr__(arg, kwargs[arg])
 

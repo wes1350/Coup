@@ -7,14 +7,14 @@ from coup.agents import AdversarialAgent
 
 if __name__ == '__main__':
     """
-        read from agent.conf to spin up agents 
+        read from agent.conf to spin up agents
     """
     config = configparser.ConfigParser()
     config.read('agents/agents.conf')
     agents = [agent_type for agent_type in config['AGENTS']]
     paths = [path for path in config['PATHS']]
     total_agents = sum([int(config['AGENTS'][agent]) for agent in agents])
-    
+
     sio = socketio.Client()
 
     def run_agent(path):
@@ -40,7 +40,7 @@ if __name__ == '__main__':
         for _ in range(num_agents):
             # get path for agent file
             path = config['PATHS'][agent]
-            print(f"Spinning up {agent}") 
+            print(f"Spinning up {agent}")
             thread = threading.Thread(target=run_agent, args=(path,))
             thread_pool.append(thread)
             thread.start()
@@ -49,7 +49,7 @@ if __name__ == '__main__':
 
     # send start signal
     sio.emit("start_observer", total_agents)
-    
+
     # wait for threads to finish
     for thread in thread_pool:
         thread.join()

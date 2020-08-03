@@ -1,5 +1,5 @@
 import eventlet
-# Eventlet isn't compatible with some python modules (e.g. time) so monkeypatch to resolve 
+# Eventlet isn't compatible with some python modules (e.g. time) so monkeypatch to resolve
 # bugs that result from such conflicts
 eventlet.monkey_patch()
 from flask import Flask
@@ -18,4 +18,4 @@ login_manager = LoginManager(app)
 login_manager.init_app(app)
 
 # Import relevant flask handling modules here, to avoid circular imports
-from coup import routes, socketio_handlers, models  
+from coup import routes, socketio_handlers, models

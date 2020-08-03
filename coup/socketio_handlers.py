@@ -16,7 +16,7 @@ class RoomTracker:
         self.sids_to_rooms = {}
 
 rt = RoomTracker()
-    
+
 
 """Run Flask-SocketIO, potentially changing settings"""
 
@@ -80,7 +80,7 @@ def on_join(room):
     if room not in rt.game_rooms:
         rt.game_rooms[room] = {"clients": {}, "observers": {}, "started": False}
     join_room(room)
-    new_index = max(rt.game_rooms[room]["clients"].keys()) + 1 if len(rt.game_rooms[room]["clients"]) > 0 else 0  
+    new_index = max(rt.game_rooms[room]["clients"].keys()) + 1 if len(rt.game_rooms[room]["clients"]) > 0 else 0
     rt.game_rooms[room]["clients"][new_index] = {"sid": request.sid, "response": "No response", "ai": False}
     rt.sids_to_rooms[request.sid] = room
     send("A new player has joined room {}!".format(room), room=room)
@@ -92,7 +92,7 @@ def on_leave(room):
 
 @socketio.on('connect')
 def on_connect():
-#     new_index = max(clients.keys()) + 1 if len(clients) > 0 else 0  
+#     new_index = max(clients.keys()) + 1 if len(clients) > 0 else 0
 #     clients[new_index] = {"sid": request.sid, "response": "No response", "ai": False}
     print("Client connected")
 #     print(clients)
@@ -118,8 +118,8 @@ def mark_as_observer():
 @socketio.on('start_observer')
 def start_as_observer(n_agents):
     print(f"Waiting for {n_agents} agents to connect before starting...")
-    # Need to check here not for the number of clients, but for the number of AI, so that we give enough time 
-    # to mark AIs as AI, so that we send them AI-compatible messages. Setting sleep to something low (e.g. 0.0001) 
+    # Need to check here not for the number of clients, but for the number of AI, so that we give enough time
+    # to mark AIs as AI, so that we send them AI-compatible messages. Setting sleep to something low (e.g. 0.0001)
     # and not waiting for us to mark them as AI will result in us treating them like humans,
     # And so the agents never respond since we don't send them the correct messages.
     # Will need to change this a bit if we want to allow human players to mix with Scheduler,
@@ -150,7 +150,7 @@ def on_start(passed_room=None):
         print("Starting")
         broadcast_to_room(room)("",  "start game")
         rt.game_rooms[room]["started"] = True
-        # shuffle clients randomly 
+        # shuffle clients randomly
         clients_keys = list(rt.game_rooms[room]["clients"].keys())
         random_keys = [i for i in range(len(rt.game_rooms[room]["clients"]))]
         if not keep_client_order:
@@ -188,7 +188,7 @@ def add_bot(bot_type):
             print('done')
         except BaseException:
             assert False
-            pass 
+            pass
 #     thread = threading.Thread(target=run_agent)
     thread = socketio.start_background_task(target=run_agent)
 #     thread.start()

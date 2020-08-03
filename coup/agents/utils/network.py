@@ -5,7 +5,7 @@ import json, time
 
 
 def start(agent, room):
-    
+
     sio = socketio.Client()
 
     @sio.on('ai_query')

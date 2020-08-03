@@ -12,20 +12,20 @@ class User(UserMixin, db.Model):
     n_games = db.Column(db.Integer, server_default="0", nullable=False)
 
     def __repr__(self):
-        return '<User {}>'.format(self.username)  
+        return '<User {}>'.format(self.username)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)  
+        return check_password_hash(self.password_hash, password)
 
     def set_elo(self, elo):
         self.elo = elo
 
     def get_elo(self):
         return self.elo
-    
+
     def add_games(self, n):
         self.n_games += n
 
@@ -44,7 +44,7 @@ class AgentType(db.Model):
 
     def get_elo(self):
         return self.elo
-    
+
     def add_games(self, n):
         self.n_games += n
 

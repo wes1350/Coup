@@ -1,4 +1,4 @@
-"""Master class for running Coup. Reads in arguments from the command line, 
+"""Master class for running Coup. Reads in arguments from the command line,
    maintains and updates the state, and queries players for actions."""
 
 import random, time, sys, os, json
@@ -22,7 +22,7 @@ from coup.classes.reactions.Challenge import Challenge
 
 
 class Engine:
-    """Maintains all the logic relevant to the game, such as the 
+    """Maintains all the logic relevant to the game, such as the
        game state, config, querying players, etc."""
 
     def __init__(self, whisper_f=None, shout_f=None, query_f=None, game_info=None, **kwargs) -> None:
@@ -46,8 +46,8 @@ class Engine:
             for local_ai in self._config.local_ais:
                 self.game_info.ai_players.append(local_ai)
             self.local = (None in [self.whisper_f, self.shout_f, self.query_f]) and not self._config.local_ais
-            
-            self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local, 
+
+            self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local,
                                 self.game_info.ai_players)
 
             self.local_ais = self._config.local_ais
@@ -84,23 +84,23 @@ class Engine:
             # Handle block reactions
             self.add_to_history("block", chosen_reaction.history_rep())
             blocker = chosen_reaction.from_player
-            query_challenge_players = [p for p in self._state.get_alive_players() 
+            query_challenge_players = [p for p in self._state.get_alive_players()
                                        if p != blocker]
             challenges = self.query_challenges(query_challenge_players)
             if len(challenges) > 0:
-                # Someone challenged the block, so resolve the challenge 
+                # Someone challenged the block, so resolve the challenge
                 chosen_challenge = self.choose_among_reactions(challenges)
                 self.add_to_history("challenge", chosen_challenge.history_rep())
                 challenger = chosen_challenge.from_player
                 claimed_character = chosen_reaction.as_character
-                losing_player = self._state.get_challenge_loser(claimed_character, 
+                losing_player = self._state.get_challenge_loser(claimed_character,
                                                                 blocker, challenger)
                 card = self.query_player_card(losing_player)
                 self._state.kill_player_card(losing_player, card)
                 self.add_to_history("challenge_resolution", {"success": losing_player == blocker})
                 self.add_to_history("block_resolution", {"success": losing_player != blocker})
                 if losing_player == blocker:
-                    self.execute_action(action, current_player, target, 
+                    self.execute_action(action, current_player, target,
                                         ignore_if_dead=True)
                 else:
                     self.exchange_player_card(blocker, chosen_reaction)
@@ -113,8 +113,8 @@ class Engine:
                 self.add_to_history("block_resolution", {"success": True})
                 # Enforce any costs to original action executor
                 self.execute_action(action, current_player, only_pay_cost=True)
-                self.shout("Action blocked with {}".format(chosen_reaction.as_character))    
-        
+                self.shout("Action blocked with {}".format(chosen_reaction.as_character))
+
         if not action.is_blockable() and not action.is_challengeable():
             # Action always goes through, e.g. Income
             self.execute_action(action, current_player, target)
@@ -132,7 +132,7 @@ class Engine:
                     challenger = chosen_reaction.from_player
                     self.add_to_history("challenge", chosen_reaction.history_rep())
                     claimed_character = action.as_character
-                    losing_player = self._state.get_challenge_loser(claimed_character, 
+                    losing_player = self._state.get_challenge_loser(claimed_character,
                                                                     current_player, challenger)
                     card = self.query_player_card(losing_player)
                     self._state.kill_player_card(losing_player, card)
@@ -143,7 +143,7 @@ class Engine:
                         self.broadcast_state()
                         # Handle original action as usual, once the challenge has been settled
                         if action.is_blockable():
-                            # Since any action that can be blocked and challenged can only be blocked 
+                            # Since any action that can be blocked and challenged can only be blocked
                             # by the target, we only ask the target if they want to block
                             if target is None:
                                 raise Exception(("Tried to query for a block for an Action after an "
@@ -155,24 +155,24 @@ class Engine:
                                 if block:
                                     handle_block(block)
                                 else:
-                                    self.execute_action(action, current_player, target)   
+                                    self.execute_action(action, current_player, target)
                             else:
-                                self.execute_action(action, current_player, target, ignore_if_dead=True)   
+                                self.execute_action(action, current_player, target, ignore_if_dead=True)
                         else:
-                            self.execute_action(action, current_player, target)   
+                            self.execute_action(action, current_player, target)
                     else:
                         if self._config.pay_on_successful_challenges:
                             # Enforce any costs to original action executor
                             self.execute_action(action, current_player, only_pay_cost=True)
-                else:           
+                else:
                     raise ValueError("Invalid reaction type encountered")
             else:
                 # Nobody reacted, so the action goes through
-                self.execute_action(action, current_player, target)   
+                self.execute_action(action, current_player, target)
 
     def next_turn(self) -> None:
         """Move on to the next turn, updating the game state as necessary."""
-        self._state.update_current_player() 
+        self._state.update_current_player()
         # self.shout("It is now Player {}'s turn".format(self._state.get_current_player_id()))
 
     def choose_among_reactions(self, reactions : List[Reaction]) -> Reaction:
@@ -188,13 +188,13 @@ class Engine:
                 if reaction.reaction_type == "challenge":
                     chosen_reaction = reaction
                     break
-                chosen_reaction = reactions[0] 
+                chosen_reaction = reactions[0]
         elif mode == "first_block":
             for reaction in reactions:
                 if reaction.reaction_type == "block":
                     chosen_reaction = reaction
                     break
-                chosen_reaction = reactions[0] 
+                chosen_reaction = reactions[0]
         elif mode == "random_challenge":
                 desired = [r for r in reactions if r.reaction_type == "challenge"]
                 if len(desired) > 0:
@@ -214,7 +214,7 @@ class Engine:
         self.shout("Player {} does a {}{}".format(player, reaction_type, " as {}".format(character) if is_block else ""))
         return chosen_reaction
 
-    def execute_action(self, action: Action = None, source : int = None, target : int = None, 
+    def execute_action(self, action: Action = None, source : int = None, target : int = None,
                        ignore_if_dead : bool = False, only_pay_cost : bool = False) -> None:
         """Given an action, execute it based on the parameters provided."""
 
@@ -228,7 +228,7 @@ class Engine:
                 card = self.query_player_card(target, ignore_if_dead)
                 if card is not None:
                     action.kill_card_id = card
-                else:   
+                else:
                     # card is None because the player is already dead and there is no card to choose
                     ignore_killing = True
         self._state.execute_action(source, action, ignore_killing, only_pay_cost)
@@ -256,7 +256,7 @@ class Engine:
                 self.whisper(query_msg + "\n", player_id, "prompt")
             while True:
                 response = input(query_msg + "\n") if self.local else self.get_response(player_id)
-                try: 
+                try:
                     action = self.translate_action_choice(response, source_id=player_id)
                 except ValueError:
                     self.whisper("ERROR: invalid action name, please try again", player_id, "error")
@@ -275,7 +275,7 @@ class Engine:
             else:
                 message_action = "[C]hallenge"
         else:
-            challengeable = action.as_character 
+            challengeable = action.as_character
             blockable = action.is_blockable()
             if challengeable and blockable:
                 message_action = "[B]lock or [C]hallenge"
@@ -297,7 +297,7 @@ class Engine:
                 reaction_space["Challenge"] = True
                 reaction_space["Block"] = []
         else:
-            challengeable = action.as_character 
+            challengeable = action.as_character
             blockable = action.is_blockable()
             if challengeable and blockable:
                 reaction_space["Block"] = action.blockable_by
@@ -322,7 +322,7 @@ class Engine:
                 while True:
                     message = self.determine_reaction_message(target, player_id, action)
                     response = input(message)
-                    try: 
+                    try:
                         reaction = self.translate_reaction_choice(response, player_id, action)
                     except ValueError:
                         self.whisper("Invalid reaction, please try again.", player_id)
@@ -344,7 +344,7 @@ class Engine:
         for i, player_id in enumerate(players):
             message = self.determine_reaction_message(target, player_id, action)
             if self.is_ai_player(player_id):
-                self.whisper(player=player_id, ai_query_type="reaction", 
+                self.whisper(player=player_id, ai_query_type="reaction",
                              ai_options=self.determine_reaction_space(target, player_id, action))
             else:
                 self.whisper(message, player_id, "prompt")
@@ -356,7 +356,7 @@ class Engine:
                     response = self.get_response(player_id, sleep=False, print_wait=print_wait_msg)
                     if response is None:
                         continue
-                    try: 
+                    try:
                         reaction = self.translate_reaction_choice(response, player_id, action)
                     except ValueError:
                         self.whisper("Invalid response, please try again.", player_id, "error")
@@ -371,7 +371,7 @@ class Engine:
                         self.whisper("Impossible reaction, please try again.", player_id, "error")
             # Sleep in order to not poll too often, but only after we check each player's response
             if False in reactions:
-                time.sleep(self._config.engine_sleep_duration) 
+                time.sleep(self._config.engine_sleep_duration)
                 print_wait_msg = False
         return [r for r in reactions if r is not None]
 
@@ -380,7 +380,7 @@ class Engine:
         query_msg = "Player {}, do you want to block?\n".format(player_id)
         if not self.local:
             if self.is_ai_player(player_id):
-                self.whisper(player=player_id, ai_query_type="reaction", 
+                self.whisper(player=player_id, ai_query_type="reaction",
                              ai_options={"Challenge": False, "Block": action.blockable_by, "Pass": True})
             else:
                 self.whisper(query_msg, player_id, "prompt")
@@ -397,7 +397,7 @@ class Engine:
                 if valid:
                     return reaction
                 self.whisper("Invalid block, please try again.", player_id)
-        
+
     def query_challenges(self, players : List[int]) -> List[Challenge]:
         """Given a list of players to query, ask them if they want to challenge."""
         if self.local:
@@ -405,7 +405,7 @@ class Engine:
             for player_id in players:
                 while True:
                     response = input("Player {}, are you going to [C]hallenge?\n".format(player_id))
-                    try: 
+                    try:
                         reaction = self.translate_challenge_answer(response, player_id)
                         if reaction is not None:
                             challenges.append(reaction)
@@ -421,19 +421,19 @@ class Engine:
         for i, player_id in enumerate(players):
             query_msg = "Player {}, are you going to [C]hallenge?\n".format(player_id)
             if self.is_ai_player(player_id):
-                self.whisper(player=player_id, ai_query_type="reaction", 
+                self.whisper(player=player_id, ai_query_type="reaction",
                              ai_options={"Challenge": True, "Block": [], "Pass": True})
             else:
                 self.whisper(query_msg, player_id, "prompt")
         print_wait_msg = True
-        challenges = [False for _ in players]        
+        challenges = [False for _ in players]
         while False in challenges:
             for i, player_id in enumerate(players):
                 if not challenges[i] and challenges[i] is not None:
                     response = self.get_response(player_id, sleep=False, print_wait=print_wait_msg)
                     if response is None:
                         continue
-                    try: 
+                    try:
                         challenges[i] = self.translate_challenge_answer(response, player_id)
                     except ValueError:
                         self.whisper("Invalid response, please try again.", player_id, "error")
@@ -503,7 +503,7 @@ class Engine:
         if action_name in [Steal.aliases, Assassinate.aliases, Coup.aliases]:
             if target is None:
                 raise ValueError("Need to specify target for assassinate/steal")
-     
+
         if action_name in Income.aliases:
             action = Income()
         elif action_name in ForeignAid.aliases:
@@ -524,7 +524,7 @@ class Engine:
         action.set_source(source_id)
         return action
 
-    def translate_reaction_choice(self, response : str, source_id : int, 
+    def translate_reaction_choice(self, response : str, source_id : int,
                                   action : Action) -> Reaction:
         """Given a reaction response, translate it appropriately."""
         response = response.strip().lower()
@@ -539,7 +539,7 @@ class Engine:
                     # action is not blockable, invalid response
                     raise ValueError("Cannot block unblockable action")
                 if len(character_options) == 1:
-                    character = character_options[0] 
+                    character = character_options[0]
                     if len(args) > 1:
                         if args[1].lower() != character.lower():
                             raise ValueError("Invalid character choice for block")
@@ -547,7 +547,7 @@ class Engine:
                     if len(args) != 2:
                         raise ValueError("Invalid number of arguments for block")
                     character = args[1]
-                    if character not in [c.lower() for c in character_options]:  
+                    if character not in [c.lower() for c in character_options]:
                         raise ValueError("Invalid character choice for block")
                 return Block(source_id, action.target, character.capitalize())
             elif reaction_type in Challenge.aliases:
@@ -558,7 +558,7 @@ class Engine:
     def translate_challenge_answer(self, response : str, source_id : int) -> Challenge:
         """Given a challenge response, translate it appropriately."""
         response = response.strip().lower()
-        if len(response) == 0 or response in ["no", "n"]:  
+        if len(response) == 0 or response in ["no", "n"]:
             return None
         elif response in ["yes", "y"] or response in Challenge.aliases:
             return Challenge(source_id)
@@ -580,12 +580,12 @@ class Engine:
         """Given a card choice to discard, translate it appropriately."""
         chosen_card = int(response)
         if chosen_card not in options:
-            raise ValueError("Invalid card option") 
-        return chosen_card       
+            raise ValueError("Invalid card option")
+        return chosen_card
 
     def validate_action(self, action : Action, player_id : int) -> bool:
         """Given an action, return whether it can be done given the current state."""
-        return self._state.validate_action(action, player_id) 
+        return self._state.validate_action(action, player_id)
 
     def validate_reaction(self, reaction : Reaction, action : Action, allow_challenges : bool = True) -> bool:
         """Given a reaction, return whether it can be done given the turn state."""
@@ -615,13 +615,13 @@ class Engine:
             return False
 
     def exchange_player_card(self, player : int, move : Reaction) -> None:
-        """Given a player and an action or reaction they did, exchange one of their cards appropriately. 
+        """Given a player and an action or reaction they did, exchange one of their cards appropriately.
            This is called when a player wins a challenge and needs to replace the challenged character."""
         self._state.exchange_player_card(player, move.as_character)
 
     def get_config_status(self) -> str:
         return self._config_status
-    
+
     def get_config_err_msg(self) -> str:
         return self._config_err_msg
 
@@ -631,11 +631,11 @@ class Engine:
             print(msg)
         elif self._config.local_ais:
             pass
-        else:       
+        else:
             self.shout_f(msg, shout_type)
             pass
-    
-    def whisper(self, msg : str = None, player : int = None, whisper_type : str = None, 
+
+    def whisper(self, msg : str = None, player : int = None, whisper_type : str = None,
                 ai_query_type : str = None, ai_options : dict = None, ai_info : dict = None) -> None:
         """Send a message only to a specific player."""
         if player is None:
@@ -660,7 +660,7 @@ class Engine:
             if msg is None:
                 raise ValueError("Must specify a message for human players")
             if self.local:
-                print(msg) 
+                print(msg)
             else:
                 self.whisper_f(msg, player, whisper_type)
 
@@ -687,8 +687,8 @@ class Engine:
 
     def broadcast_state(self) -> None:
         self._state.broadcast_state()
-    
-    def add_to_history(self, event_type : str, event_info : dict, 
+
+    def add_to_history(self, event_type : str, event_info : dict,
                        hide_from_ai : bool = False) -> None:
         # Add the action resolution to the history
         self._state.add_to_history(event_type, event_info, hide_from_ai)

@@ -5,11 +5,11 @@ from coup.agents import *
 
 class Config:
     """The class storing all the config parameters."""
-    def __init__(self, **kwargs) -> None: 
+    def __init__(self, **kwargs) -> None:
         self.n_players = 2
         self.local_ais = {}
 
-        # self.local_ais = {0: KerasAgent(load=True, training=True, debug=False), 
+        # self.local_ais = {0: KerasAgent(load=True, training=True, debug=False),
         #                    1: KerasAgent(load=True, training=False, debug=False)}
 
         self.cards_per_player = 2
@@ -39,8 +39,8 @@ class Config:
         self.deck_configuration = None
 #         self.deck_configuration = {"Ambassador": 0,
 #                                    "Assassin": 0,
-#                                    "Captain": 0, 
-#                                    "Contessa": 0, 
+#                                    "Captain": 0,
+#                                    "Contessa": 0,
 #                                    "Duke": 9}
 
 
@@ -55,18 +55,18 @@ class Config:
 
     def validate_args(self) -> NoReturn:
         """Ensure that the starting arguments give a valid configuration."""
-        
+
         # Make sure that there are enough cards in the deck for the settings
         max_cards_in_use = self.n_players * self.cards_per_player + self.n_cards_for_exchange
         cards_in_deck = self.cards_per_character * 5
         if max_cards_in_use > cards_in_deck:
             raise ValueError("Not enough cards to play given game settings")
-        
+
         # Ensure first player penalty in 2p games is not greater than starting coins
         if self.n_players == 2 and self.penalize_first_player_in_2p_game:
             if self.first_player_coin_penalty > self.starting_coins:
                 raise ValueError("First player penalty is greater than number of starting coins")
-        
+
         # Ensure reaction choice mode is valid
         if self.reaction_choice_mode not in ["first", "random", "first_block", "first_challenge", "random_block", "random_challenge"]:
             raise ValueError("Invalid reaction choice mode: {}".format(self.reaction_choice_mode))

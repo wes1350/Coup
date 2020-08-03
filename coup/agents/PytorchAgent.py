@@ -27,7 +27,7 @@ def strong_softmax(x):
 
 
 class CoupNN(nn.Module):
-    
+
     def __init__(self, input_size, hidden_size, n_players):
         super(CoupNN, self).__init__()
         self.input_size = input_size
@@ -46,7 +46,7 @@ class CoupNN(nn.Module):
     def forward_no_update(self, input_vector, additional_input_vectors : list = []):
         hidden = self.hidden_state.clone().detach()
         cell = self.cell_state.clone().detach()
-    
+
         out, (hidden, cell) = self.lstm(input_vector, (hidden, cell))
         for iv in additional_input_vectors:
             out, (hidden, cell) = self.lstm(iv, (hidden, cell))
@@ -76,7 +76,7 @@ class PytorchAgent(Agent):
 
         self.optimizer.zero_grad()
         inputs = torch.cat(self.events).view(history_training_cutoff, 1, -1)
-        
+
         # Reset hidden and cell states to ensure we start with 0 history
         self.model.hidden_state = torch.zeros(self.hidden_size).view(1, 1, -1)
         self.model.cell_state = torch.zeros(self.hidden_size).view(1, 1, -1)
@@ -99,13 +99,13 @@ class PytorchAgent(Agent):
         info = e["info"]
 
         chars = ["Ambassador", "Assassin", "Captain", "Contessa", "Duke"]
-        
+
         if event == "action":
             rep[0] = 1
             action_idx = ["Income", "ForeignAid", "Tax", "Exchange", "Steal", "Assassinate", "Coup"].index(info["type"])
             rep[1 + action_idx] = 1
             if info["as_character"] is not None:
-                claimed_idx = ["Ambassador", "Assassin", "Captain", "Duke"].index(info["as_character"]) 
+                claimed_idx = ["Ambassador", "Assassin", "Captain", "Duke"].index(info["as_character"])
                 rep[8 + claimed_idx] = 1
             rep[18 + info["from_player"]] = 1
             if info["target"] is not None:
@@ -168,9 +168,9 @@ class PytorchAgent(Agent):
             my_life_statuses = [c["alive"] for c in my_cards]
             rep[55] = 1 if my_life_statuses[0] else 0
             rep[56] = 1 if my_life_statuses[1] else 0
-            
-            opponent_idx = -1  # Order opponents from 0 to n-2 
-            for i in range(self.n_players):  
+
+            opponent_idx = -1  # Order opponents from 0 to n-2
+            for i in range(self.n_players):
                 if i != info["playerId"]:
                     opponent_idx += 1
                     opponent_cards = [player_info[info["playerId"]]["cards"][i] for i in range(n_cards)]
@@ -178,7 +178,7 @@ class PytorchAgent(Agent):
                     if opp_chars[0] is not None:
      #                    rep[57 + opponent_idx * 10 + chars.index(opp_chars[0])] = 1
                          rep[57 + chars.index(opp_chars[0])] = 1
-                    
+
                     if opp_chars[1] is not None:
     #                     rep[62 + opponent_idx * 10 + chars.index(opp_chars[1])] = 1
                          rep[62 + chars.index(opp_chars[1])] = 1
@@ -205,7 +205,7 @@ class PytorchAgent(Agent):
                 claimed = "Assassin"
             else:
                 claimed = None
-            return [{"event": "action", "info": {"type": name, "as_character": claimed, "from_player": self.id, 
+            return [{"event": "action", "info": {"type": name, "as_character": claimed, "from_player": self.id,
                                                  "target": None if isinstance(option, str) else option[1]}}]
         elif option_type == "reaction":
             return [{"event": "reaction", "info": {"type": option[0], "from": self.id, "as_character": option[1]}}]
@@ -215,8 +215,8 @@ class PytorchAgent(Agent):
             events = []
             alive_cards = [c for c in self.cards if c["alive"]]
             for i in range(len(alive_cards)):
-                events.append({"event": "card_swap", 
-                               "info": {"from": alive_cards[i]["character"], 
+                events.append({"event": "card_swap",
+                               "info": {"from": alive_cards[i]["character"],
                                         "to": option[i], "player": self.id}})
             return events
 
@@ -269,7 +269,7 @@ class PytorchAgent(Agent):
         response_probs = strong_softmax(win_probs)
         sampled_response = option_list[np.random.choice([i for i in range(len(option_list))], p=response_probs)]
         return convert(*sampled_response)
-        
+
     def decide_card(self, options):
      #    ask neural net for best card to choose
         option_list = extract_options(options, "card_selection")

@@ -16,7 +16,7 @@ def parse_args():
 
     # app config
     parser.add_argument("-k", "--keep_client_order", action="store_true", help="Don't randomize client order")
-    
+
     args = parser.parse_args()
     specified_args = {k: v for k, v in vars(args).items() if v is not None}
     return specified_args

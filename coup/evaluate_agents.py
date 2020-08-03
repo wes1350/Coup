@@ -1,4 +1,4 @@
-import random 
+import random
 from Engine import Engine
 from agents.TrickyAgent import TrickyAgent
 from agents.RandomAgent import RandomAgent
@@ -50,8 +50,8 @@ def calculate_new_elos(elos, winner):
         winner_update = K * (1 - e_winner)
         loser_update = K * (0 - e_loser)
         return (winner_update, loser_update)
-        
-    # Calculate ELO change between each (winner, loser) pair. 
+
+    # Calculate ELO change between each (winner, loser) pair.
     # The winner elo will change as much as the loser elos combined.
     new_elos = []
     total_winner_change = 0
@@ -75,18 +75,18 @@ def get_db_elos(agents):
             elos.append(DEFAULT_ELO)
         else:
             elos.append(db_entry.elo)
-    
+
     return elos
 
 def update_db_elos(agents, elos, n_games_per_agent):
     if len(agents) != len(elos) or len(agents) != len(n_games_per_agent):
         raise ValueError("agent, elo, and n_game lists must be equal in length")
-    
+
     for i, agent in enumerate(agents):
         db_entry = AgentType.query.filter(AgentType.name == str(agent)).first()
         db_entry.set_elo(elos[i])
         db_entry.add_games(n_games_per_agent[i])
-    
+
     db.session.commit()
 
 

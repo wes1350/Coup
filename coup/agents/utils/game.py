@@ -70,7 +70,7 @@ def extract_options(options, option_type):
             else:
                 for i in range(len(options[r])):
                     extracted_options.append((r, options[r][i]))
-        return extracted_options 
+        return extracted_options
     elif option_type == "card_selection":
         return [c for c in options]
     elif option_type == "exchange":
@@ -85,4 +85,4 @@ def extract_options(options, option_type):
                     if b > a:
                         extracted_options.append([(a, cards[a]), (b, cards[b])])
             return extracted_options
-            
+
