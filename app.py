@@ -7,6 +7,7 @@ from flask_socketio import SocketIO, send, emit, join_room, leave_room
 from flask_login import LoginManager, current_user, login_user, logout_user
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_cors import CORS
 from AppConfig import AppConfig
 from Engine import Engine
 from GameInfo import GameInfo
@@ -19,7 +20,8 @@ app = Flask(__name__)
 app.config.from_object(AppConfig)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
-socketio = SocketIO(app, cors_allowed_origins="*")
+CORS(app, resources={r"/*": {"origins": "*"}})
+socketio = SocketIO(app, cors_allowed_origins="https://localhost:3000")
 login_manager = LoginManager(app)
 import models  # for importing db models for db migration
 
@@ -106,6 +108,21 @@ def registerReact():
             }
             return make_response(jsonify(response_object)), 401
 
+@app.route('/users/authenticate', methods=('POST', ))
+def authenticate():
+    try:
+        data = request.get_json(force=True)
+        username = data["username"]
+        password = data["password"]
+        user = models.User.query.filter_by(username=username).first()
+        if user is None or not user.check_password(password):
+            return jsonify({'status': 'User not found'}), 404 
+        login_user(user, remember=True)
+        return jsonify({'status': 'logged in!'}), 200
+    except Exception as e:
+        print(e)
+        return  jsonify({'status': 'server error'}), 500
+
 @app.route('/logout')
 def logout():
     logout_user()
@@ -117,6 +134,24 @@ def home():
         room = request.form["room"]
         return redirect(url_for('room', room=room))
     return render_template('home.html')
+
+@app.route('/rooms', methods=('GET', 'POST'))
+def rooms():
+    if current_user.is_authenticated:
+        try:
+            if request.method == "GET":
+                # will need to verfiy that the authToken is good
+                return jsonify(game_rooms), 200
+            elif request.method == "POST":
+                data = request.get_json(force=True)
+                if create_room(data['roomName']) is None:
+                    return jsonify('room already exist'), 400
+                return jsonify('room created'), 201
+        except Exception as e:
+            print(e)
+            return jsonify({'status': 'Server error'}), 500
+    else:
+        return jsonify({'status': 'unauthorized'}), 401
 
 @app.route('/room/<room>')
 def room(room):
@@ -272,6 +307,12 @@ def clear_old_info(room, specific_client=None):
     for client in ([specific_client] if specific_client is not None else game_rooms[room]["clients"]):
         emit_to_client_in_room(room)("", client, "error")
         emit_to_client_in_room(room)("", client, "prompt")
+
+def create_room(name):
+    if name not in game_rooms:
+        game_rooms[name] = {"clients": {}, "observers": {}, "started": False}
+        print(game_rooms)
+        return name 
 
 if __name__ == '__main__':
     parsed_args = parse_args()
