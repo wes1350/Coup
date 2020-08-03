@@ -6,6 +6,7 @@ from agents import *
 class Config:
     """The class storing all the config parameters."""
     def __init__(self, **kwargs) -> None: 
+        self.n_players = 2
         self.local_ais = {}
 
         # self.local_ais = {0: KerasAgent(load=True, training=True, debug=False), 
@@ -25,7 +26,7 @@ class Config:
 
         self.pay_on_successful_challenges = False
 
-        self.engine_sleep_duration = 0 
+        self.engine_sleep_duration = 0.5
 
         self.verbose = 0
 
@@ -47,7 +48,8 @@ class Config:
         for key, value in kwargs.items():
             self.__setattr__(key, value)
 
-        self.n_players = 2 if not self.local_ais else len(self.local_ais)
+        if self.local_ais:
+            self.n_players = len(self.local_ais)
 
         self.validate_args()
 
