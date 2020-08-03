@@ -1,13 +1,15 @@
+import sys
+sys.path.insert(0,'..')
 import random
+from __init__ import db
 from Engine import Engine
+from coup.models import AgentType, DEFAULT_ELO  # Must use relative iport here to avoid db error
 from agents.TrickyAgent import TrickyAgent
 from agents.RandomAgent import RandomAgent
 from agents.HonestAgent import HonestAgent
 from agents.MimickingAgent import MimickingAgent
 from agents.TaxAgent import TaxAgent
 from agents.AdversarialAgent import AdversarialAgent
-from app import db
-from models import AgentType, User, DEFAULT_ELO
 
 def run_match(agents, elos=None, randomize_order=True, n_iters=1000):
     if elos is None:
