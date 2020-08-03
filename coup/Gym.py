@@ -4,10 +4,10 @@ import pickle
 import json
 import numpy as np
 import shutil
-from Engine import Engine
 from keras import models, layers
 from tensorflow import keras
-from agents import *
+from coup.Engine import Engine
+from coup.agents import *
 
 class Gym():
     def __init__(self, epoch=10, gamma=0.9, epsilon=.1):

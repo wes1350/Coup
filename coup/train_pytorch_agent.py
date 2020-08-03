@@ -1,6 +1,6 @@
-from Engine import Engine
-from agents.PytorchAgent import PytorchAgent
-from agents.AdversarialAgent import AdversarialAgent
+from coup.Engine import Engine
+from coup.agents.PytorchAgent import PytorchAgent
+from coup.agents.AdversarialAgent import AdversarialAgent
 import torch.optim as optim
 
 a = PytorchAgent(input_size=67, hidden_size=10, n_players=2)

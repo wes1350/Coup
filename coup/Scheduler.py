@@ -3,7 +3,7 @@ import socketio
 import threading
 import configparser
 import subprocess
-from agents import AdversarialAgent
+from coup.agents import AdversarialAgent
 
 if __name__ == '__main__':
     """

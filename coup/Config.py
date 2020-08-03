@@ -1,7 +1,7 @@
 """Maintains various parameters used in the game, such as the number of players and number of coins per player."""
 
 from typing import NoReturn
-from agents import *
+from coup.agents import *
 
 class Config:
     """The class storing all the config parameters."""

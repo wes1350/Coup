@@ -1,19 +1,18 @@
 """Maintains the state of a Coup game. The state includes the Deck of cards, the set of players, and the turn state."""
-import time 
-import json
+import time, json
 from typing import List
-from Config import Config
-from classes.Player import Player
-from classes.Deck import Deck
-from classes.Card import Card
-from classes.actions.Action import Action
-from classes.actions.ForeignAid import ForeignAid
-from classes.actions.Tax import Tax
-from classes.actions.Steal import Steal
-from classes.actions.Exchange import Exchange
-from classes.actions.Assassinate import Assassinate
-from classes.actions.Income import Income
-from classes.actions.Coup import Coup
+from coup.Config import Config
+from coup.classes.Player import Player
+from coup.classes.Deck import Deck
+from coup.classes.Card import Card
+from coup.classes.actions.Action import Action
+from coup.classes.actions.ForeignAid import ForeignAid
+from coup.classes.actions.Tax import Tax
+from coup.classes.actions.Steal import Steal
+from coup.classes.actions.Exchange import Exchange
+from coup.classes.actions.Assassinate import Assassinate
+from coup.classes.actions.Income import Income
+from coup.classes.actions.Coup import Coup
 
 
 class State:

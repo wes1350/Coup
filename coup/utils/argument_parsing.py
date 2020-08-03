@@ -15,7 +15,7 @@ def parse_args():
     parser.add_argument("-s", "--engine_sleep_duration", type=float, help="How long Engine sleeps when waiting for a response")
 
     # app config
-    parser.add_argument("-k", "--keep_client_order", action="store_true", help="Randomize client order")
+    parser.add_argument("-k", "--keep_client_order", action="store_true", help="Don't randomize client order")
     
     args = parser.parse_args()
     specified_args = {k: v for k, v in vars(args).items() if v is not None}

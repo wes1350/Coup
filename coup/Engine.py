@@ -3,22 +3,22 @@
 
 import random, time, sys, os, json
 from typing import List, Optional, Dict, Any
-from State import State
-from Config import Config
-from GameInfo import GameInfo
-from utils.argument_parsing import parse_args
-from classes.Card import Card
-from classes.actions.Action import Action
-from classes.actions.Income import Income
-from classes.actions.ForeignAid import ForeignAid
-from classes.actions.Tax import Tax
-from classes.actions.Steal import Steal
-from classes.actions.Assassinate import Assassinate
-from classes.actions.Coup import Coup
-from classes.actions.Exchange import Exchange
-from classes.reactions.Reaction import Reaction
-from classes.reactions.Block import Block
-from classes.reactions.Challenge import Challenge
+from coup.State import State
+from coup.Config import Config
+from coup.GameInfo import GameInfo
+from coup.utils.argument_parsing import parse_args
+from coup.classes.Card import Card
+from coup.classes.actions.Action import Action
+from coup.classes.actions.Income import Income
+from coup.classes.actions.ForeignAid import ForeignAid
+from coup.classes.actions.Tax import Tax
+from coup.classes.actions.Steal import Steal
+from coup.classes.actions.Assassinate import Assassinate
+from coup.classes.actions.Coup import Coup
+from coup.classes.actions.Exchange import Exchange
+from coup.classes.reactions.Reaction import Reaction
+from coup.classes.reactions.Block import Block
+from coup.classes.reactions.Challenge import Challenge
 
 
 class Engine:
