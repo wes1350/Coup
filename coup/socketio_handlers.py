@@ -109,11 +109,9 @@ def mark_as_ai():
         raise Exception("Didn't mark as AI, probably executed AI connect before joining room was completed")
 
 @socketio.on('observer_connect')
-def mark_as_observer():
-    room = rt.sids_to_rooms[request.sid]
+def mark_as_observer(room):
+    rt.sids_to_rooms[request.sid] = room
     rt.game_rooms[room]["observers"][request.sid] = {}
-    if get_id_from_sid(request.sid) in rt.game_rooms[room]["clients"]:
-        del rt.game_rooms[room]["clients"][get_id_from_sid(request.sid)]
 
 @socketio.on('start_observer')
 def start_as_observer(n_agents):
@@ -144,7 +142,6 @@ def on_start(passed_room=None):
     if passed_room is not None:
         room = passed_room
     else:
-        print(rt.sids_to_rooms)
         room = rt.sids_to_rooms[request.sid]
     if not rt.game_rooms[room]["started"]:  # Don't allow multiple starts
         print("Starting")
