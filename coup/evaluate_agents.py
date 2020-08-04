@@ -1,7 +1,7 @@
 import sys
-sys.path.insert(0,'..')
+sys.path.insert(0,'..')  # For importing app config, required for using db
 import random
-from __init__ import db
+from coup import db  # importing directly from __init__ will not access the proper db and make changes ephemeral
 from Engine import Engine
 from coup.models import AgentType, DEFAULT_ELO  # Must use relative iport here to avoid db error
 from agents.TrickyAgent import TrickyAgent
@@ -110,11 +110,8 @@ if __name__ == "__main__":
     # run_match([a, a])
     # run_match([b, b])
     print("Got from db:", get_db_elos(agents))
-    n_iters = 300
+    n_iters = 100
     new_elos = run_match(agents, elos=elos, n_iters=n_iters)
-    update_db_elos(agents, new_elos, [n_iters for i in range(len(agents))])
+    update_db_elos(agents, new_elos, [n_iters]*len(agents))
     print("Stored in db:", get_db_elos(agents))
     # run_match([b, b, b])
-
-
-
