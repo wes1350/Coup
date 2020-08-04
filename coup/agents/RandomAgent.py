@@ -4,12 +4,10 @@ import sys, random
 
 if "." not in __name__:
     from utils.game import *
-    from utils.responses import *
     from utils.network import *
     from Agent import Agent
 else:
     from .utils.game import *
-    from .utils.responses import *
     from .utils.network import *
     from .Agent import Agent
 

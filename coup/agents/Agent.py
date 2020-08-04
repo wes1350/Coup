@@ -3,11 +3,9 @@ import json
 
 if __name__ == "Agent":
     from utils.game import *
-    from utils.responses import *
     from utils.network import *
 else:
     from .utils.game import *
-    from .utils.responses import *
     from .utils.network import *
 
 class Agent:
