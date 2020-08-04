@@ -33,7 +33,7 @@ def register():
         username = request.form["username"]
         password = request.form["password"]
 
-        user = models.User(username=username)
+        user = User(username=username)
         user.set_password(password)
         db.session.add(user)
         db.session.commit()
