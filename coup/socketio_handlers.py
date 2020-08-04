@@ -3,7 +3,6 @@ import random, time, subprocess
 from flask import request
 from flask_socketio import send, emit, join_room, leave_room
 from coup.Engine import Engine
-from coup.GameInfo import GameInfo
 from coup import socketio
 
 """Settings"""
@@ -157,13 +156,10 @@ def on_start(passed_room=None):
             shuffled_clients[k] = rt.game_rooms[room]["clients"][clients_keys[i]]
         rt.game_rooms[room]["clients"] = shuffled_clients
 
-        game_info = GameInfo()
-        game_info.ai_players = [c for c in rt.game_rooms[room]["clients"] if rt.game_rooms[room]["clients"][c]["ai"]]
-        print(game_info.ai_players)
+        ai_players = [c for c in rt.game_rooms[room]["clients"] if rt.game_rooms[room]["clients"][c]["ai"]]
         print(rt.game_rooms[room]["clients"])
         engine = Engine(emit_to_client_in_room(room), broadcast_to_room(room), retrieve_response_in_room(room),
-                        game_info=game_info, n_players=len(rt.game_rooms[room]["clients"]), **parsed_args)
-        broadcast_to_room(room)(game_info.config_settings, "settings")
+                        nonlocal_ais=ai_players, n_players=len(rt.game_rooms[room]["clients"]), **parsed_args)
         winner = engine.run_game()
         socketio.stop()
 

@@ -5,7 +5,6 @@ import random, time, sys, os, json
 from typing import List, Optional, Dict, Any
 from coup.State import State
 from coup.Config import Config
-from coup.GameInfo import GameInfo
 from coup.utils.argument_parsing import parse_args
 from coup.classes.Card import Card
 from coup.classes.actions.Action import Action
@@ -25,7 +24,7 @@ class Engine:
     """Maintains all the logic relevant to the game, such as the
        game state, config, querying players, etc."""
 
-    def __init__(self, whisper_f=None, shout_f=None, query_f=None, game_info=None, **kwargs) -> None:
+    def __init__(self, whisper_f=None, shout_f=None, query_f=None, **kwargs) -> None:
         """Initialize a new Engine, with arguments from the command line."""
         self._config_status, self._config_err_msg = True, None
         self.whisper_f = whisper_f
@@ -39,16 +38,18 @@ class Engine:
             self._config_err_msg = getattr(e, 'message', repr(e))
             raise ValueError("Invalid Configuration! Terminating.", self._config_err_msg)
         else:
-            if game_info and self._config.local_ais:
+            if self._config.nonlocal_ais and self._config.local_ais:
                 raise Exception("Playing with local AIs over the browser is currently unsupported!")
-            self.game_info = game_info if game_info else GameInfo()
-            self.game_info.config_settings = str(self._config)
+            self.config_settings = str(self._config)
+            self.ai_players = []
             for local_ai in self._config.local_ais:
-                self.game_info.ai_players.append(local_ai)
+                self.ai_players.append(local_ai)
+            for nonlocal_ai in self._config.nonlocal_ais:
+                self.ai_players.append(nonlocal_ai)
             self.local = (None in [self.whisper_f, self.shout_f, self.query_f]) and not self._config.local_ais
 
             self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local,
-                                self.game_info.ai_players)
+                                self.ai_players)
 
             self.local_ais = self._config.local_ais
             self.local_ai_responses = {}
@@ -694,7 +695,7 @@ class Engine:
         self._state.add_to_history(event_type, event_info, hide_from_ai)
 
     def is_ai_player(self, i : int) -> bool:
-        return i in self.game_info.ai_players
+        return i in self.ai_players
 
     def is_local_ai(self, i : int) -> bool:
         return i in self.local_ais

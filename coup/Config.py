@@ -8,6 +8,7 @@ class Config:
     def __init__(self, **kwargs) -> None:
         self.n_players = 2
         self.local_ais = {}
+        self.nonlocal_ais = {}
 
         # self.local_ais = {0: KerasAgent(load=True, training=True, debug=False),
         #                    1: KerasAgent(load=True, training=False, debug=False)}
