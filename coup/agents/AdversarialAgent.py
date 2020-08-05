@@ -34,7 +34,7 @@ class AdversarialAgent(Agent):
             return block(random.choice(options["Block"]))
 
     def decide_card(self, options):
-        return random.choice(options)
+        return random.choice(list(options.keys()))
 
 
 if __name__ == "__main__":

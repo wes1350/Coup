@@ -31,7 +31,7 @@ class TaxAgent(Agent):
         return decline()
 
     def decide_card(self, options):
-        return options[0]
+        return list(options.keys())[0]
 
 
 if __name__ == "__main__":

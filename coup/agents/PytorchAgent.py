@@ -26,8 +26,8 @@ def strong_softmax(x):
 
 class CoupNN(nn.Module):
 
-    def __init__(self, input_size, hidden_size, n_players, **kwargs):
-        super().__init__(**kwargs)
+    def __init__(self, input_size, hidden_size, n_players):
+        super().__init__()
         self.input_size = input_size
         self.hidden_size = hidden_size
 
@@ -53,7 +53,8 @@ class CoupNN(nn.Module):
         return nn.Softmax(dim=2)(values).view(-1).tolist()
 
 class PytorchAgent(Agent):
-    def __init__(self, input_size, hidden_size, n_players):
+    def __init__(self, input_size, hidden_size, n_players, **kwargs):
+        super().__init__(**kwargs)
         self.input_size = input_size
         self.hidden_size = hidden_size
         self.n_players = n_players

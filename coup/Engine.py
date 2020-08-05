@@ -421,15 +421,18 @@ class Engine:
     def query_player_card(self, player_id : int, ignore_if_dead : bool = False) -> int:
         """Given a player who must choose a card to discard, query them for their card choice."""
         # First, determine whether we need to query the player for a card
-        options = self._state.get_player_living_card_ids(player_id)
-        if len(options) == 0:
+        alive_cards = self._state.get_player_living_card_ids(player_id)
+        if len(alive_cards) == 0:
             if ignore_if_dead:
                 return None
             else:
                 raise ValueError("Cannot choose a card from a Player who is eliminated")
-        elif len(options) == 1:
-            return options[0]
+        elif len(alive_cards) == 1:
+            return alive_cards[0]
         else:
+            options = {}
+            for card in alive_cards:
+                options[card] = self._state.get_player_card(player_id, card).get_character_type()
             if self.is_ai_player(player_id):
                 self.whisper(player=player_id, ai_query_type="card_selection", ai_options=options)
             else:
@@ -528,7 +531,7 @@ class Engine:
         target = int(response)
         return Coup(target=target)
 
-    def translate_card_choice(self, response : str, options : List[int]) -> int:
+    def translate_card_choice(self, response : str, options : Dict[int, str]) -> int:
         response = response.strip()
         """Given a card choice to discard, translate it appropriately."""
         chosen_card = int(response)

@@ -27,7 +27,7 @@ class RandomAgent(Agent):
         return self.decide_action(options)
 
     def decide_card(self, options):
-        return random.choice(options)
+        return random.choice(list(options.keys()))
 
     def decide_exchange(self, options):
         return choose_exchange_cards(random.sample(options["cards"].keys(), options["n"]))

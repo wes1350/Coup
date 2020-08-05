@@ -9,6 +9,7 @@ from coup.agents.HonestAgent import HonestAgent
 from coup.agents.MimickingAgent import MimickingAgent
 from coup.agents.TaxAgent import TaxAgent
 from coup.agents.AdversarialAgent import AdversarialAgent
+from coup.agents.PytorchAgent import PytorchAgent
 
 def run_match(agents, elos=None, randomize_order=True, n_iters=1000, use_default_elos=False):
     if elos is None:
@@ -54,7 +55,6 @@ if __name__ == "__main__":
     d = TaxAgent()
     e = TrickyAgent(0.8)
     f = AdversarialAgent()
-
     agents = [a, b, c, d, e, f]
     elos = get_agent_elos(agents)
     n_iters = 1000

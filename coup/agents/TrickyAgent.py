@@ -40,7 +40,7 @@ class TrickyAgent(Agent):
             return self.random_agent.decide_reaction(options)
 
     def decide_card(self, options):
-        return random.choice(options)
+        return random.choice(list(options.keys()))
 
     def decide_exchange(self, options):
         return choose_exchange_cards(random.sample(options["cards"].keys(), options["n"]))
