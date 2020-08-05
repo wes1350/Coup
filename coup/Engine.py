@@ -46,10 +46,8 @@ class Engine:
                 self.ai_players.append(local_ai)
             for nonlocal_ai in self._config.nonlocal_ais:
                 self.ai_players.append(nonlocal_ai)
-            self.local = (None in [self.whisper_f, self.shout_f, self.query_f]) and not self._config.local_ais
 
-            self._state = State(self._config, self.whisper, self.shout, self.get_response, self.local,
-                                self.ai_players)
+            self._state = State(self._config, self.whisper, self.shout, self.get_response, self.ai_players)
 
             self.local_ais = self._config.local_ais
             self.local_ai_responses = {}
@@ -253,10 +251,10 @@ class Engine:
             query_msg = self.determine_action_message(player_id)
             if self.is_ai_player(player_id):
                 self.whisper(player=player_id, ai_query_type="action", ai_options=self._state.build_action_space(player_id))
-            if not self.local:
+            else:
                 self.whisper(query_msg + "\n", player_id, "prompt")
             while True:
-                response = input(query_msg + "\n") if self.local else self.get_response(player_id)
+                response = self.get_response(player_id)
                 try:
                     action = self.translate_action_choice(response, source_id=player_id)
                 except ValueError:
@@ -316,31 +314,6 @@ class Engine:
 
     def query_player_reactions(self, players : List[int], action : Action) -> List[Reaction]:
         """Given an action and a list of players to query, prompt players for reactions."""
-        if self.local:
-            reactions = []
-            target = action.target
-            for player_id in players:
-                while True:
-                    message = self.determine_reaction_message(target, player_id, action)
-                    response = input(message)
-                    try:
-                        reaction = self.translate_reaction_choice(response, player_id, action)
-                    except ValueError:
-                        self.whisper("Invalid reaction, please try again.", player_id)
-                    else:
-                        if reaction is None:
-                            break
-                        valid = self.validate_reaction(reaction, action)
-                        if valid:
-                            reactions.append(reaction)
-                            break
-                        self.whisper("Impossible reaction, please try again.", player_id)
-            return reactions
-        else:
-            return self.ask_player_reactions(players, action)
-
-    def ask_player_reactions(self, players : List[int], action : Action) -> List[Reaction]:
-        """Query the server for reaction responses from a list of players."""
         target = action.target
         for i, player_id in enumerate(players):
             message = self.determine_reaction_message(target, player_id, action)
@@ -378,15 +351,14 @@ class Engine:
 
     def query_player_block(self, player_id : int, action : Action) -> Reaction:
         """Query player for a block after an unsuccessful challenge."""
-        query_msg = "Player {}, do you want to block?\n".format(player_id)
-        if not self.local:
-            if self.is_ai_player(player_id):
-                self.whisper(player=player_id, ai_query_type="reaction",
-                             ai_options={"Challenge": False, "Block": action.blockable_by, "Pass": True})
-            else:
-                self.whisper(query_msg, player_id, "prompt")
+        if self.is_ai_player(player_id):
+            self.whisper(player=player_id, ai_query_type="reaction",
+                         ai_options={"Challenge": False, "Block": action.blockable_by, "Pass": True})
+        else:
+            query_msg = "Player {}, do you want to block?\n".format(player_id)
+            self.whisper(query_msg, player_id, "prompt")
         while True:
-            response = input(query_msg) if self.local else self.get_response(player_id)
+            response = self.get_response(player_id)
             try:
                 reaction = self.translate_reaction_choice(response, player_id, action)
             except ValueError:
@@ -401,24 +373,6 @@ class Engine:
 
     def query_challenges(self, players : List[int]) -> List[Challenge]:
         """Given a list of players to query, ask them if they want to challenge."""
-        if self.local:
-            challenges = []
-            for player_id in players:
-                while True:
-                    response = input("Player {}, are you going to [C]hallenge?\n".format(player_id))
-                    try:
-                        reaction = self.translate_challenge_answer(response, player_id)
-                        if reaction is not None:
-                            challenges.append(reaction)
-                        break
-                    except ValueError:
-                        self.whisper("Invalid response, please try again.", player_id)
-            return challenges
-        else:
-            return self.ask_challenges(players)
-
-    def ask_challenges(self, players : List[int]) -> List[Challenge]:
-        """Query the server for challenge responses from a list of players."""
         for i, player_id in enumerate(players):
             query_msg = "Player {}, are you going to [C]hallenge?\n".format(player_id)
             if self.is_ai_player(player_id):
@@ -446,14 +400,13 @@ class Engine:
 
     def query_player_coup_target(self, player_id : int) -> int:
         """Given a player who must coup, ask them who they are going to coup."""
-        query_msg = "Player {}, who are you going to coup?\n".format(player_id)
-        if not self.local:
-            if self.is_ai_player(player_id):
-                self.whisper(player=player_id, ai_query_type="action", ai_options=self._state.build_action_space(player_id))
-            else:
-                self.whisper(query_msg, player_id, "prompt")
+        if self.is_ai_player(player_id):
+            self.whisper(player=player_id, ai_query_type="action", ai_options=self._state.build_action_space(player_id))
+        else:
+            query_msg = "Player {}, who are you going to coup?\n".format(player_id)
+            self.whisper(query_msg, player_id, "prompt")
         while True:
-            response = input(query_msg) if self.local else self.get_response(player_id)
+            response = self.get_response(player_id)
             try:
                 action = self.translate_coup_target(response)
                 action.set_source(player_id)
@@ -477,14 +430,13 @@ class Engine:
         elif len(options) == 1:
             return options[0]
         else:
-            query_msg = "Player {}, one of your characters must die. Which one do you pick?\n".format(player_id)
-            if not self.local:
-                if self.is_ai_player(player_id):
-                    self.whisper(player=player_id, ai_query_type="card_selection", ai_options=options)
-                else:
-                    self.whisper(query_msg, player_id, "prompt")
+            if self.is_ai_player(player_id):
+                self.whisper(player=player_id, ai_query_type="card_selection", ai_options=options)
+            else:
+                query_msg = "Player {}, one of your characters must die. Which one do you pick?\n".format(player_id)
+                self.whisper(query_msg, player_id, "prompt")
             while True:
-                response = input(query_msg) if self.local else self.get_response(player_id)
+                response = self.get_response(player_id)
                 try:
                     card = self.translate_card_choice(response, options)
                     return card
@@ -628,13 +580,8 @@ class Engine:
 
     def shout(self, msg : str, shout_type : str = None) -> None:
         """Send a message to all players."""
-        if self.local:
-            print(msg)
-        elif self._config.local_ais:
-            pass
-        else:
+        if not self._config.local_ais:
             self.shout_f(msg, shout_type)
-            pass
 
     def whisper(self, msg : str = None, player : int = None, whisper_type : str = None,
                 ai_query_type : str = None, ai_options : dict = None, ai_info : dict = None) -> None:
@@ -660,10 +607,7 @@ class Engine:
         else:
             if msg is None:
                 raise ValueError("Must specify a message for human players")
-            if self.local:
-                print(msg)
-            else:
-                self.whisper_f(msg, player, whisper_type)
+            self.whisper_f(msg, player, whisper_type)
 
     def get_response(self, player : int, sleep : bool = True, print_wait : bool = False) -> str:
         """Query server for a response."""

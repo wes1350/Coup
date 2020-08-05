@@ -17,14 +17,12 @@ from coup.classes.actions.Coup import Coup
 
 class State:
 
-    def __init__(self, config : Config, whisper=None, shout=None, get_response=None,
-                 local=True, ai_players=[]) -> None:
+    def __init__(self, config : Config, whisper=None, shout=None, get_response=None, ai_players=[]) -> None:
         """Initialize the game state with players and a deck, then assign cards to each player."""
         self._config = config
         self.whisper = whisper
         self.shout = shout
         self.get_response = get_response
-        self.local = local
         self._n_players = config.n_players
         self.ai_players = ai_players
         self.local_ais = self._config.local_ais
@@ -258,14 +256,13 @@ class State:
     def query_exchange(self, player : int, draw_start : int, draw_end : int, prompt_message : str,
                        options : dict = None) -> List[int]:
         """For an Exchange, prompt the player for which cards they'd like to keep."""
-        query_msg = "Pick the cards you wish to keep:\n"
-        if not self.local:
-            if player in self.ai_players:
-                self.whisper(player=player, ai_query_type="exchange", ai_options=options)
-            else:
-                self.whisper(query_msg + prompt_message, player, "prompt")
+        if player in self.ai_players:
+            self.whisper(player=player, ai_query_type="exchange", ai_options=options)
+        else:
+            query_msg = "Pick the cards you wish to keep:\n"
+            self.whisper(query_msg + prompt_message, player, "prompt")
         while True:
-            response = input(query_msg) if self.local else self.get_response(player)
+            response = self.get_response(player)
             try:
                 cards = self.translate_exchange(response)
             except ValueError:
