@@ -11,9 +11,8 @@ else:
     from .Agent import Agent
 
 class IncomeAgent(Agent):
-    def __init__(self, verbose=False):
-        self.verbose = verbose
-        pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def decide_action(self, options):
         if can_income(options):

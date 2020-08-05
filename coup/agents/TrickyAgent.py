@@ -17,11 +17,12 @@ else:
 
 
 class TrickyAgent(Agent):
-    def __init__(self, honesty=0.5):
-        super().__init__()
+    def __init__(self, honesty=0.5, **kwargs):
+        super().__init__(**kwargs)
         self.honest_agent = HonestAgent()
         self.random_agent = RandomAgent()
         self.honesty = honesty
+        self.tag = str(round(100*honesty))
 
     def update(self, event):
         self.honest_agent.update(event)

@@ -17,6 +17,7 @@ def run_match(agents, elos=None, randomize_order=True, n_iters=1000, use_default
         else:
             raise ValueError("Must specify initial elos or specify to use default elos")
     old_elos = [elo for elo in elos]
+    print("Agents:", str([str(agent) for agent in agents]).replace("'",""))
     print("Old elos:", [round(elo) for elo in old_elos])
 
     agent_order = [i for i in range(len(agents))]
@@ -51,7 +52,7 @@ if __name__ == "__main__":
     b = HonestAgent()
     c = RandomAgent()
     d = TaxAgent()
-    e = MimickingAgent()
+    e = TrickyAgent(0.8)
     f = AdversarialAgent()
 
     agents = [a, b, c, d, e, f]

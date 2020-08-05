@@ -18,8 +18,8 @@ characters_to_moves = {"Ambassador": {"action": ["Exchange"], "block": ["Steal"]
                        "Duke": {"action": ["Tax"], "block": ["Tax"]}}
 
 class HonestAgent(Agent):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.alive_cards = {"Ambassador": False, "Assassin": False, "Captain": False,
                             "Contessa": False, "Duke": False}
 

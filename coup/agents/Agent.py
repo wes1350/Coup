@@ -9,12 +9,20 @@ else:
     from .utils.network import *
 
 class Agent:
-    def __init__(self, verbose=False):
-        self.verbose = verbose
-        pass
+    def __init__(self, **kwargs):
+        # Set base Agent properties
+        properties = {"verbose": False, "tag": ""}
+        for prop in properties:
+            self.__setattr__(prop, properties[prop])
+        # Override default properties with passed in values
+        for arg in kwargs:
+            if arg in properties:
+                self.__setattr__(arg, kwargs[arg])
+            else:
+                raise ValueError(f"Unexpected argument: {arg}")
 
     def __str__(self):
-        return type(self).__name__
+        return type(self).__name__ + (("_" + self.tag) if self.tag else "")
 
     def update_wrapper(self, event):
         event_info = json.loads(event) if isinstance(event, str) else event

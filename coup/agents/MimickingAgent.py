@@ -12,8 +12,8 @@ else:
     from .Agent import Agent
 
 class MimickingAgent(Agent):
-    def __init__(self, verbose=False):
-        self.verbose = verbose
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.action_queue = []
 
     def decide_action(self, options):

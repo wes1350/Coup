@@ -26,8 +26,8 @@ def strong_softmax(x):
 
 class CoupNN(nn.Module):
 
-    def __init__(self, input_size, hidden_size, n_players):
-        super(CoupNN, self).__init__()
+    def __init__(self, input_size, hidden_size, n_players, **kwargs):
+        super().__init__(**kwargs)
         self.input_size = input_size
         self.hidden_size = hidden_size
 
