@@ -1,5 +1,33 @@
 from coup import db  # importing directly from __init__ will not access the proper db and make changes ephemeral
-from coup.models import AgentType, DEFAULT_ELO  # Must use relative import here to avoid db error
+from coup.models import User, AgentType, DEFAULT_ELO  # Must use relative import here to avoid db error
+
+
+def get_user_elo(username):
+    db_entry = User.query.filter(User.username == username).first()
+    if db_entry is None:
+        raise ValueError(f"User {username} does not exist; cannot retrieve elo")
+    else:
+        return db_entry.elo
+
+def get_user_elos(usernames):
+    return [get_user_elo(username) for username in usernames]
+
+def update_user_elo(username, elo, n_games, commit=True):
+    db_entry = User.query.filter(User.username == username).first()
+    db_entry.set_elo(elo)
+    db_entry.add_games(n_games)
+
+    if commit:
+        db.session.commit()
+
+def update_user_elos(usernames, elos, n_games_per_user):
+    if len(usernames) != len(elos) or len(usernames) != len(n_games_per_user):
+        raise ValueError("user, elo, and n_games lists must be equal in length")
+
+    for i in range(len(usernames)):
+        update_user_elo(usernames[i], elos[i], n_games_per_user[i], commit=False)
+
+    db.session.commit()
 
 def get_agent_elo(agent):
     db_entry = AgentType.query.filter(AgentType.name == str(agent)).first()
