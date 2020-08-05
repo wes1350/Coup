@@ -6,18 +6,7 @@ This repository tries as best as possible to implement the rules described [here
 
 ### Prerequisites
 
-Configure a Python virtual environment, and then install the following packages:
-
-1. Flask (to run the web server and use any of the Flask extensions below)
-2. Flask-SocketIO (for communication between players with the web server)
-3. eventlet (to run the web server through SocketIO)
-4. Flask-Login (to log in users and if you want to use the database)
-5. Flask-SQLAlchemy (for interacting with the database)
-6. Flask-Migrate (for updating the database schema)
-7. tensorflow, keras (to run KerasAgent)
-8. pytorch (to run PytorchAgent)
-
-TODO: There are probably some additional packages missing from this list. Need to specify a requirements.txt file.
+Configure a Python virtual environment, and then run `pip install -r requirements.txt`. 
 
 ### Game Structure
 
