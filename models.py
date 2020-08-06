@@ -38,7 +38,8 @@ class User(UserMixin, db.Model):
                 "iat": datetime.datetime.utcnow(),
                 "sub": self.id
             }
-            return jwt.encode(payload, app.config.get('SECRET_KEY'), algorithm="HS256")
+            token = jwt.encode(payload, app.config.get('SECRET_KEY'), algorithm="HS256")
+            return token.decode()
         except Exception as e:
             return e
     

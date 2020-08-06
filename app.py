@@ -118,7 +118,7 @@ def authenticate():
         if user is None or not user.check_password(password):
             return jsonify({'status': 'User not found'}), 404 
         login_user(user, remember=True)
-        return jsonify({'status': 'logged in!'}), 200
+        return jsonify({'username': username, 'authToken': user.encode_auth_token()}), 200
     except Exception as e:
         print(e)
         return  jsonify({'status': 'server error'}), 500
@@ -310,9 +310,9 @@ def clear_old_info(room, specific_client=None):
 
 def create_room(name):
     if name not in game_rooms:
-        game_rooms[name] = {"clients": {}, "observers": {}, "started": False}
+        game_rooms[name] = {"name": name, "clients": {}, "observers": {}, "started": False}
         print(game_rooms)
-        return name 
+        return name
 
 if __name__ == '__main__':
     parsed_args = parse_args()
