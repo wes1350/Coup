@@ -11,11 +11,6 @@ else:
     from .utils.network import *
     from .Agent import Agent
 
-characters_to_moves = {"Ambassador": {"action": ["Exchange"], "block": ["Steal"]},
-                       "Assassin": {"action": ["Assassinate"], "block": []},
-                       "Captain": {"action": ["Steal"], "block": ["Steal"]},
-                       "Contessa": {"action": [], "block": ["Foreign Aid", "ForeignAid"]},
-                       "Duke": {"action": ["Tax"], "block": ["Tax"]}}
 
 class HonestAgent(Agent):
     def __init__(self, **kwargs):

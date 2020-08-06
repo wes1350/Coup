@@ -10,6 +10,7 @@ from coup.agents.MimickingAgent import MimickingAgent
 from coup.agents.TaxAgent import TaxAgent
 from coup.agents.AdversarialAgent import AdversarialAgent
 from coup.agents.PytorchAgent import PytorchAgent
+from coup.agents.StrategicAgentV1 import StrategicAgentV1
 
 def run_match(agents, elos=None, randomize_order=True, n_iters=1000, use_default_elos=False):
     if elos is None:
@@ -49,12 +50,15 @@ def run_match(agents, elos=None, randomize_order=True, n_iters=1000, use_default
 
 
 if __name__ == "__main__":
+    # WARNING: If using the same stateful agent multiple times, make sure to pass in copies!!
     a = TrickyAgent(0.5)
     b = HonestAgent()
     c = RandomAgent()
     d = TaxAgent()
-    e = TrickyAgent(0.8)
-    f = AdversarialAgent()
+    e = AdversarialAgent()
+    f = StrategicAgentV1()
+    g = StrategicAgentV1()
+    h = StrategicAgentV1()
     agents = [a, b, c, d, e, f]
     elos = get_agent_elos(agents)
     n_iters = 1000
