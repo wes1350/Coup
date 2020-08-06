@@ -1,0 +1,3 @@
+graft coup/static
+graft coup/templates
+global-exclude *.pyc
