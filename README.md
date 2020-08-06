@@ -55,18 +55,18 @@ In general, the agent should update its internal state (if it has one, as intell
 
 The possible event update messages are given below. Each is in the form of a dictionary with two keys: `event`, which describes the event type, and `info`, which describes the corresponding information. Below, the event name for each event type is given, along with a description of the info.
 
-`state`: describes, from the agent's point of view, the visible state of the game. This includes the agent's player index, the index of the current player, and the coin balance, index, and cards of each player (if visible).
-`action`: describes a chosen action by a player
-`action_resolution`: describes whether the previous action was successful
-`block`: describes a chosen block by a player
-`block_resolution`: describes whether the previous block was successful
-`challenge`: describes a chosen challenge by a player
-`challenge_resolution`: describes whether the previous challenge was successful
-`card_swap`: describes when a player swaps a card (the characters involved are only visible to the agent involved in the swap)
-`draw`: describes when a player draws a card during an Exchange (the characters involved are only visible to the agent involved in the swap)
-`card_loss`: describes when a player loses an influence and what card they reveal
-`winner`: describes the player who wins the game
-`loser`: describes a player who has been eliminated
+- `state`: describes, from the agent's point of view, the visible state of the game. This includes the agent's player index, the index of the current player, and the coin balance, index, and cards of each player (if visible).
+- `action`: describes a chosen action by a player
+- `action_resolution`: describes whether the previous action was successful
+- `block`: describes a chosen block by a player
+- `block_resolution`: describes whether the previous block was successful
+- `challenge`: describes a chosen challenge by a player
+- `challenge_resolution`: describes whether the previous challenge was successful
+- `card_swap`: describes when a player swaps a card (the characters involved are only visible to the agent involved in the swap)
+- `draw`: describes when a player draws a card during an Exchange (the characters involved are only visible to the agent involved in the swap)
+- `card_loss`: describes when a player loses an influence and what card they reveal
+- `winner`: describes the player who wins the game
+- `loser`: describes a player who has been eliminated
 
 
 ##### Response Queries
