@@ -612,7 +612,8 @@ class Engine:
                     else:
                         self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player, "ai_query")
             elif whisper_type == "error":
-                raise Exception(f"Got invalid response from AI Agent. -- Error: {msg} -- Response: '{response}' -- Options: {ai_options}")
+                name = str(self.local_ais[player]) if player in self.local_ais else "<name unavailable>"
+                raise Exception(f"Got invalid response from AI Agent with index {player} and name '{name}'. -- Error: {msg} -- Response: '{response}' -- Options: {ai_options}")
         else:
             if msg is None:
                 raise ValueError("Must specify a message for human players")
