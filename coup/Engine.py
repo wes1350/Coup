@@ -249,8 +249,9 @@ class Engine:
             return self.query_player_coup_target(player_id)
         else:
             query_msg = self.determine_action_message(player_id)
+            ai_options = self._state.build_action_space(player_id)
             if self.is_ai_player(player_id):
-                self.whisper(player=player_id, ai_query_type="action", ai_options=self._state.build_action_space(player_id))
+                self.whisper(player=player_id, ai_query_type="action", ai_options=ai_options)
             else:
                 self.whisper(query_msg + "\n", player_id, "prompt")
             while True:
@@ -258,14 +259,14 @@ class Engine:
                 try:
                     action = self.translate_action_choice(response, source_id=player_id)
                 except ValueError:
-                    self.whisper("ERROR: invalid action name, please try again", player_id, "error")
+                    self.whisper("ERROR: invalid action name, please try again", player_id, "error", response=response, ai_options=ai_options)
                 else:
                     valid = self.validate_action(action, player_id)
                     if valid:
                         as_character = " as " + action.as_character if action.as_character else ""
                         self.shout("Player {} {}".format(player_id, action.output_rep()) + as_character)
                         return action
-                    self.whisper("Impossible action, please try again.", player_id, "error")
+                    self.whisper("Impossible action, please try again.", player_id, "error", response=response, ai_options=ai_options)
 
     def determine_reaction_message(self, target : int, player_id : int, action : Action) -> str:
         if target is not None:
@@ -330,10 +331,11 @@ class Engine:
                     response = self.get_response(player_id, sleep=False, print_wait=print_wait_msg)
                     if response is None:
                         continue
+                    ai_options = self.determine_reaction_space(target, player_id, action)
                     try:
                         reaction = self.translate_reaction_choice(response, player_id, action)
                     except ValueError:
-                        self.whisper("Invalid response, please try again.", player_id, "error")
+                        self.whisper("Invalid response, please try again.", player_id, "error", response=response, ai_options=ai_options)
                     else:
                         if reaction is None:
                             reactions[i] = None
@@ -342,7 +344,7 @@ class Engine:
                         if valid:
                             reactions[i] = reaction
                             continue
-                        self.whisper("Impossible reaction, please try again.", player_id, "error")
+                        self.whisper("Impossible reaction, please try again.", player_id, "error", response=response, ai_options=ai_options)
             # Sleep in order to not poll too often, but only after we check each player's response
             if False in reactions:
                 time.sleep(self._config.engine_sleep_duration)
@@ -351,9 +353,10 @@ class Engine:
 
     def query_player_block(self, player_id : int, action : Action) -> Reaction:
         """Query player for a block after an unsuccessful challenge."""
+        ai_options = {"Challenge": False, "Block": action.blockable_by, "Pass": True}
         if self.is_ai_player(player_id):
             self.whisper(player=player_id, ai_query_type="reaction",
-                         ai_options={"Challenge": False, "Block": action.blockable_by, "Pass": True})
+                         ai_options=ai_options)
         else:
             query_msg = "Player {}, do you want to block?\n".format(player_id)
             self.whisper(query_msg, player_id, "prompt")
@@ -362,22 +365,23 @@ class Engine:
             try:
                 reaction = self.translate_reaction_choice(response, player_id, action)
             except ValueError:
-                self.whisper("Invalid block, please try again.", player_id)
+                self.whisper("Invalid block, please try again.", player_id, "error", response=response, ai_options=ai_options)
             else:
                 if reaction is None:
                     return None
                 valid = self.validate_reaction(reaction, action, allow_challenges=False)
                 if valid:
                     return reaction
-                self.whisper("Invalid block, please try again.", player_id)
+                self.whisper("Invalid block, please try again.", player_id, "error", response=response, ai_options=ai_options)
 
     def query_challenges(self, players : List[int]) -> List[Challenge]:
         """Given a list of players to query, ask them if they want to challenge."""
+        ai_options = {"Challenge": True, "Block": [], "Pass": True}
         for i, player_id in enumerate(players):
             query_msg = "Player {}, are you going to [C]hallenge?\n".format(player_id)
             if self.is_ai_player(player_id):
                 self.whisper(player=player_id, ai_query_type="reaction",
-                             ai_options={"Challenge": True, "Block": [], "Pass": True})
+                             ai_options=ai_options)
             else:
                 self.whisper(query_msg, player_id, "prompt")
         print_wait_msg = True
@@ -391,7 +395,7 @@ class Engine:
                     try:
                         challenges[i] = self.translate_challenge_answer(response, player_id)
                     except ValueError:
-                        self.whisper("Invalid response, please try again.", player_id, "error")
+                        self.whisper("Invalid response, please try again.", player_id, "error", response=response, ai_options=ai_options)
             # Sleep in order to not poll too often, but only after we check each player's response
             if False in challenges:
                 time.sleep(self._config.engine_sleep_duration)
@@ -400,36 +404,46 @@ class Engine:
 
     def query_player_coup_target(self, player_id : int) -> int:
         """Given a player who must coup, ask them who they are going to coup."""
-        if self.is_ai_player(player_id):
-            self.whisper(player=player_id, ai_query_type="action", ai_options=self._state.build_action_space(player_id))
-        else:
-            query_msg = "Player {}, who are you going to coup?\n".format(player_id)
-            self.whisper(query_msg, player_id, "prompt")
+        
+        ai_options = self._state.build_action_space(player_id)
+        only_one_option = len(json.loads(ai_options)["Coup"]) == 1
+        if not only_one_option:
+            if self.is_ai_player(player_id):
+                self.whisper(player=player_id, ai_query_type="action", ai_options=ai_options)
+            else:
+                query_msg = "Player {}, who are you going to coup?\n".format(player_id)
+                self.whisper(query_msg, player_id, "prompt")
         while True:
-            response = self.get_response(player_id)
+            if only_one_option:
+                response = str(json.loads(ai_options)["Coup"][0])
+            else:
+                response = self.get_response(player_id)
             try:
                 action = self.translate_coup_target(response)
                 action.set_source(player_id)
             except ValueError:
-                self.whisper("Invalid coup target, please try again.", player_id, "error")
+                self.whisper("Invalid coup target, please try again.", player_id, "error", response=response, ai_options=ai_options)
             else:
                 valid = self.validate_action(action, player_id)
                 if valid:
                     return action
-                self.whisper("Invalid coup target, please try again.", player_id, "error")
+                self.whisper("Invalid coup target, please try again.", player_id, "error", response=response, ai_options=ai_options)
 
     def query_player_card(self, player_id : int, ignore_if_dead : bool = False) -> int:
         """Given a player who must choose a card to discard, query them for their card choice."""
         # First, determine whether we need to query the player for a card
-        options = self._state.get_player_living_card_ids(player_id)
-        if len(options) == 0:
+        alive_cards = self._state.get_player_living_card_ids(player_id)
+        if len(alive_cards) == 0:
             if ignore_if_dead:
                 return None
             else:
                 raise ValueError("Cannot choose a card from a Player who is eliminated")
-        elif len(options) == 1:
-            return options[0]
+        elif len(alive_cards) == 1:
+            return alive_cards[0]
         else:
+            options = {}
+            for card in alive_cards:
+                options[card] = self._state.get_player_card(player_id, card).get_character_type()
             if self.is_ai_player(player_id):
                 self.whisper(player=player_id, ai_query_type="card_selection", ai_options=options)
             else:
@@ -441,7 +455,7 @@ class Engine:
                     card = self.translate_card_choice(response, options)
                     return card
                 except ValueError:
-                    self.whisper("ERROR: invalid card number, please try again.", player_id, "error")
+                    self.whisper("ERROR: invalid card number, please try again.", player_id, "error", response=response, ai_options=options)
 
     def translate_action_choice(self, response : str, source_id : int) -> Action:
         """Given an action response, translate it appropriately."""
@@ -528,7 +542,7 @@ class Engine:
         target = int(response)
         return Coup(target=target)
 
-    def translate_card_choice(self, response : str, options : List[int]) -> int:
+    def translate_card_choice(self, response : str, options : Dict[int, str]) -> int:
         response = response.strip()
         """Given a card choice to discard, translate it appropriately."""
         chosen_card = int(response)
@@ -548,20 +562,20 @@ class Engine:
             target = action.target
             if target is not None:
                 if target != reactor:
-                    self.whisper("Cannot block action when not the target", reactor, "error")
+                    # self.whisper("Cannot block action when not the target", reactor, "error")
                     return False
             if not action.is_blockable():
-                self.whisper("Action is unblockable", reactor, "error")
+                # self.whisper("Action is unblockable", reactor, "error")
                 return False
             character = reaction.as_character
             blockable_by = action.blockable_by
             if character not in blockable_by:
-                self.whisper("Specified character cannot block this action", reactor, "error")
+                # self.whisper("Specified character cannot block this action", reactor, "error")
                 return False
             return True
         elif reaction_type == "challenge":
             if not action.is_challengeable() or not allow_challenges:
-                self.whisper("Action cannot be challenged", reactor, "error")
+                # self.whisper("Action cannot be challenged", reactor, "error")
                 return False
             return True
         else:
@@ -584,7 +598,8 @@ class Engine:
             self.shout_f(msg, shout_type)
 
     def whisper(self, msg : str = None, player : int = None, whisper_type : str = None,
-                ai_query_type : str = None, ai_options : dict = None, ai_info : dict = None) -> None:
+                ai_query_type : str = None, ai_options : dict = None, ai_info : dict = None, 
+                response : str = None) -> None:
         """Send a message only to a specific player."""
         if player is None:
             raise ValueError("Must specify a player to whisper to")
@@ -603,7 +618,8 @@ class Engine:
                     else:
                         self.whisper_f(json.dumps({"type": ai_query_type, "options": ai_options}), player, "ai_query")
             elif whisper_type == "error":
-                raise Exception("Got invalid response from AI Agent")
+                name = str(self.local_ais[player]) if player in self.local_ais else "<name unavailable>"
+                raise Exception(f"Got invalid response from AI Agent with index {player} and name '{name}'. -- Error: {msg} -- Response: '{response}' -- Options: {ai_options}")
         else:
             if msg is None:
                 raise ValueError("Must specify a message for human players")

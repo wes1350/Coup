@@ -15,7 +15,8 @@ else:
     from .Agent import Agent
 
 class KerasAgent(Agent):
-    def __init__(self, label, model=None, epsilon=0, debug=False, verbose=True):
+    def __init__(self, label, model=None, epsilon=0, debug=False, **kwargs):
+        super().__init__(**kwargs)
         self.label = label
         self.debug = debug
         self.verbose = verbose

@@ -11,15 +11,10 @@ else:
     from .utils.network import *
     from .Agent import Agent
 
-characters_to_moves = {"Ambassador": {"action": ["Exchange"], "block": ["Steal"]},
-                       "Assassin": {"action": ["Assassinate"], "block": []},
-                       "Captain": {"action": ["Steal"], "block": ["Steal"]},
-                       "Contessa": {"action": [], "block": ["Foreign Aid", "ForeignAid"]},
-                       "Duke": {"action": ["Tax"], "block": ["Tax"]}}
 
 class HonestAgent(Agent):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.alive_cards = {"Ambassador": False, "Assassin": False, "Captain": False,
                             "Contessa": False, "Duke": False}
 
@@ -69,7 +64,7 @@ class HonestAgent(Agent):
         return decline()
 
     def decide_card(self, options):
-        return random.choice(options)
+        return random.choice(list(options.keys()))
 
     def decide_exchange(self, options):
         return choose_exchange_cards(random.sample(options["cards"].keys(), options["n"]))
