@@ -404,14 +404,20 @@ class Engine:
 
     def query_player_coup_target(self, player_id : int) -> int:
         """Given a player who must coup, ask them who they are going to coup."""
+        
         ai_options = self._state.build_action_space(player_id)
-        if self.is_ai_player(player_id):
-            self.whisper(player=player_id, ai_query_type="action", ai_options=ai_options)
-        else:
-            query_msg = "Player {}, who are you going to coup?\n".format(player_id)
-            self.whisper(query_msg, player_id, "prompt")
+        only_one_option = len(json.loads(ai_options)["Coup"]) == 1
+        if not only_one_option:
+            if self.is_ai_player(player_id):
+                self.whisper(player=player_id, ai_query_type="action", ai_options=ai_options)
+            else:
+                query_msg = "Player {}, who are you going to coup?\n".format(player_id)
+                self.whisper(query_msg, player_id, "prompt")
         while True:
-            response = self.get_response(player_id)
+            if only_one_option:
+                response = str(json.loads(ai_options)["Coup"][0])
+            else:
+                response = self.get_response(player_id)
             try:
                 action = self.translate_coup_target(response)
                 action.set_source(player_id)
