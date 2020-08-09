@@ -1,10 +1,13 @@
 """Handlers for Flask routes"""
-
+import datetime
 from flask import render_template, request, g, redirect, url_for, make_response, jsonify
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
 from flask_login import current_user, login_user, logout_user
 from coup import app, db
 from coup.models import User
 from coup.socketio_handlers import rt
+
+jwt = JWTManager(app)
 
 @app.route('/', methods=('GET', 'POST'))
 def login():
@@ -58,55 +61,44 @@ def room(room):
     return render_template('room.html', room=room)
 
 @app.route('/rooms', methods=('GET', 'POST'))
+@jwt_required
 def rooms():
-    print(current_user)
-    if current_user.is_authenticated:
-        try:
-            if request.method == "GET":
-                # will need to verfiy that the authToken is good
-                return jsonify(rt.game_rooms), 200
-            elif request.method == "POST":
-                data = request.get_json(force=True)
-                if create_room(data['roomName']) is None:
-                    return jsonify('room already exist'), 400
-                return jsonify('room created'), 201
-        except Exception as e:
-            print(e)
-            return jsonify({'status': 'Server error'}), 500
-    else:
-        return jsonify({'status': 'unauthorized'}), 401
+    try:
+        if request.method == "GET":
+            return jsonify(list(rt.game_rooms.values())), 200
+        elif request.method == "POST":
+            data = request.get_json(force=True)
+            if create_room(data['roomName']) is None:
+                return jsonify('room already exist'), 400
+            return jsonify('room created'), 201
+    except Exception as e:
+        print(e)
+        return jsonify({'status': 'Server error'}), 500
 
-@app.route('/registerReact', methods=('POST',))
+@app.route('/users/register', methods=('POST',))
 def registerReact():
-    if current_user.is_authenticated:
-        response_object = {
-            'status': 'fail',
-            'message': 'User already signed in.',
-        }
-        return make_response(jsonify(response_object)), 202 
-
     if request.method == "POST":
         try:
-            username = request.form["username"]
-            password = request.form["password"]
+            data = request.get_json(force=True)
+            username = data["username"]
+            password = data["password"]
 
+            if User.query.filter_by(username=username).first() is not None:
+                raise Exception("username not available.")
             user = User(username=username)
             user.set_password(password)
-            auth_token = user.encode_auth_token()
-            print(auth_token)
             db.session.add(user)
             db.session.commit()
             response_object = {
                 'status': 'success',
                 'message': 'Successfully registered',
-                'auth_token': auth_token.decode()
             }
             return make_response(jsonify(response_object)), 201
         except Exception as e:
             print(e)
             response_object = {
                 'status': 'fail',
-                'message': 'Some error occured. Please try again'
+                'message': str(e)
                 }
             return make_response(jsonify(response_object)), 401
 
@@ -119,8 +111,8 @@ def authenticate():
         user = User.query.filter_by(username=username).first()
         if user is None or not user.check_password(password):
             return jsonify({'status': 'User not found'}), 404 
-        login_user(user, remember=True)
-        return jsonify({'username': username, 'authToken': user.encode_auth_token()}), 200
+        expires = datetime.timedelta(hours=1)
+        return jsonify({'username': username, 'access_token': create_access_token(identity=user.id, expires_delta=expires)}), 200
     except Exception as e:
         print(e)
         return  jsonify({'status': 'server error'}), 500

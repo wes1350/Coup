@@ -1,6 +1,4 @@
-import jwt
 import sys
-import datetime
 sys.path.insert(0,'..')  # For importing app config, required for using db
 from coup import app, db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -23,7 +21,7 @@ class User(UserMixin, db.Model):
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
-
+    
     def set_elo(self, elo):
         self.elo = elo
 
@@ -32,28 +30,6 @@ class User(UserMixin, db.Model):
 
     def add_games(self, n):
         self.n_games += n
-
-    def encode_auth_token(self):
-        try:
-            payload = {
-                "exp": datetime.datetime.utcnow() + datetime.timedelta(days=0, seconds=5),
-                "iat": datetime.datetime.utcnow(),
-                "sub": self.id
-            }
-            token = jwt.encode(payload, app.config.get('SECRET_KEY'), algorithm="HS256")
-            return token.decode()
-        except Exception as e:
-            return e
-    
-    @staticmethod
-    def decode_auth_token(auth_token):
-        try:
-            payload = jwt.decode(auth_token, app.config.get('SECRET_KEY'))
-            return payload['sub']
-        except jwt.ExpiredSignatureError:
-            return 'Signature expired. Please log in again'
-        except jwt.InvalidTokenError:
-            return 'InvalidToken. Please log in again.'
 
 class AgentType(db.Model):
     id = db.Column(db.Integer, primary_key=True)

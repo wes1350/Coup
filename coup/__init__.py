@@ -15,7 +15,7 @@ app.config.from_object(AppConfig)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
 CORS(app, resources={r"/*": {"origins": "*"}})
-socketio = SocketIO(app, cors_allowed_origins="https://localhost:3000")
+socketio = SocketIO(app, cors_allowed_origins="*")
 login_manager = LoginManager(app)
 login_manager.init_app(app)
 
