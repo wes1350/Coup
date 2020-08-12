@@ -100,7 +100,7 @@ def registerReact():
                 'status': 'fail',
                 'message': str(e)
                 }
-            return make_response(jsonify(response_object)), 401
+            return make_response(jsonify(response_object)), 400
 
 @app.route('/users/authenticate', methods=('POST', ))
 def authenticate():

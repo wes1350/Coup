@@ -77,7 +77,7 @@ def clear_old_info(room, specific_client=None):
 @socketio.on('join_room')
 def on_join(room):
     if room not in rt.game_rooms:
-        rt.game_rooms[room] = {"clients": {}, "observers": {}, "started": False}
+        rt.game_rooms[room] = {"name": room, "clients": {}, "observers": {}, "started": False}
     join_room(room)
     new_index = max(rt.game_rooms[room]["clients"].keys()) + 1 if len(rt.game_rooms[room]["clients"]) > 0 else 0
     rt.game_rooms[room]["clients"][new_index] = {"sid": request.sid, "response": "No response", "ai": False}
