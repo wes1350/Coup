@@ -6,6 +6,7 @@ from flask_login import current_user, login_user, logout_user
 from coup import app, db
 from coup.models import User
 from coup.socketio_handlers import rt
+from coup.agents import *
 
 jwt = JWTManager(app)
 
@@ -122,3 +123,8 @@ def create_room(name):
         rt.game_rooms[name] = {"name": name, "clients": {}, "observers": {}, "started": False}
         print(rt.game_rooms)
         return name
+
+@jwt_required
+@app.route('/agents', methods=('GET',))
+def getAgents():
+    return jsonify([str(agent()) for agent in agents]), 200

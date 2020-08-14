@@ -6,3 +6,5 @@ from .PytorchAgent import PytorchAgent
 from .KerasAgent import KerasAgent
 from .TaxAgent import TaxAgent
 from .Agent import Agent
+
+agents = [IncomeAgent, RandomAgent, AdversarialAgent, MimickingAgent, TaxAgent]
