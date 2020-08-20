@@ -12,9 +12,8 @@ else:
     from .Agent import Agent
 
 class RandomAgent(Agent):
-    def __init__(self, verbose=False):
-        self.verbose = verbose
-        pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def decide_action(self, options):
         possible_actions = possible_responses(options)
@@ -28,7 +27,7 @@ class RandomAgent(Agent):
         return self.decide_action(options)
 
     def decide_card(self, options):
-        return random.choice(options)
+        return random.choice(list(options.keys()))
 
     def decide_exchange(self, options):
         return choose_exchange_cards(random.sample(options["cards"].keys(), options["n"]))

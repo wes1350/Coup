@@ -1,5 +1,13 @@
 """Utilities for extracting information about the game."""
 
+"""Useful objects describing the game"""
+
+characters_to_moves = {"Ambassador": {"action": ["Exchange"], "block": ["Steal"]},
+                       "Assassin": {"action": ["Assassinate"], "block": []},
+                       "Captain": {"action": ["Steal"], "block": ["Steal"]},
+                       "Contessa": {"action": [], "block": ["Foreign Aid", "ForeignAid"]},
+                       "Duke": {"action": ["Tax"], "block": ["Tax"]}}
+
 """Functions corresponding to responses to the Game Engine."""
 
 """Actions"""
@@ -159,6 +167,42 @@ def convert(string, identifier=None):
     elif name == "challenge":
         return challenge()
     else:
-        assert isinstance(string, str)
+        if not isinstance(string, str):
+            raise ValueError("Input to convert must be a string")
         raise ValueError("Unrecognized value to convert " + string)
 
+def extract_state_info(event):
+    """A helper function that extracts information from state event messages."""
+    if event["event"] == "state":
+        info = event["info"]
+        my_id = info["playerId"]
+        current_player_id = info["currentPlayer"]
+        my_cards = info["players"][my_id]["cards"]
+        my_living_characters = {"Ambassador": 0, "Assassin": 0, "Captain": 0, "Contessa": 0, "Duke": 0}
+        for card in my_cards:
+            if card["alive"]:
+                my_living_characters[card["character"]] += 1
+
+        dead_characters = {"Ambassador": 0, "Assassin": 0, "Captain": 0, "Contessa": 0, "Duke": 0}
+        for player in info["players"]:
+            for card in player["cards"]:
+                if not card["alive"]:
+                    dead_characters[card["character"]] += 1
+
+        alive_counts_by_player = {id_: len([c for c in info["players"][id_]["cards"] if c["alive"]]) for id_ in range(len(info["players"]))}
+
+        my_coins = info["players"][my_id]["coins"]
+        coin_balances = {id_: info["players"][id_]["coins"] for id_ in range(len(info["players"]))}
+        summary = {
+            "my_id": my_id,
+            "current_player_id": current_player_id,
+            "my_cards": my_cards,
+            "my_living_characters": my_living_characters,
+            "dead_characters": dead_characters,
+            "alive_counts_by_player": alive_counts_by_player,
+            "my_coins": my_coins,
+            "coin_balances": coin_balances
+        }
+        return summary
+    else:
+        return None

@@ -12,8 +12,8 @@ else:
     from .Agent import Agent
 
 class MimickingAgent(Agent):
-    def __init__(self, verbose=False):
-        self.verbose = verbose
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
         self.action_queue = []
 
     def decide_action(self, options):
@@ -51,7 +51,7 @@ class MimickingAgent(Agent):
         return decline()
 
     def decide_card(self, options):
-        return random.choice(options)
+        return random.choice(list(options.keys()))
 
     def decide_exchange(self, options):
         return choose_exchange_cards(random.sample(options["cards"].keys(), options["n"]))

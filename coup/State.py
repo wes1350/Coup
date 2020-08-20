@@ -216,8 +216,8 @@ class State:
         # Validate the cost
         budget = self._players[player_id].get_coins()
         if action.cost > budget:
-            if whisper:
-                self.whisper("ERROR: not enough coins for action", player_id, "error")
+            # if whisper:
+            #     self.whisper("ERROR: not enough coins for action", player_id, "error")
             return False
 
         # Check if player must Coup
@@ -231,24 +231,24 @@ class State:
         if has_target:
             # Target must be a valid Player. Bank doesn't count
             if target_id < 0 or target_id >= self.get_n_players():
-                if whisper:
-                    self.whisper("ERROR: invalid player id", player_id, "error")
+                # if whisper:
+                #     self.whisper("ERROR: invalid player id", player_id, "error")
                 return False
             # Target must be alive
             if not self.player_is_alive(target_id):
-                if whisper:
-                    self.whisper("ERROR: chosen player has been eliminated", player_id, "error")
+                # if whisper:
+                #     self.whisper("ERROR: chosen player has been eliminated", player_id, "error")
                 return False
             # Target must not be self
             if target_id == player_id:
-                if whisper:
-                    self.whisper("ERROR: cannot target self with action", player_id, "error")
+                # if whisper:
+                #     self.whisper("ERROR: cannot target self with action", player_id, "error")
                 return False
             # If we are stealing, target must have coins to steal
             if self._players[target_id].get_coins() <= 0:
                 if "steal" in action.aliases:
-                    if whisper:
-                        self.whisper("ERROR: cannot steal from player with no coins", player_id, "error")
+                    # if whisper:
+                    #     self.whisper("ERROR: cannot steal from player with no coins", player_id, "error")
                     return False
 
         return True
@@ -266,12 +266,12 @@ class State:
             try:
                 cards = self.translate_exchange(response)
             except ValueError:
-                self.whisper("Invalid exchange, please try again.", player, "error")
+                self.whisper("Invalid exchange, please try again.", player, "error", response=response, ai_options=options)
             else:
                 valid = self.validate_exchange(player, cards, draw_start, draw_end)
                 if valid:
                     return cards
-                self.whisper("Impossible exchange, please try again.", player, "error")
+                self.whisper("Impossible exchange, please try again.", player, "error", response=response, ai_options=options)
 
     def translate_exchange(self, response : str) -> List[int]:
         """Given an exchange response, translate it accordingly."""

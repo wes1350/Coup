@@ -12,9 +12,8 @@ else:
     from .Agent import Agent
 
 class AdversarialAgent(Agent):
-    def __init__(self, verbose=False):
-        self.verbose = verbose
-        pass
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
 
     def decide_action(self, options):
         possible_actions = possible_responses(options)
@@ -35,7 +34,7 @@ class AdversarialAgent(Agent):
             return block(random.choice(options["Block"]))
 
     def decide_card(self, options):
-        return random.choice(options)
+        return random.choice(list(options.keys()))
 
 
 if __name__ == "__main__":

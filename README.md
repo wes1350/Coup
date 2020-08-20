@@ -6,7 +6,7 @@ This repository tries as best as possible to implement the rules described [here
 
 ### Prerequisites
 
-Configure a Python virtual environment, and then run `pip install -r requirements.txt`. 
+Configure a Python virtual environment, and then run `pip install -r requirements.txt`.
 
 ### Game Structure
 
@@ -55,23 +55,25 @@ In general, the agent should update its internal state (if it has one, as intell
 
 The possible event update messages are given below. Each is in the form of a dictionary with two keys: `event`, which describes the event type, and `info`, which describes the corresponding information. Below, the event name for each event type is given, along with a description of the info.
 
-`state`: describes, from the agent's point of view, the visible state of the game. This includes the agent's player index, the index of the current player, and the coin balance, index, and cards of each player (if visible).
-`action`: describes a chosen action by a player
-`action_resolution`: describes whether the previous action was successful
-`block`: describes a chosen block by a player
-`block_resolution`: describes whether the previous block was successful
-`challenge`: describes a chosen challenge by a player
-`challenge_resolution`: describes whether the previous challenge was successful
-`card_swap`: describes when a player swaps a card (the characters involved are only visible to the agent involved in the swap)
-`draw`: describes when a player draws a card during an Exchange (the characters involved are only visible to the agent involved in the swap)
-`card_loss`: describes when a player loses an influence and what card they reveal
-`winner`: describes the player who wins the game
-`loser`: describes a player who has been eliminated
+- `state`: describes, from the agent's point of view, the visible state of the game. This includes the agent's player index, the index of the current player, and the coin balance, index, and cards of each player (if visible).
+- `action`: describes a chosen action by a player
+- `action_resolution`: describes whether the previous action was successful
+- `block`: describes a chosen block by a player
+- `block_resolution`: describes whether the previous block was successful
+- `challenge`: describes a chosen challenge by a player
+- `challenge_resolution`: describes whether the previous challenge was successful
+- `card_swap`: describes when a player swaps a card (the characters involved are only visible to the agent involved in the swap)
+- `draw`: describes when a player draws a card during an Exchange (the characters involved are only visible to the agent involved in the swap)
+- `card_loss`: describes when a player loses an influence and what card they reveal
+- `winner`: describes the player who wins the game
+- `loser`: describes a player who has been eliminated
 
 
 ##### Response Queries
 
 Of course, the agent must be able to act when required to. To do so, it must be able to handle the situations described in #2-#5 in the list above. In each case, the agent is presented with a data structure describing what options it has available to it, which describe all possible legal moves in some format. From these options, the agent must decide what action to take. Below, the `options` data structure, the sole parameter to each of the `decide_xxxxx` functions, is described for each situation.
+
+For return values, make use of the provided utilities in `agents/utils/game.py`. For example, `return tax()` to Tax, `return convert("Block", "Duke")` to block as a Duke, and `return choose_exchange_cards([1, 3])` to select the cards with indices `1` and `3` during an Exchange.
 
 `decide_action`: a dictionary containing each action and whether it is possible (if it does not accept a target) or what targets it can be applied to (if it requires a target). For example:
 
@@ -93,11 +95,14 @@ Of course, the agent must be able to act when required to. To do so, it must be 
         "Pass": true
     }
 
-`decide_card`: a list containing the cards that can be chosen when losing an influence (i.e. a card is lost.) For example:
+`decide_card`: a dictionary containing the cards that can be chosen when losing an influence (i.e. a card is lost.) with their corresponding indices. For example:
 
-    [0, 1]
+    {
+        0: "Contessa",
+        1: "Assassin"
+    }
 
-TODO: attach character types to each card, so that it's easy to know just from looking what characters they correspond to.
+The index of the desired card should be returned.
 
 `decide_exchange`: a dictionary describing how many cards can be chosen (in the `n` field) and what characters the possible cards correspond to. For example:
 
@@ -109,6 +114,8 @@ TODO: attach character types to each card, so that it's easy to know just from l
             "3": "Contessa"
         }
     }
+
+To return a response, use `return choose_exchange_cards([cards])`, where `[cards]` is a list of card indices of the appropriate length.
 
 #####
 
