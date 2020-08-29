@@ -1,3 +1,4 @@
+import sys
 import os
 import random
 import itertools
@@ -15,7 +16,7 @@ else:
     from .Agent import Agent
 
 class KerasAgent(Agent):
-    def __init__(self, label, model=None, epsilon=0, debug=False, **kwargs):
+    def __init__(self, label, model=None, epsilon=0, verbose=False, debug=False, **kwargs):
         super().__init__(**kwargs)
         self.label = label
         self.debug = debug
@@ -55,7 +56,7 @@ class KerasAgent(Agent):
             'tax': 2,
             'steal': 3,
             'exchange': 4,
-            'assassinate': 4,
+            'assassinate': 5,
             'coup': 6}
 
     def __str__(self):
@@ -350,6 +351,7 @@ class KerasAgent(Agent):
 
 if __name__ == "__main__":
     # load the saved model
-    model = keras.models.load_model("./KerasModel/checkpoint")
-    keras_agent = KerasAgent(model)
-    start(keras_agent)
+    print(os.getcwd())
+    model = keras.models.load_model("/mnt/c/Users/tzwong/source/Coup/KerasModel/checkpoints/bootstrap_against_honest2")
+    keras_agent = KerasAgent('label', model)
+    start(keras_agent, sys.argv[1])

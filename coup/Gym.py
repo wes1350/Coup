@@ -1,3 +1,5 @@
+import sys
+sys.path.insert(0, '..')  # For importing app config, required for using db
 from datetime import datetime
 import os
 import pickle
@@ -32,8 +34,10 @@ class Gym():
         shutil.copytree(source_location, hold_location)
 
     def load_model(self, model_location):
+        # model location should relative to /KerasModel
         model = None
         try:
+            print(model_location)
             print("Loading model from ", model_location)
             model = keras.models.load_model(model_location)
             print("Loaded model")
@@ -147,8 +151,7 @@ class Gym():
     def benchmark(self, agent: Agent, n=100):
         stats = {}
         # bench marking against other Agents
-        checkpoint_agent = KerasAgent(label='checkpoint', model=self.load_checkpoint('checkpoint'), verbose=False)
-        opponents = [TaxAgent(), IncomeAgent(), AdversarialAgent(), MimickingAgent(), checkpoint_agent]
+        opponents = [TaxAgent(), IncomeAgent(), AdversarialAgent(), HonestAgent(), StrategicAgentV1(), TrickyAgent()]
         # remove epsilon for benchmarking
         agent.epsilon = 0
         agent.verbose = False
@@ -178,6 +181,7 @@ class Gym():
 if __name__ == "__main__":
     print('imported')
     gym = Gym()
+    '''
     trained_agent = KerasAgent(label='training', model=gym.load_model(gym.training_location), verbose=False)
     checkpoint_agent = KerasAgent(label='checkpoint', model=gym.load_checkpoint('checkpoint'), verbose=False)
     batch_training_agent = KerasAgent(label='bathTraining1', model=gym.load_checkpoint('testBatchTraining'), verbose=False)
@@ -192,3 +196,5 @@ if __name__ == "__main__":
     benchmark_stats['checkpoint'] = gym.benchmark(checkpoint_agent)
     benchmark_stats[session_name] = gym.benchmark(trained_agent)
     print(json.dumps(benchmark_stats, indent=4))
+
+    '''
