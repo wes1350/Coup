@@ -35,5 +35,5 @@ class TaxAgent(Agent):
 
 
 if __name__ == "__main__":
-    start(TaxAgent())
+    start(TaxAgent(), sys.argv[1])
 

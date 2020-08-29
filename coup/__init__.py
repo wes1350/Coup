@@ -3,6 +3,7 @@ import eventlet
 # bugs that result from such conflicts
 eventlet.monkey_patch()
 from flask import Flask
+from flask_cors import CORS
 from flask_socketio import SocketIO
 from flask_login import LoginManager
 from flask_sqlalchemy import SQLAlchemy
@@ -13,6 +14,7 @@ app = Flask(__name__)
 app.config.from_object(AppConfig)
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+CORS(app, resources={r"/*": {"origins": "*"}})
 socketio = SocketIO(app, cors_allowed_origins="*")
 login_manager = LoginManager(app)
 login_manager.init_app(app)

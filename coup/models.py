@@ -1,4 +1,6 @@
-from coup import db, login_manager
+import sys
+sys.path.insert(0,'..')  # For importing app config, required for using db
+from coup import app, db, login_manager
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import UserMixin
 
@@ -29,7 +31,6 @@ class User(UserMixin, db.Model):
     def add_games(self, n):
         self.n_games += n
 
-
 class AgentType(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), index=True, unique=True)
@@ -47,7 +48,6 @@ class AgentType(db.Model):
 
     def add_games(self, n):
         self.n_games += n
-
 
 @login_manager.user_loader
 def load_user(user_id):
