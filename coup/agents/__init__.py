@@ -9,3 +9,5 @@ from .TrickyAgent import TrickyAgent
 from .StrategicAgentV1 import StrategicAgentV1
 from .HonestAgent import HonestAgent
 from .Agent import Agent
+
+agents = [IncomeAgent, RandomAgent, AdversarialAgent, MimickingAgent, TaxAgent]
