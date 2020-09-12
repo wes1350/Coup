@@ -1,7 +1,7 @@
 """Handlers for Flask routes"""
 import datetime
 from flask import render_template, request, g, redirect, url_for, make_response, jsonify
-from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity
+from flask_jwt_extended import JWTManager, jwt_required, create_access_token, get_jwt_identity, jwt_refresh_token_required, create_refresh_token
 from flask_login import current_user, login_user, logout_user
 from coup import app, db
 from coup.models import User
@@ -9,6 +9,8 @@ from coup.socketio_handlers import rt
 from coup.agents import *
 
 jwt = JWTManager(app)
+# expiration time for access tokens
+expires = datetime.timedelta(hours=1)
 
 @app.route('/', methods=('GET', 'POST'))
 def login():
@@ -103,6 +105,17 @@ def registerReact():
                 }
             return make_response(jsonify(response_object)), 400
 
+
+@app.route('/users/refresh', methods=('POST', ))
+@jwt_refresh_token_required
+def refresh():
+    current_user = get_jwt_identity()
+    print(current_user)
+    ret = {
+        'access_token': create_access_token(identity=current_user, expires_delta=expires)
+    }
+    return make_response(jsonify(ret)), 200
+
 @app.route('/users/authenticate', methods=('POST', ))
 def authenticate():
     try:
@@ -112,8 +125,12 @@ def authenticate():
         user = User.query.filter_by(username=username).first()
         if user is None or not user.check_password(password):
             return jsonify({'status': 'User not found'}), 404 
-        expires = datetime.timedelta(hours=1)
-        return jsonify({'username': username, 'access_token': create_access_token(identity=user.id, expires_delta=expires)}), 200
+        res = make_response(jsonify({
+                'username': username,
+                'access_token': create_access_token(identity=user.id, expires_delta=expires)
+                }))
+        res.set_cookie("refresh_token", value=create_refresh_token(identity=user.id), httponly=True)
+        return make_response(res), 200
     except Exception as e:
         print(e)
         return  jsonify({'status': 'server error'}), 500
